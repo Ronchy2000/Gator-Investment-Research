@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>鳄鱼派投资研报 - 全天候投资风向标</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="鳄鱼派投资研报收录与分析">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  
+  <!-- 主题样式 -->
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css" disabled>
+  
+  <!-- 自定义样式 -->
+  <style>
+    body {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    
+    /* 侧边栏样式优化 */
+    .sidebar-toggle {
+      background-color: #42B983 !important;
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 50% !important;
+      padding: 10px !important;
+      opacity: 0.8 !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .sidebar-toggle:hover {
+      opacity: 1 !important;
+      transform: scale(1.1) !important;
+    }
+
+    /* 分类标签样式 */
+    .category-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      margin-left: 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      background-color: #f3f4f5;
+      color: #606266;
+    }
+
+    .category-macro {
+      background-color: #e1f3d8;
+      color: #67c23a;
+    }
+
+    .category-industry {
+      background-color: #fef0f0;
+      color: #f56c6c;
+    }
+
+    .category-all {
+      background-color: #ecf5ff;
+      color: #409eff;
+    }
+
+    /* 上下页跳转字体 */
+    .pagination-item-title {
+      font-size: 1em !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">加载中...</div>
+  
+  <script>
+    window.$docsify = {
+      name: '🐊 鳄鱼派投资研报',
+      repo: 'https://github.com/ronchy2000/Python_Study',
+      loadSidebar: true,
+      loadNavbar: false,
+      coverpage: true,
+      onlyCover: false,
+      maxLevel: 3,
+      subMaxLevel: 2,
+      auto2top: true,
+      homepage: 'index.md',
+      search: {
+        paths: 'auto',
+        placeholder: '🔍 搜索研报',
+        noData: '😞 没有找到相关内容',
+        depth: 3
+      },
+      count: {
+        countable: true,
+        fontsize:'0.9em',
+        color:'rgb(90,90,90)',
+        language:'chinese'
+      },
+      pagination: {
+        previousText: '上一篇',
+        nextText: '下一篇',
+        crossChapter: true,
+        crossChapterText: true,
+      },
+      plugins: [
+        function(hook, vm) {
+          hook.beforeEach(function(html) {
+            // 在每篇文章前添加更新时间
+            const url = vm.router.parse().file;
+            if (url) {
+              const editTime = new Date().toLocaleDateString('zh-CN');
+              html = `> 📅 最后更新: ${editTime}\n\n` + html;
+            }
+            return html;
+          });
+        }
+      ]
+    }
+  </script>
+  
+  <!-- Docsify v4 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  
+  <!-- 搜索插件 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  
+  <!-- 字数统计插件 -->
+  <script src="//unpkg.com/docsify-count/dist/countable.js"></script>
+  
+  <!-- 分页导航插件 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  
+  <!-- 代码高亮 -->
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  
+  <!-- 复制代码插件 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+  
+  <!-- Zoom image -->
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+  
+  <!-- 不蒜子访问量统计 -->
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</body>
+</html>
