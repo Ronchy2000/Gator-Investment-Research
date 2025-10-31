@@ -52,6 +52,8 @@ def replace_block(content: str, block: str) -> str:
 
 def render_articles_block(files: Iterable[Path], category_name: str) -> str:
     """生成文章列表区块，带清晰的标题和结构"""
+    from urllib.parse import quote
+    
     lines = [ARTICLES_START, "", "## 📄 文章列表", ""]
     
     if not files:
@@ -73,7 +75,8 @@ def render_articles_block(files: Iterable[Path], category_name: str) -> str:
             title_part = title
         
         # 构建相对路径（从当前分类目录，只需文件名）
-        rel_path = file_path.name
+        # URL 编码文件名以支持中文和空格
+        rel_path = quote(file_path.name)
         
         # 格式化输出
         if date_part:
