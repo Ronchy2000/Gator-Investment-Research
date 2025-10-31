@@ -33,11 +33,14 @@ def list_markdown_files(path: Path) -> List[Path]:
 
 
 def get_last_update_from_files(paths: Iterable[Path]) -> str:
-    timestamps = [p.stat().st_mtime for p in paths if p.exists()]
-    if not timestamps:
-        return datetime.now().strftime("%Y-%m-%d")
-    latest = max(timestamps)
-    return datetime.fromtimestamp(latest).strftime("%Y-%m-%d")
+    """
+    获取最后更新日期
+    
+    ⚠️ 改进 (2025-11-01):
+    - 使用当前日期，而不是文件修改时间
+    - 更准确反映网站的更新时间
+    """
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def ensure_index_defaults(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:

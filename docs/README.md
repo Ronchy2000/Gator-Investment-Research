@@ -61,7 +61,7 @@
 ### 📧 联系方式
 
 - GitHub: [ronchy2000](https://github.com/ronchy2000)
-- 项目地址: [Python_Study](https://github.com/ronchy2000/Python_Study)
+- 项目地址: [Gator-Investment-Research](https://github.com/Ronchy2000/Gator-Investment-Research)
 
 ---
 
