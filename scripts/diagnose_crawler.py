@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from datetime import datetime
@@ -19,24 +20,34 @@ from config import INDEX_FILE, ARTICLE_CATEGORIES
 
 
 def count_actual_files() -> dict[str, int]:
-    """统计实际存在的文件数量（去重）"""
+    """统计实际存在的文件数量（按 article_id 去重）"""
     counts = {}
-    all_files = set()  # 用于去重
+    all_article_ids = set()  # 用于按 ID 去重
     
     for category, path in ARTICLE_CATEGORIES.items():
         if path.exists():
             files = [
-                f.name for f in path.iterdir()
+                f for f in path.iterdir()
                 if f.suffix == ".md" and f.name.lower() != "readme.md"
             ]
             counts[category] = len(files)
-            all_files.update(files)
+            
+            # 从文件中提取 article_id
+            for file in files:
+                try:
+                    content = file.read_text(encoding="utf-8")
+                    # 提取 "- 文章ID: xxx" 行
+                    match = re.search(r"^-\s*文章ID:\s*(\d+)", content, re.MULTILINE)
+                    if match:
+                        all_article_ids.add(int(match.group(1)))
+                except Exception:
+                    pass
         else:
             counts[category] = 0
     
     # 去重后的总数
-    counts["total"] = len(all_files)
-    counts["total_with_duplicates"] = sum(counts[k] for k in counts if k != "total")
+    counts["total"] = len(all_article_ids)
+    counts["total_with_duplicates"] = sum(counts[k] for k in counts if k not in ("total", "total_with_duplicates"))
     return counts
 
 
