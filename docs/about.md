@@ -17,7 +17,7 @@
 
 ```
 鳄鱼派投资研报系统
-├── 爬虫模块 (Playwright)
+├── 爬虫模块 (Selenium)
 │   ├── 自动抓取研报内容
 │   ├── HTML 转 Markdown
 │   └── 智能分类识别
@@ -35,7 +35,7 @@
 
 | 技术 | 用途 | 优势 |
 |-----|------|------|
-| **Playwright** | 网页爬虫 | 自动下载浏览器驱动，无需手动配置 |
+| **Selenium** | 网页爬虫 | 成熟稳定，支持动态页面渲染和等待 |
 | **Docsify** | 文档框架 | 轻量级，无需构建步骤，支持插件扩展 |
 | **GitHub Actions** | CI/CD | 免费的定时任务，与代码仓库无缝集成 |
 | **BeautifulSoup** | HTML 解析 | 强大的 HTML 解析和内容提取能力 |
@@ -44,21 +44,23 @@
 
 ### 1. 智能爬虫系统
 
-**技术实现**: 使用 Playwright 代替传统 Selenium
+**技术实现**: 使用 Selenium 实现动态页面抓取
 
 ```python
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    # 自动处理 SPA 页面渲染
-    # 无需手动下载 ChromeDriver
+options = Options()
+options.add_argument("--headless")
+driver = webdriver.Chrome(options=options)
+# 等待 SPA 页面动态加载完成
+# 支持 JavaScript 渲染的内容
 ```
 
 **特点**:
-- ✅ 零配置：首次运行自动下载浏览器驱动
-- ✅ 高效率：支持异步并发抓取
-- ✅ 反检测：模拟真实用户行为
+- ✅ 成熟稳定：经过大规模实战验证
+- ✅ 动态渲染：支持 SPA 单页应用
+- ✅ 智能等待：自动等待页面加载完成
 
 ### 2. 内容智能处理
 
@@ -106,7 +108,7 @@ def detect_category(title, content):
 - **目标网站**: `h5.2025eyp.com` (鳄鱼派)
 - **内容类型**: 投资研究报告
 - **更新频率**: 每日更新
-- **历史数据**: 100+ 篇研报
+- **历史数据**: 600+ 篇研报
 
 ## 🚀 部署指南
 
@@ -114,21 +116,24 @@ def detect_category(title, content):
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/ronchy2000/Python_Study.git
-cd Python_Study/爬虫学习/鳄鱼派研报/wiki_Gator_Investment_Research
+git clone https://github.com/Ronchy2000/Gator-Investment-Research.git
+cd Gator-Investment-Research
 
 # 2. 安装依赖
-python3 -m pip install -r requirements.txt
-python3 -m playwright install chromium
+pip install -r requirements.txt
 
-# 3. 运行爬虫
-python3 crawler/fetch_reports.py --batch-size 50 --max-miss 20
+# 3. 运行前置检查（边界探测）
+python scripts/pre_crawl_check.py
 
-# 4. 生成导航和统计
-python3 scripts/update_category_meta.py
-python3 scripts/generate_sidebar.py
+# 4. 运行爬虫（内容下载）
+python crawler/fetch_reports.py --max-requests 100 --sleep 1.0
 
-# 5. 本地预览
+# 5. 生成导航和统计
+python scripts/update_category_meta.py
+python scripts/generate_sidebar.py
+
+# 6. 本地预览（需要全局安装 docsify-cli）
+# npm i -g docsify-cli
 docsify serve docs
 ```
 
@@ -145,8 +150,8 @@ docsify serve docs
 
 ### 参与方式
 
-- 🐛 报告 Bug: [提交 Issue](https://github.com/ronchy2000/Python_Study/issues)
-- 💡 功能建议: [发起 Discussion](https://github.com/ronchy2000/Python_Study/discussions)
+- 🐛 报告 Bug: [提交 Issue](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
+- 💡 功能建议: [发起 Discussion](https://github.com/Ronchy2000/Gator-Investment-Research/discussions)
 - 📝 改进文档: 提交 PR 更新 Markdown 文件
 - 🔧 代码贡献: Fork 仓库并提交 PR
 
@@ -170,8 +175,9 @@ docsify serve docs
 ## 📞 联系方式
 
 - **项目作者**: ronchy2000
-- **GitHub**: [@ronchy2000](https://github.com/ronchy2000)
-- **项目仓库**: [Python_Study](https://github.com/ronchy2000/Python_Study)
+- **GitHub**: [@Ronchy2000](https://github.com/Ronchy2000)
+- **项目仓库**: [Gator-Investment-Research](https://github.com/Ronchy2000/Gator-Investment-Research)
+- **在线文档**: [https://ronchy2000.github.io/Gator-Investment-Research/](https://ronchy2000.github.io/Gator-Investment-Research/)
 
 ---
 
