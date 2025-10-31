@@ -1,17 +1,17 @@
 {
   "last_update": "2025-10-31",
-  "total_articles": 372,
+  "total_articles": 471,
   "categories": {
-    "全部研报": 242,
-    "宏观分析": 78,
-    "行业分析": 275
+    "全部研报": 471,
+    "宏观分析": 122,
+    "行业分析": 329
   },
   "version": "1.2.0",
   "index": {
-    "saved_total": 372,
-    "missing_total": 7,
+    "saved_total": 471,
+    "missing_total": 29,
     "pending_total": 0,
-    "last_probed_id": 388,
-    "next_probe_id": 389
+    "last_probed_id": 651,
+    "next_probe_id": 652
   }
 }
