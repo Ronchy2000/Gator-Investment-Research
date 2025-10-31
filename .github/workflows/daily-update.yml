@@ -72,24 +72,34 @@ jobs:
           
           # 检查是否有更改
           if [ -n "$(git status --porcelain)" ]; then
-            # 获取新增文章数
-            new_files=$(git status --porcelain | grep -c "^?? docs/.*\.md$" || echo "0")
-            modified_files=$(git status --porcelain | grep -c "^M " || echo "0")
+            # 统计变更情况
+            new_articles=$(git status --porcelain | grep "^?? docs/.*\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
+            modified_articles=$(git status --porcelain | grep "^M.*docs/.*\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
+            modified_readmes=$(git status --porcelain | grep "^M.*README.md$" | wc -l | tr -d ' ')
+            modified_other=$(git status --porcelain | grep "^M " | grep -v "\.md$" | wc -l | tr -d ' ')
             
-            echo "发现更改: 新增 $new_files 篇, 修改 $modified_files 个文件"
+            # 计算总文章变更（新增+修改）
+            total_articles=$((new_articles + modified_articles))
+            
+            echo "📊 变更统计:"
+            echo "  - 新增文章: ${new_articles} 篇"
+            echo "  - 更新文章: ${modified_articles} 篇"
+            echo "  - 更新 README: ${modified_readmes} 个"
+            echo "  - 其他文件: ${modified_other} 个"
+            echo "  - 总计: ${total_articles} 篇文章变更"
             
             git add -A
-            git commit -m "Auto Update: ${new_files} new reports
+            git commit -m "🔄 Auto Update: ${total_articles} articles
             
-            - New articles: ${new_files}
-            - Modified files: ${modified_files}
-            - Update time: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
-            - Triggered by: ${{ github.event_name }}"
+            - New: ${new_articles} | Updated: ${modified_articles}
+            - READMEs: ${modified_readmes} | Others: ${modified_other}
+            - Time: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
+            - Trigger: ${{ github.event_name }}"
             
             git push
-            echo "[SUCCESS] Changes committed"
+            echo "✅ [SUCCESS] Changes committed and pushed"
           else
-            echo "[INFO] No new changes to commit"
+            echo "ℹ️ [INFO] No new changes to commit"
           fi
 
       - name: Generate Report
