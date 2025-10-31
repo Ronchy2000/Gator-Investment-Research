@@ -45,9 +45,9 @@ jobs:
           echo "=== 下载文章内容 (增量更新) ==="
           echo "职责: 从 index.json 读取边界,下载未下载的文章"
           echo "参数说明:"
-          echo "  --max-requests 500: 单次最多下载 500 篇文章"
+          echo "  --max-requests 9999: 不限制下载数量,一次性下载所有"
           echo "  --sleep 0.8: 每次请求间隔 0.8 秒"
-          python crawler/fetch_reports.py --max-requests 500 --sleep 0.8
+          python crawler/fetch_reports.py --max-requests 9999 --sleep 0.8
         continue-on-error: true
 
       - name: Update Documentation Metadata
