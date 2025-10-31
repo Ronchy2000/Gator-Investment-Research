@@ -47,14 +47,6 @@
 
 <!-- stats:end -->
 
-<div id="busuanzi_container_site_pv" style="display: inline-block;">
-  📊 总访问量: <span id="busuanzi_value_site_pv">--</span> 次
-</div>
-<span style="margin: 0 10px;">|</span>
-<div id="busuanzi_container_site_uv" style="display: inline-block;">
-  👤 访客数: <span id="busuanzi_value_site_uv">--</span> 人
-</div>
-
 ### 💡 技术栈
 
 - **前端框架**: [Docsify](https://docsify.js.org/) - 轻量级文档生成器

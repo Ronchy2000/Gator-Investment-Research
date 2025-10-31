@@ -32,7 +32,7 @@
 
 <br>
 
-[开始阅读](#/README)
+[开始阅读](./README)
 [GitHub](https://github.com/Ronchy2000/Gator-Investment-Research)
 
 <!-- 背景图片 -->

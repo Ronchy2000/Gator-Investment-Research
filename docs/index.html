@@ -7,7 +7,7 @@
   <meta name="description" content="鳄鱼派投资研报收录与分析">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   
-  <!-- 主题样式 -->
+  <!-- 主题样式 - 白天/夜间模式 -->
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css" disabled>
   
@@ -18,7 +18,7 @@
       line-height: 1.6;
     }
     
-    /* 侧边栏样式优化 */
+    /* 侧边栏菜单按钮优化 */
     .sidebar-toggle {
       background-color: #42B983 !important;
       width: 40px !important;
@@ -34,35 +34,35 @@
       transform: scale(1.1) !important;
     }
 
-    /* 分类标签样式 */
-    .category-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      margin-left: 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      background-color: #f3f4f5;
-      color: #606266;
+    .sidebar-toggle span {
+      background-color: white !important;
+      height: 2px !important;
+      width: 16px !important;
+      margin: 4px auto !important;
     }
 
-    .category-macro {
-      background-color: #e1f3d8;
-      color: #67c23a;
-    }
-
-    .category-industry {
-      background-color: #fef0f0;
-      color: #f56c6c;
-    }
-
-    .category-all {
-      background-color: #ecf5ff;
-      color: #409eff;
+    /* 侧边栏边框 */
+    .sidebar {
+      border-right: 2px solid #42B983 !important;
     }
 
     /* 上下页跳转字体 */
     .pagination-item-title {
       font-size: 1em !important;
+    }
+
+    /* 移动端响应式 */
+    @media screen and (max-width: 768px) {
+      .sidebar-toggle {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 8px !important;
+      }
+      
+      .sidebar-toggle span {
+        width: 14px !important;
+        margin: 3px auto !important;
+      }
     }
   </style>
 </head>
@@ -76,34 +76,49 @@
       loadSidebar: true,
       loadNavbar: false,
       coverpage: true,
-      onlyCover: false,
+      onlyCover: true,  // 仅加载一次封面
       maxLevel: 3,
       subMaxLevel: 2,
       auto2top: true,
-      homepage: 'index.md',
+      homepage: 'README.md',  // 修改：首页指向 README.md
       
-      // 锚点滚动配置
+      // Hash 路由模式
       routerMode: 'hash',
-      crossOriginLinks: [],
       
+      // 全文搜索
       search: {
+        maxAge: 86400000,
         paths: 'auto',
         placeholder: '🔍 搜索研报',
         noData: '😞 没有找到相关内容',
         depth: 3
       },
+      
+      // 字数统计
       count: {
         countable: true,
-        fontsize:'0.9em',
-        color:'rgb(90,90,90)',
-        language:'chinese'
+        position: 'top',
+        fontsize: '0.9em',
+        color: 'rgb(90,90,90)',
+        language: 'chinese'
       },
+      
+      // 上下页跳转
       pagination: {
         previousText: '上一篇',
         nextText: '下一篇',
         crossChapter: true,
         crossChapterText: true,
       },
+      
+      // 白天/夜间模式切换
+      switchLightDarkMode: {
+        useSwitchMode: true,
+        top: 130,
+        right: 26,
+        svgColor: '#7d7b75',
+      },
+      
       plugins: [
         function(hook, vm) {
           hook.beforeEach(function(html) {
@@ -136,24 +151,33 @@
   <!-- Docsify v4 -->
   <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
   
-  <!-- 搜索插件 -->
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <!-- 全文搜索 -->
+  <script src="https://cdn.bootcss.com/docsify/4.5.9/plugins/search.min.js"></script>
   
-  <!-- 字数统计插件 -->
+  <!-- 图片缩放 -->
+  <script src="//unpkg.com/docsify/lib/plugins/zoom-image.js"></script>
+  
+  <!-- 字数统计 -->
   <script src="//unpkg.com/docsify-count/dist/countable.js"></script>
   
-  <!-- 分页导航插件 -->
-  <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  <!-- 表情插件 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"></script>
+  
+  <!-- 上下页跳转 -->
+  <script src="//unpkg.com/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  
+  <!-- 返回顶部 -->
+  <script src="https://cdn.jsdelivr.net/gh/Sumsung524/docsify-backTop/dist/docsify-backTop.min.js"></script>
+  
+  <!-- 白天/夜间模式切换 -->
+  <script src="https://cdn.jsdelivr.net/gh/pikapikapikaori/docsify-simple-dark-mode@latest/src/switchLightDarkMode.js"></script>
   
   <!-- 代码高亮 -->
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
   
-  <!-- 复制代码插件 -->
+  <!-- 复制代码 -->
   <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
-  
-  <!-- Zoom image -->
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
   
   <!-- 不蒜子访问量统计 -->
   <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
