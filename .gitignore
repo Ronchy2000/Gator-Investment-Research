@@ -1,3 +1,21 @@
+# Python
 **/.DS_Store/*
 **/__pycache__/*
+*.pyc
+*.pyo
+*.pyd
+.Python
 
+# Data and cache
+data/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*~
