@@ -167,6 +167,6 @@ MIT License © [Ronchy2000](https://github.com/Ronchy2000)
 
 Made with ❤️ by [Ronchy2000](https://github.com/Ronchy2000)
 
-[🏠 在线阅读](https://ronchy2000.github.io/Gator-Investment-Research/) | [📮 反馈问题](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
+[🏠 在线阅读](https://gator-investment-research.vercel.app/) | [📮 反馈问题](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
 
 </div>
