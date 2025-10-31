@@ -30,5 +30,10 @@
 
 <br>
 
-[开始阅读](#/?id=鳄鱼派投资研报)
+<br>
+
+[开始阅读](#/README)
 [GitHub](https://github.com/Ronchy2000/Gator-Investment-Research)
+
+<!-- 背景图片 -->
+![](https://docsify.js.org/_media/bg.png)
