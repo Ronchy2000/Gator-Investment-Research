@@ -295,44 +295,74 @@ def probe_new_articles(
     max_fetches: int = PROBE_MAX_FETCHES,
     max_consecutive_missing: int = PROBE_CONSECUTIVE_MISS,
 ) -> List[Article]:
-    """增量探测新文章，返回需要下载的 Article 列表"""
+    """
+    增量探测新文章，返回需要下载的 Article 列表。
+    
+    探测策略（参考 v6）：
+    1. 从 next_probe_id 开始向后探测
+    2. 跳过已知缺失的 ID（避免重复请求）
+    3. 实际请求数达到 max_fetches 个后停止
+    4. 或者连续缺失达到 max_consecutive_missing 后停止
+    """
     saved = set(int(i) for i in index.get("saved_ids", []))
     known_missing = set(int(i) for i in index.get("missing_ids", []))
 
     start_id = resolve_probe_start(index)
     current_id = start_id
-    fetched_count = 0
+    fetched_count = 0  # 实际请求数
     consecutive_missing = 0
     last_found_id = int(index.get("last_probed_id", 0))
 
     new_articles: Dict[int, Article] = {}
-    probed_ids: List[int] = []
+    probed_ids: List[int] = []  # 实际请求的 ID 列表
+    
+    print(f"\n🚀 开始增量探测 (从 ID {start_id}，最多请求 {max_fetches} 个，连续缺失上限 {max_consecutive_missing})")
 
-    while fetched_count < max_fetches and consecutive_missing < max_consecutive_missing:
-        if current_id in known_missing and current_id < index.get("next_probe_id", current_id):
+    # 探测循环：只有在两个条件都满足时才继续
+    while fetched_count < max_fetches:
+        # 跳过已知缺失的 ID（减少无效请求）
+        if current_id in known_missing:
             current_id += 1
             continue
 
+        # 实际发起请求
         probed_ids.append(current_id)
         fetched_count += 1
 
         article = fetcher.fetch(current_id)
         if article:
+            # 找到文章
             clear_missing_id(current_id, index)
             last_found_id = max(last_found_id, current_id)
             consecutive_missing = 0
             if current_id not in saved:
                 new_articles[current_id] = article
+                print(f"  ✅ [{fetched_count}/{max_fetches}] ID {current_id}: {article.title[:40]}... ({article.date or 'N/A'})")
+            else:
+                print(f"  ⏭️  [{fetched_count}/{max_fetches}] ID {current_id}: 已存在，跳过")
         else:
+            # 未找到文章
             record_missing_id(current_id, index)
             consecutive_missing += 1
+            print(f"  ❌ [{fetched_count}/{max_fetches}] ID {current_id}: 未找到 (连续缺失 {consecutive_missing})")
+            
+            # 连续缺失达到阈值，停止探测
+            if consecutive_missing >= max_consecutive_missing:
+                print(f"\n⚠️  连续缺失 {consecutive_missing} 个 ID，停止探测")
+                break
 
         current_id += 1
 
+    # 更新探测进度
     index["next_probe_id"] = current_id
     index["last_probed_id"] = last_found_id
     update_probe_history(index, start_id, current_id - 1, last_found_id)
     index["_last_probe_ids"] = probed_ids
+    
+    print(f"\n📊 探测完成: 实际请求 {fetched_count} 个, 新发现 {len(new_articles)} 篇文章")
+    print(f"   探测范围: ID {start_id} - {current_id - 1}")
+    print(f"   最新发现: ID {last_found_id}")
+    print(f"   下次起点: ID {current_id}")
 
     return list(new_articles.values())
 
@@ -615,8 +645,9 @@ def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Fetch Gator investment research articles.")
     parser.add_argument("--start-id", type=int, help="Start article ID (inclusive)")
     parser.add_argument("--end-id", type=int, help="End article ID (inclusive)")
-    parser.add_argument("--batch-size", type=int, default=50, help="Batch size when auto-scanning for new IDs")
-    parser.add_argument("--max-miss", type=int, default=15, help="Stop after this many consecutive missing articles")
+    parser.add_argument("--batch-size", type=int, help="[已弃用] 改用 --max-requests 限制单次请求数")
+    parser.add_argument("--max-requests", type=int, help="单次运行最多请求多少个 ID (默认无限制，直到连续缺失)")
+    parser.add_argument("--max-miss", type=int, default=25, help="连续缺失多少个 ID 后停止探测 (默认 25)")
     parser.add_argument("--no-headless", action="store_true", help="Run browser in headed mode for debugging")
     parser.add_argument("--save-html", action="store_true", help="Persist raw HTML snapshots for debugging")
     parser.add_argument("--sleep", type=float, default=1.0, help="Seconds to sleep between requests")
@@ -662,12 +693,18 @@ def run_incremental_mode(args: argparse.Namespace, index: Dict[str, Any]) -> int
         index["pending_ids"] = sorted(pending_set)
         write_index(index)
 
+    # 决定单次请求数限制
+    max_fetches = args.max_requests if args.max_requests else 1500  # 默认无限制
+    if args.batch_size:  # 兼容旧参数
+        print(f"⚠️  --batch-size 已弃用，请使用 --max-requests")
+        max_fetches = args.batch_size
+
     with GatorFetcher(headless=not args.no_headless, save_html=args.save_html) as fetcher:
         pending_articles = fetch_pending_articles(fetcher, index.get("pending_ids", []), index)
         probed_articles = probe_new_articles(
             fetcher,
             index,
-            max_fetches=max(1, args.batch_size),
+            max_fetches=max_fetches,
             max_consecutive_missing=max(1, args.max_miss),
         )
 
