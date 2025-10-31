@@ -34,7 +34,8 @@ from config import INDEX_FILE, ARTICLE_CATEGORIES
 # 探测参数
 COARSE_PROBE_STEP = 50      # 粗探测步长：每隔 50 个 ID 采样
 COARSE_PROBE_MAX = 1500     # 粗探测上限：探测到 ID 1500
-FINE_PROBE_RANGE = 50      # 细探测范围：在粗探测边界前后 100 个 ID
+FINE_PROBE_RANGE = 50       # 细探测范围：从最后存在点往后探测 50 个 ID
+FINE_PROBE_SAFETY = 3       # 细探测安全边界：往前回退 3 个 ID 作为起点
 MAX_CONSECUTIVE_MISS = 25   # 连续缺失 25 个认为到达边界
 
 
@@ -125,12 +126,13 @@ def coarse_probe_boundary(driver, start_id: int = 1, max_id: int = COARSE_PROBE_
 def fine_probe_boundary(driver, start_id: int, probe_range: int = FINE_PROBE_RANGE) -> int:
     """
     细探测：精确定位边界 ID
+    从 start_id 开始往后探测 probe_range 个 ID
     返回：实际的最大文章 ID
     """
     print(f"\n🎯 细探测阶段 (范围 {start_id} - {start_id + probe_range})")
     print("=" * 60)
     
-    max_id = start_id
+    max_id = start_id - 1  # 初始化为起点前一个（如果起点都不存在，则边界在之前）
     consecutive_miss = 0
     
     for article_id in range(start_id, start_id + probe_range + 1):
@@ -326,12 +328,13 @@ def main():
     driver = webdriver.Chrome(options=options)
     
     try:
-        # 粗探测
+        # 粗探测：找到最后存在的采样点
         coarse_boundary = coarse_probe_boundary(driver, start_id=probe_start)
         
-        # 细探测：从粗探测结果的前一个步长开始
-        fine_start = max(1, coarse_boundary - COARSE_PROBE_STEP)
-        precise_boundary = fine_probe_boundary(driver, fine_start)
+        # 细探测：从最后存在点往前 3 个作为安全边界，往后探测 50 个
+        # 例如：粗探测找到 ID 651，细探测从 648 开始，探测 648-698
+        fine_start = max(1, coarse_boundary - FINE_PROBE_SAFETY)
+        precise_boundary = fine_probe_boundary(driver, fine_start, probe_range=FINE_PROBE_RANGE)
         
         # 更新 index.json
         data["last_probed_id"] = precise_boundary
