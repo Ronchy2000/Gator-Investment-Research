@@ -74,9 +74,9 @@ def render_articles_block(files: Iterable[Path], category_name: str) -> str:
             date_part = ""
             title_part = title
         
-        # 构建相对路径（从当前分类目录，只需文件名）
-        # URL 编码文件名以支持中文和空格
-        rel_path = quote(file_path.name)
+        # 构建相对路径：分类目录/文件名（带 URL 编码）
+        # 例如: 全部研报/2025.10.27-xxx.md
+        rel_path = f"{category_name}/{quote(file_path.name)}"
         
         # 格式化输出
         if date_part:
@@ -140,6 +140,8 @@ def update_homepage(stats: Dict[str, object]) -> None:
 
 
 def generate_index_page(stats: Dict[str, object]) -> None:
+    from urllib.parse import quote
+    
     index_path = DOCS_DIR / "index.md"
 
     recent_files = sorted(
@@ -150,7 +152,8 @@ def generate_index_page(stats: Dict[str, object]) -> None:
 
     recent_lines = []
     for file_path in recent_files:
-        rel_path = file_path.relative_to(DOCS_DIR).as_posix()
+        # 相对路径格式: 全部研报/文件名.md (带 URL 编码)
+        rel_path = f"全部研报/{quote(file_path.name)}"
         title = file_path.stem
         recent_lines.append(f"- [{title}]({rel_path})")
 
@@ -165,9 +168,9 @@ def generate_index_page(stats: Dict[str, object]) -> None:
             stats_block,
             "",
             "## 📚 快速导航",
-            "- [📑 全部研报](全部研报/README.md)",
-            "- [📈 宏观分析](宏观分析/README.md)",
-            "- [🏭 行业分析](行业分析/README.md)",
+            "- [📑 全部研报](/全部研报/)",
+            "- [📈 宏观分析](/宏观分析/)",
+            "- [🏭 行业分析](/行业分析/)",
             "",
             "## 🆕 最新收录",
         ]
