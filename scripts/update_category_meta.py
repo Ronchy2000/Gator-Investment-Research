@@ -141,12 +141,29 @@ def update_homepage(stats: Dict[str, object]) -> None:
 
 def generate_index_page(stats: Dict[str, object]) -> None:
     from urllib.parse import quote
+    import re
     
     index_path = DOCS_DIR / "index.md"
-
+    
+    # 获取所有文章
+    all_files = list(list_markdown_files(ARTICLE_CATEGORIES["全部研报"]))
+    
+    # 提取每个文件的 ID
+    def extract_article_id(file_path: Path) -> int:
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            # 从文件内容中提取 "文章ID: 686" 这样的行
+            match = re.search(r'文章ID[：:]\s*(\d+)', content)
+            if match:
+                return int(match.group(1))
+        except:
+            pass
+        return -1  # 没有 ID 的排最后
+    
+    # 按 ID 倒序排序（ID 越大越新）
     recent_files = sorted(
-        list_markdown_files(ARTICLE_CATEGORIES["全部研报"]),
-        key=lambda p: p.stem,
+        all_files,
+        key=extract_article_id,
         reverse=True,
     )[:8]
 
@@ -155,7 +172,12 @@ def generate_index_page(stats: Dict[str, object]) -> None:
         # 相对路径格式: 全部研报/文件名.md (带 URL 编码)
         rel_path = f"全部研报/{quote(file_path.name)}"
         title = file_path.stem
-        recent_lines.append(f"- [{title}]({rel_path})")
+        article_id = extract_article_id(file_path)
+        # 显示 ID 方便调试
+        if article_id > 0:
+            recent_lines.append(f"- [{title}]({rel_path}) `#{article_id}`")
+        else:
+            recent_lines.append(f"- [{title}]({rel_path})")
 
     stats_block = render_stats_block(stats["total_articles"], stats["last_update"])
 
