@@ -34,13 +34,13 @@ jobs:
           playwright install chromium
           playwright install-deps
 
-      - name: � 阶段 1: 边界探测
+      - name: Stage 1 - Boundary Detection
         run: |
           echo "=== 探测文章边界 (轻量级检查) ==="
           echo "职责: 快速探测边界,写入 last_probed_id 到 index.json"
           python scripts/pre_crawl_check.py
 
-      - name: 📥 阶段 2: 内容下载
+      - name: Stage 2 - Content Download
         run: |
           echo "=== 下载文章内容 (增量更新) ==="
           echo "职责: 从 index.json 读取边界,下载未下载的文章"
@@ -50,7 +50,7 @@ jobs:
           python crawler/fetch_reports.py --max-requests 500 --sleep 0.8
         continue-on-error: true
 
-      - name: 📊 更新文档元数据
+      - name: Update Documentation Metadata
         run: |
           echo "=== 更新分类 README (包含统计) ==="
           python scripts/update_category_meta.py
@@ -58,12 +58,12 @@ jobs:
           echo "=== 生成侧边栏导航 ==="
           python scripts/generate_sidebar.py
 
-      - name: 🔍 最终诊断
+      - name: Final Diagnostics
         run: |
           echo "=== 最终状态检查 ==="
           python scripts/diagnose_crawler.py
 
-      - name: 📝 提交更改
+      - name: Commit Changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -79,20 +79,20 @@ jobs:
             echo "发现更改: 新增 $new_files 篇, 修改 $modified_files 个文件"
             
             git add -A
-            git commit -m "🤖 自动更新: 新增 ${new_files} 篇研报
+            git commit -m "Auto Update: ${new_files} new reports
             
-            - 新增文章: ${new_files} 篇
-            - 修改文件: ${modified_files} 个
-            - 更新时间: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
-            - 触发方式: ${{ github.event_name }}"
+            - New articles: ${new_files}
+            - Modified files: ${modified_files}
+            - Update time: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
+            - Triggered by: ${{ github.event_name }}"
             
             git push
-            echo "✅ 更改已提交"
+            echo "[SUCCESS] Changes committed"
           else
-            echo "ℹ️  没有新的更改需要提交"
+            echo "[INFO] No new changes to commit"
           fi
 
-      - name: 📊 生成运行报告
+      - name: Generate Report
         if: always()
         run: |
           echo "=== 运行报告 ==="
