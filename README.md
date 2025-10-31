@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 
-[📖 在线阅读](https://ronchy2000.github.io/Gator-Investment-Research/) | [� 更新日志](CHANGELOG.md) | [🏗️ 技术架构](ARCHITECTURE.md)
+[📖 在线阅读](https://gator-investment-research.vercel.app/) | [📋 更新日志](CHANGELOG.md) | [🏗️ 技术架构](ARCHITECTURE.md)
 
 </div>
 
@@ -154,7 +154,7 @@ MIT License © [Ronchy2000](https://github.com/Ronchy2000)
 
 ---
 
-## � 相关文档
+## 📜 相关文档
 
 - [📋 CHANGELOG.md](CHANGELOG.md) - 版本更新日志
 - [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) - 技术架构详解
