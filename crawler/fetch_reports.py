@@ -21,7 +21,12 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
-from config import ARTICLE_CATEGORIES, INDEX_FILE, RAW_HTML_DIR, ensure_structure
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = SCRIPT_DIR.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from config import ARTICLE_CATEGORIES, INDEX_FILE, RAW_HTML_DIR, ensure_structure  # noqa: E402
 
 
 BASE_URL = "http://h5.2025eyp.com"
