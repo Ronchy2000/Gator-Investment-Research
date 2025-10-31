@@ -2,7 +2,7 @@ name: Daily Gator Sync
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # 每天 UTC 00:00 (北京时间 08:00)
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,7 @@ concurrency:
 jobs:
   crawl-and-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -24,31 +25,92 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps
 
-      - name: Run crawler
+      - name: � 前置检查和修复
         run: |
+          echo "=== 运行前置检查 ==="
+          python scripts/pre_crawl_check.py
+
+      - name: �🔍 诊断爬虫状态
+        run: |
+          echo "=== 运行诊断 ==="
+          python scripts/diagnose_crawler.py
+
+      - name: 🚀 运行爬虫 (增量更新)
+        run: |
+          echo "=== 开始爬取新文章 ==="
           python crawler/fetch_reports.py --batch-size 80 --max-miss 20 --sleep 0.8
+        continue-on-error: true
 
-      - name: Update docs metadata
+      - name: 📊 更新文档元数据
         run: |
+          echo "=== 更新统计信息 ==="
+          python scripts/generate_stats.py
+          
+          echo "=== 更新分类 README ==="
           python scripts/update_category_meta.py
+          
+          echo "=== 生成侧边栏 ==="
           python scripts/generate_sidebar.py
 
-      - name: Commit and push
+      - name: 🔍 最终诊断
+        run: |
+          echo "=== 最终状态检查 ==="
+          python scripts/diagnose_crawler.py
+
+      - name: 📝 提交更改
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # 检查是否有更改
           if [ -n "$(git status --porcelain)" ]; then
+            # 获取新增文章数
+            new_files=$(git status --porcelain | grep -c "^?? docs/.*\.md$" || echo "0")
+            modified_files=$(git status --porcelain | grep -c "^M " || echo "0")
+            
+            echo "发现更改: 新增 $new_files 篇, 修改 $modified_files 个文件"
+            
             git add -A
-            git commit -m "chore: sync gator reports"
+            git commit -m "🤖 自动更新: 新增 ${new_files} 篇研报
+
+- 新增文章: ${new_files} 篇
+- 修改文件: ${modified_files} 个
+- 更新时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+- 触发方式: ${{ github.event_name }}
+            
             git push
+            echo "✅ 更改已提交"
           else
-            echo "No changes to commit"
+            echo "ℹ️  没有新的更改需要提交"
           fi
+
+      - name: 📊 生成运行报告
+        if: always()
+        run: |
+          echo "=== 运行报告 ==="
+          echo "工作流: ${{ github.workflow }}"
+          echo "触发事件: ${{ github.event_name }}"
+          echo "运行编号: ${{ github.run_number }}"
+          echo "运行时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo ""
+          echo "=== 当前状态 ==="
+          python -c "
+          import json
+          from pathlib import Path
+          index = json.load(open('docs/index.json'))
+          print(f'已探测: {len(index.get(\"saved_ids\", []))} 篇')
+          print(f'已下载: {len(index.get(\"downloaded_ids\", []))} 篇')
+          print(f'缺失记录: {len(index.get(\"missing_ids\", []))} 个')
+          print(f'下次探测起点: ID {index.get(\"next_probe_id\", 1)}')
+          "

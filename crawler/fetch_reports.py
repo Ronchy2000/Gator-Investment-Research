@@ -183,6 +183,7 @@ def ensure_index_defaults(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     if not isinstance(data, dict):
         data = {}
     data.setdefault("saved_ids", [])
+    data.setdefault("downloaded_ids", [])  # 新增：追踪已下载的文章
     data.setdefault("missing_ids", [])
     data.setdefault("pending_ids", [])
     data.setdefault("last_probed_id", 0)
@@ -218,6 +219,18 @@ def add_saved_id(article_id: int, index: Dict[str, Any]) -> None:
 
 def article_already_saved(article_id: int, index: Dict[str, Any]) -> bool:
     return int(article_id) in set(int(i) for i in index.get("saved_ids", []))
+
+
+def article_downloaded(article_id: int, index: Dict[str, Any]) -> bool:
+    """检查文章是否已完成下载"""
+    return int(article_id) in set(int(i) for i in index.get("downloaded_ids", []))
+
+
+def add_downloaded_id(article_id: int, index: Dict[str, Any]) -> None:
+    """标记文章已成功下载"""
+    downloaded = set(int(i) for i in index.get("downloaded_ids", []))
+    downloaded.add(int(article_id))
+    index["downloaded_ids"] = sorted(downloaded)
 
 
 def record_missing_id(article_id: int, index: Dict[str, Any]) -> None:
@@ -417,6 +430,7 @@ def download_articles(
 ) -> Tuple[int, int, int]:
     """保存文章并维护索引，返回 (新增, 跳过, 失败)"""
     saved_ids = set(int(i) for i in index.get("saved_ids", []))
+    downloaded_ids = set(int(i) for i in index.get("downloaded_ids", []))
     pending_ids = set(int(i) for i in index.get("pending_ids", []))
 
     success = 0
@@ -426,7 +440,8 @@ def download_articles(
     for article in sorted(articles, key=lambda a: a.article_id):
         article_id = int(article.article_id)
 
-        if article_id in saved_ids:
+        # 检查是否已下载（而非仅检查是否已保存）
+        if article_id in downloaded_ids:
             pending_ids.discard(article_id)
             skipped += 1
             continue
@@ -441,12 +456,15 @@ def download_articles(
             continue
 
         add_saved_id(article_id, index)
+        add_downloaded_id(article_id, index)  # 标记为已下载
         clear_missing_id(article_id, index)
         pending_ids.discard(article_id)
         saved_ids.add(article_id)
+        downloaded_ids.add(article_id)
         success += 1
 
         index["pending_ids"] = sorted(pending_ids)
+        index["downloaded_ids"] = sorted(downloaded_ids)
         write_index(index)
 
         if sleep_seconds > 0:
@@ -454,6 +472,7 @@ def download_articles(
 
     index["pending_ids"] = sorted(pending_ids)
     index["saved_ids"] = sorted(saved_ids)
+    index["downloaded_ids"] = sorted(downloaded_ids)
     write_index(index)
 
     return success, skipped, failed
@@ -617,15 +636,31 @@ def determine_range(args: argparse.Namespace, index: Dict[str, Any]) -> Tuple[in
 
 def run_incremental_mode(args: argparse.Namespace, index: Dict[str, Any]) -> int:
     saved_count = len(index.get("saved_ids", []))
+    downloaded_count = len(index.get("downloaded_ids", []))
     missing_count = len(index.get("missing_ids", []))
     pending_count = len(index.get("pending_ids", []))
 
     print("📊 当前索引状态:")
-    print(f"   已保存: {saved_count} 篇")
+    print(f"   已探测: {saved_count} 篇")
+    print(f"   已下载: {downloaded_count} 篇")
     print(f"   缺失记录: {missing_count} 个")
     print(f"   待下载: {pending_count} 个")
     print(f"   上次探测 ID: {index.get('last_probed_id', 0)}")
     print(f"   下一次探测起点: {index.get('next_probe_id', 1)}")
+    
+    # 🆕 检查并修复未完成的下载
+    saved_ids = set(int(i) for i in index.get("saved_ids", []))
+    downloaded_ids = set(int(i) for i in index.get("downloaded_ids", []))
+    pending_downloads = sorted(list(saved_ids - downloaded_ids))
+    
+    if pending_downloads:
+        print(f"\n⚠️  发现 {len(pending_downloads)} 篇已探测但未下载的文章")
+        print(f"   ID 列表: {pending_downloads[:10]}{'...' if len(pending_downloads) > 10 else ''}")
+        # 添加到待下载列表
+        pending_set = set(int(i) for i in index.get("pending_ids", []))
+        pending_set.update(pending_downloads)
+        index["pending_ids"] = sorted(pending_set)
+        write_index(index)
 
     with GatorFetcher(headless=not args.no_headless, save_html=args.save_html) as fetcher:
         pending_articles = fetch_pending_articles(fetcher, index.get("pending_ids", []), index)
@@ -642,16 +677,16 @@ def run_incremental_mode(args: argparse.Namespace, index: Dict[str, Any]) -> int
         for article in probed_articles:
             article_map[article.article_id] = article
 
-        # 更新待下载列表（仅包含未保存的文章）
+        # 更新待下载列表（仅包含未下载的文章）
         pending_set = {
             int(article_id)
             for article_id in index.get("pending_ids", [])
-            if not article_already_saved(article_id, index)
+            if not article_downloaded(article_id, index)
         }
         pending_set.update(
             article_id
             for article_id in article_map
-            if not article_already_saved(article_id, index)
+            if not article_downloaded(article_id, index)
         )
         index["pending_ids"] = sorted(pending_set)
         write_index(index)
@@ -676,11 +711,17 @@ def run_incremental_mode(args: argparse.Namespace, index: Dict[str, Any]) -> int
             success = skipped = failed = 0
 
     final_total = len(index.get("saved_ids", []))
+    final_downloaded = len(index.get("downloaded_ids", []))
     print("\n✅ 任务完成")
     print(f"   新增: {success} 篇，跳过: {skipped} 篇，失败: {failed} 篇")
-    print(f"   当前总量: {final_total} 篇")
+    print(f"   当前总量: {final_total} 篇探测，{final_downloaded} 篇已下载")
     print(f"   最新探测 ID: {index.get('last_probed_id', 0)}")
     print(f"   下一次探测将从 ID {index.get('next_probe_id', 1)} 开始")
+    
+    # 最终检查
+    if final_total != final_downloaded:
+        print(f"\n⚠️  注意：还有 {final_total - final_downloaded} 篇文章未完成下载")
+    
     return 0
 
 

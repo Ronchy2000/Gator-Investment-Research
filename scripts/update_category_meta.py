@@ -50,14 +50,39 @@ def replace_block(content: str, block: str) -> str:
     return content + "\n\n" + block + "\n"
 
 
-def render_articles_block(files: Iterable[Path]) -> str:
-    lines = [ARTICLES_START, ""]
-    for file_path in files:
-        rel_path = file_path.relative_to(DOCS_DIR).as_posix()
+def render_articles_block(files: Iterable[Path], category_name: str) -> str:
+    """生成文章列表区块，带清晰的标题和结构"""
+    lines = [ARTICLES_START, "", "## 📄 文章列表", ""]
+    
+    if not files:
+        lines.append("> 暂无内容，稍后再来看看吧。")
+        lines.append("")
+        lines.append(ARTICLES_END)
+        return "\n".join(lines)
+    
+    # 按日期分组展示（从新到旧）
+    for idx, file_path in enumerate(files, 1):
         title = file_path.stem
-        lines.append(f"- [{title}]({rel_path})")
-    if len(lines) == 2:
-        lines.append("- 暂无内容，稍后再来看看吧。")
+        
+        # 提取日期和标题
+        if len(title) > 11 and title[4] == "." and title[7] == "." and title[10] == "-":
+            date_part = title[:10]
+            title_part = title[11:]
+        else:
+            date_part = ""
+            title_part = title
+        
+        # 构建相对路径（从当前分类目录，只需文件名）
+        rel_path = file_path.name
+        
+        # 格式化输出
+        if date_part:
+            lines.append(f"{idx}. **[{title_part}]({rel_path})** - `{date_part}`")
+        else:
+            lines.append(f"{idx}. **[{title_part}]({rel_path})**")
+    
+    lines.append("")
+    lines.append(f"> 共 {len(list(files))} 篇研报")
     lines.append("")
     lines.append(ARTICLES_END)
     return "\n".join(lines)
@@ -94,9 +119,11 @@ def update_category_readme(stats: Dict[str, object]) -> None:
         content = readme_path.read_text(encoding="utf-8")
         block = render_stats_block(category_counts.get(category, 0), last_update)
         content = replace_block(content, block)
-        articles_block = render_articles_block(files)
+        articles_block = render_articles_block(files, category)
         content = replace_articles_block(content, articles_block)
         readme_path.write_text(content, encoding="utf-8")
+        
+        print(f"✅ 更新 {category} README: {len(list(files))} 篇文章")
 
 
 def update_homepage(stats: Dict[str, object]) -> None:
