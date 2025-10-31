@@ -1,8 +1,29 @@
 """
-Playwright-based crawler for Gator Investment Research articles.
+鳄鱼派研报爬虫 - 内容下载器
 
-This script replaces the Selenium implementation and works in headless environments
-such as GitHub Actions without requiring a manually installed ChromeDriver.
+⚠️ 架构说明 (2025-11-01 重构):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本脚本专注于下载文章内容,不再负责边界探测。
+
+职责分工:
+1. scripts/pre_crawl_check.py  → 边界探测 (轻量级,快速)
+2. crawler/fetch_reports.py    → 内容下载 (重量级,完整)
+
+工作流程:
+1. 先运行 pre_crawl_check.py 探测边界,写入 last_probed_id
+2. 再运行 fetch_reports.py 下载文章,读取 last_probed_id 作为边界
+3. 自动跳过已下载的文章,实现增量更新
+
+使用方法:
+# 增量下载 (推荐)
+python crawler/fetch_reports.py
+
+# 限制单次下载数量
+python crawler/fetch_reports.py --max-requests 100
+
+# 手动下载指定范围
+python crawler/fetch_reports.py --start-id 400 --end-id 500
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
 from __future__ import annotations
@@ -154,8 +175,103 @@ def html_to_markdown(html: str) -> str:
             src = node.get("src", "")
             return f"![{alt}]({src})" if src else ""
 
+        # 表格转换
+        if name == "table":
+            return convert_table(node)
+
         inner = "".join(convert(child) for child in node.children)
         return inner
+
+    def convert_table(table_node) -> str:
+        """将 HTML 表格转换为 Markdown 表格"""
+        rows = []
+        
+        # 提取表头 (thead > tr > th 或第一行的 th)
+        thead = table_node.find("thead")
+        headers = []
+        first_row_is_header = False
+        
+        if thead:
+            header_row = thead.find("tr")
+            if header_row:
+                headers = [
+                    "".join(convert(child) for child in th.children).strip()
+                    for th in header_row.find_all(["th", "td"])
+                ]
+        
+        # 如果没有 thead，检查第一行是否全是 th
+        if not headers:
+            first_row = table_node.find("tr")
+            if first_row:
+                ths = first_row.find_all("th")
+                if ths:
+                    headers = [
+                        "".join(convert(child) for child in th.children).strip()
+                        for th in ths
+                    ]
+                    first_row_is_header = True
+        
+        # 提取数据行 (tbody > tr > td 或所有 tr)
+        tbody = table_node.find("tbody")
+        data_rows = []
+        
+        if tbody:
+            for tr in tbody.find_all("tr"):
+                cells = [
+                    "".join(convert(child) for child in td.children).strip()
+                    for td in tr.find_all(["td", "th"])
+                ]
+                if cells:
+                    data_rows.append(cells)
+        else:
+            # 没有 tbody，遍历所有 tr（跳过已处理的表头）
+            all_trs = table_node.find_all("tr")
+            start_idx = 1 if first_row_is_header else 0
+            for tr in all_trs[start_idx:]:
+                cells = [
+                    "".join(convert(child) for child in td.children).strip()
+                    for td in tr.find_all(["td", "th"])
+                ]
+                if cells:
+                    # 跳过重复的表头行（内容与 headers 完全相同）
+                    if headers and cells == headers:
+                        continue
+                    data_rows.append(cells)
+        
+        # 如果既没有表头也没有数据，返回空
+        if not headers and not data_rows:
+            return ""
+        
+        # 如果没有表头，使用第一行作为表头
+        if not headers and data_rows:
+            headers = data_rows[0]
+            data_rows = data_rows[1:]
+        
+        # 构建 Markdown 表格
+        if not headers:
+            return ""
+        
+        # 确保所有行的列数一致
+        col_count = len(headers)
+        
+        # 表头
+        header_line = "| " + " | ".join(headers) + " |"
+        separator = "|" + "|".join([" --- " for _ in range(col_count)]) + "|"
+        
+        # 数据行
+        data_lines = []
+        for row in data_rows:
+            # 补齐或截断列数
+            row = (row + [""] * col_count)[:col_count]
+            data_lines.append("| " + " | ".join(row) + " |")
+        
+        # 组合表格
+        table_md = "\n" + header_line + "\n" + separator + "\n"
+        if data_lines:
+            table_md += "\n".join(data_lines) + "\n"
+        table_md += "\n"
+        
+        return table_md
 
     markdown = "".join(convert(child) for child in soup.body.children) if soup.body else convert(soup)
     markdown = re.sub(r"\n{3,}", "\n\n", markdown).strip()
@@ -260,6 +376,7 @@ def update_probe_history(index: Dict[str, Any], start_id: int, stop_id: int, fou
 
 
 def resolve_probe_start(index: Dict[str, Any]) -> int:
+    """[已弃用] 仅用于手动模式兼容"""
     saved_ids = list(index.get("saved_ids", []))
     max_saved = max(saved_ids) if saved_ids else 0
     next_cursor = int(index.get("next_probe_id", 1))
@@ -267,12 +384,16 @@ def resolve_probe_start(index: Dict[str, Any]) -> int:
     return max(1, max_saved, next_cursor, last_probed)
 
 
+# ==================== 已弃用的探测函数 ====================
+# 以下函数已由 pre_crawl_check.py 接管,保留仅用于手动模式
+# =======================================================
+
 def fetch_pending_articles(
     fetcher: "GatorFetcher",
     pending_ids: Sequence[int],
     index: Dict[str, Any],
 ) -> List[Article]:
-    """重试 pending 列表中的文章，返回成功的 Article 列表。"""
+    """[已弃用] 重试 pending 列表中的文章"""
     results: Dict[int, Article] = {}
 
     for article_id in sorted({int(i) for i in pending_ids}):
@@ -296,75 +417,15 @@ def probe_new_articles(
     max_consecutive_missing: int = PROBE_CONSECUTIVE_MISS,
 ) -> List[Article]:
     """
-    增量探测新文章，返回需要下载的 Article 列表。
+    [已弃用] 此函数已由 pre_crawl_check.py 接管
     
-    探测策略（参考 v6）：
-    1. 从 next_probe_id 开始向后探测
-    2. 跳过已知缺失的 ID（避免重复请求）
-    3. 实际请求数达到 max_fetches 个后停止
-    4. 或者连续缺失达到 max_consecutive_missing 后停止
+    新架构:
+    - pre_crawl_check.py: 轻量级边界探测
+    - fetch_reports.py: 只负责下载已知边界内的文章
     """
-    saved = set(int(i) for i in index.get("saved_ids", []))
-    known_missing = set(int(i) for i in index.get("missing_ids", []))
-
-    start_id = resolve_probe_start(index)
-    current_id = start_id
-    fetched_count = 0  # 实际请求数
-    consecutive_missing = 0
-    last_found_id = int(index.get("last_probed_id", 0))
-
-    new_articles: Dict[int, Article] = {}
-    probed_ids: List[int] = []  # 实际请求的 ID 列表
-    
-    print(f"\n🚀 开始增量探测 (从 ID {start_id}，最多请求 {max_fetches} 个，连续缺失上限 {max_consecutive_missing})")
-
-    # 探测循环：只有在两个条件都满足时才继续
-    while fetched_count < max_fetches:
-        # 跳过已知缺失的 ID（减少无效请求）
-        if current_id in known_missing:
-            current_id += 1
-            continue
-
-        # 实际发起请求
-        probed_ids.append(current_id)
-        fetched_count += 1
-
-        article = fetcher.fetch(current_id)
-        if article:
-            # 找到文章
-            clear_missing_id(current_id, index)
-            last_found_id = max(last_found_id, current_id)
-            consecutive_missing = 0
-            if current_id not in saved:
-                new_articles[current_id] = article
-                print(f"  ✅ [{fetched_count}/{max_fetches}] ID {current_id}: {article.title[:40]}... ({article.date or 'N/A'})")
-            else:
-                print(f"  ⏭️  [{fetched_count}/{max_fetches}] ID {current_id}: 已存在，跳过")
-        else:
-            # 未找到文章
-            record_missing_id(current_id, index)
-            consecutive_missing += 1
-            print(f"  ❌ [{fetched_count}/{max_fetches}] ID {current_id}: 未找到 (连续缺失 {consecutive_missing})")
-            
-            # 连续缺失达到阈值，停止探测
-            if consecutive_missing >= max_consecutive_missing:
-                print(f"\n⚠️  连续缺失 {consecutive_missing} 个 ID，停止探测")
-                break
-
-        current_id += 1
-
-    # 更新探测进度
-    index["next_probe_id"] = current_id
-    index["last_probed_id"] = last_found_id
-    update_probe_history(index, start_id, current_id - 1, last_found_id)
-    index["_last_probe_ids"] = probed_ids
-    
-    print(f"\n📊 探测完成: 实际请求 {fetched_count} 个, 新发现 {len(new_articles)} 篇文章")
-    print(f"   探测范围: ID {start_id} - {current_id - 1}")
-    print(f"   最新发现: ID {last_found_id}")
-    print(f"   下次起点: ID {current_id}")
-
-    return list(new_articles.values())
+    print("\n⚠️  警告: probe_new_articles() 已弃用")
+    print("   请使用 pre_crawl_check.py 进行边界探测")
+    return []
 
 
 def manual_scan_range(
@@ -567,6 +628,18 @@ class GatorFetcher:
             return False
 
     def fetch(self, article_id: int) -> Optional[Article]:
+        """
+        获取单篇文章的完整内容
+        
+        ⚠️ 关键：文章存在性判断 (2025-11-01 验证)
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        1. 这是 SPA (单页应用)，需要等待 JS 动态加载内容
+        2. 文章不存在时，页面只显示免责声明:
+           "鳄鱼派声明：文章内容仅供参考，不构成投资建议。投资者据此操作，风险自担。"
+        3. 文章存在时，页面会显示标题、日期、正文等完整内容 (通常 > 200 字符)
+        4. 免责声明是判断文章不存在的关键标识！
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        """
         assert self.driver is not None
         url = f"{BASE_URL}/articles/{article_id}"
         try:
@@ -586,6 +659,7 @@ class GatorFetcher:
                 page_source, encoding="utf-8"
             )
 
+        # 检查文章是否存在：关键判断标识
         if "找不到页面" in page_source or "404" in page_source:
             return None
 
@@ -642,15 +716,18 @@ class GatorFetcher:
 
 
 def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fetch Gator investment research articles.")
-    parser.add_argument("--start-id", type=int, help="Start article ID (inclusive)")
-    parser.add_argument("--end-id", type=int, help="End article ID (inclusive)")
-    parser.add_argument("--batch-size", type=int, help="[已弃用] 改用 --max-requests 限制单次请求数")
-    parser.add_argument("--max-requests", type=int, help="单次运行最多请求多少个 ID (默认无限制，直到连续缺失)")
-    parser.add_argument("--max-miss", type=int, default=25, help="连续缺失多少个 ID 后停止探测 (默认 25)")
-    parser.add_argument("--no-headless", action="store_true", help="Run browser in headed mode for debugging")
-    parser.add_argument("--save-html", action="store_true", help="Persist raw HTML snapshots for debugging")
-    parser.add_argument("--sleep", type=float, default=1.0, help="Seconds to sleep between requests")
+    parser = argparse.ArgumentParser(
+        description="下载鳄鱼派研报 (仅下载,不探测边界)",
+        epilog="提示: 边界探测请使用 python scripts/pre_crawl_check.py"
+    )
+    parser.add_argument("--start-id", type=int, help="手动模式: 起始 ID")
+    parser.add_argument("--end-id", type=int, help="手动模式: 结束 ID")
+    parser.add_argument("--batch-size", type=int, help="[已弃用] 改用 --max-requests")
+    parser.add_argument("--max-requests", type=int, help="单次最多下载多少篇文章 (默认: 全部)")
+    parser.add_argument("--max-miss", type=int, default=25, help="手动模式: 连续缺失阈值 (默认 25)")
+    parser.add_argument("--no-headless", action="store_true", help="显示浏览器窗口 (调试用)")
+    parser.add_argument("--save-html", action="store_true", help="保存原始 HTML (调试用)")
+    parser.add_argument("--sleep", type=float, default=1.0, help="请求间隔秒数 (默认 1.0)")
     return parser.parse_args(argv)
 
 
@@ -665,99 +742,177 @@ def determine_range(args: argparse.Namespace, index: Dict[str, Any]) -> Tuple[in
     return start, end
 
 
-def run_incremental_mode(args: argparse.Namespace, index: Dict[str, Any]) -> int:
-    saved_count = len(index.get("saved_ids", []))
-    downloaded_count = len(index.get("downloaded_ids", []))
-    missing_count = len(index.get("missing_ids", []))
-    pending_count = len(index.get("pending_ids", []))
-
-    print("📊 当前索引状态:")
-    print(f"   已探测: {saved_count} 篇")
-    print(f"   已下载: {downloaded_count} 篇")
-    print(f"   缺失记录: {missing_count} 个")
-    print(f"   待下载: {pending_count} 个")
-    print(f"   上次探测 ID: {index.get('last_probed_id', 0)}")
-    print(f"   下一次探测起点: {index.get('next_probe_id', 1)}")
+def verify_downloaded_files(index: Dict[str, Any]) -> tuple[set[int], set[int], set[int]]:
+    """
+    验证 downloaded_ids 对应的文件是否实际存在
     
-    # 🆕 检查并修复未完成的下载
-    saved_ids = set(int(i) for i in index.get("saved_ids", []))
+    返回: (实际存在的 ID, 文件丢失的 ID, 额外的 ID)
+    
+    ⚠️ 数据一致性保证 (2025-11-01):
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    问题 1: downloaded_ids 记录了 ID,但 MD 文件可能被手动删除
+    问题 2: 手动添加的 MD 文件,但 downloaded_ids 没有记录
+    解决: 启动时验证文件实际存在,双向同步 downloaded_ids
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    """
     downloaded_ids = set(int(i) for i in index.get("downloaded_ids", []))
-    pending_downloads = sorted(list(saved_ids - downloaded_ids))
     
-    if pending_downloads:
-        print(f"\n⚠️  发现 {len(pending_downloads)} 篇已探测但未下载的文章")
-        print(f"   ID 列表: {pending_downloads[:10]}{'...' if len(pending_downloads) > 10 else ''}")
-        # 添加到待下载列表
-        pending_set = set(int(i) for i in index.get("pending_ids", []))
-        pending_set.update(pending_downloads)
-        index["pending_ids"] = sorted(pending_set)
-        write_index(index)
+    # 扫描所有 MD 文件,提取 article_id
+    existing_ids = set()
+    for category_path in ARTICLE_CATEGORIES.values():
+        if not category_path.exists():
+            continue
+        
+        for md_file in category_path.glob("*.md"):
+            if md_file.name.lower() == "readme.md":
+                continue
+            
+            # 从文件内容中提取 article_id
+            try:
+                content = md_file.read_text(encoding="utf-8")
+                match = re.search(r"^- 文章ID:\s*(\d+)", content, re.MULTILINE)
+                if match:
+                    existing_ids.add(int(match.group(1)))
+            except Exception:
+                continue
+    
+    # 计算差异
+    missing_files = downloaded_ids - existing_ids  # JSON 有但文件不存在
+    extra_files = existing_ids - downloaded_ids    # 文件存在但 JSON 没记录
+    
+    return existing_ids, missing_files, extra_files
 
-    # 决定单次请求数限制
-    max_fetches = args.max_requests if args.max_requests else 1500  # 默认无限制
+
+def run_incremental_mode(args: argparse.Namespace, index: Dict[str, Any]) -> int:
+    """
+    增量下载模式 (不再探测,只下载)
+    
+    ⚠️ 职责分离 (2025-11-01 重构):
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    1. pre_crawl_check.py 负责边界探测,写入 last_probed_id
+    2. fetch_reports.py 只负责下载,从 index.json 读取边界
+    3. 下载范围: 从 1 到 last_probed_id (跳过已下载的)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    """
+    # 🆕 第一步: 验证文件实际存在并同步
+    print("🔍 验证已下载文件...")
+    existing_ids, missing_files, extra_files = verify_downloaded_files(index)
+    
+    sync_needed = False
+    
+    if missing_files:
+        print(f"⚠️  发现 {len(missing_files)} 篇文件丢失 (JSON 有记录但文件不存在)")
+        print(f"   丢失 ID: {sorted(list(missing_files))[:20]}{'...' if len(missing_files) > 20 else ''}")
+        sync_needed = True
+    
+    if extra_files:
+        print(f"📥 发现 {len(extra_files)} 篇额外文件 (文件存在但 JSON 未记录)")
+        print(f"   额外 ID: {sorted(list(extra_files))[:20]}{'...' if len(extra_files) > 20 else ''}")
+        sync_needed = True
+    
+    if sync_needed:
+        # 双向同步: 以实际文件为准
+        index["downloaded_ids"] = sorted(list(existing_ids))
+        index["saved_ids"] = sorted(list(set(index.get("saved_ids", [])) | existing_ids))
+        write_index(index)
+        print(f"✅ 已同步 downloaded_ids: {len(index['downloaded_ids'])} 篇")
+    else:
+        print(f"✅ 文件验证通过: {len(existing_ids)} 篇")
+    
+    downloaded_ids = existing_ids  # 使用实际存在的 ID
+    boundary = int(index.get("last_probed_id", 0))
+    
+    print("📊 当前索引状态:")
+    print(f"   已下载: {len(downloaded_ids)} 篇")
+    print(f"   探测边界: ID {boundary} (由 pre_crawl_check.py 写入)")
+    
+    if boundary == 0:
+        print("\n❌ 错误: 边界未探测 (last_probed_id = 0)")
+        print("   请先运行: python scripts/pre_crawl_check.py")
+        return 1
+    
+    # 计算需要下载的 ID 列表 (1 到 boundary, 跳过已下载)
+    all_ids = set(range(1, boundary + 1))
+    known_missing = set(int(i) for i in index.get("missing_ids", []))
+    to_download = sorted(all_ids - downloaded_ids - known_missing)
+    
+    if not to_download:
+        print("\n✅ 所有文章已下载完成!")
+        print(f"   边界内文章: {boundary} 篇")
+        print(f"   已下载: {len(downloaded_ids)} 篇")
+        print(f"   已知缺失: {len(known_missing)} 篇")
+        return 0
+    
+    print(f"\n📥 待下载文章: {len(to_download)} 篇")
+    print(f"   ID 范围: {to_download[0]} - {to_download[-1]}")
+    print(f"   前 20 个: {to_download[:20]}")
+    
+    # 限制单次下载数量
+    max_download = args.max_requests if args.max_requests else len(to_download)
     if args.batch_size:  # 兼容旧参数
         print(f"⚠️  --batch-size 已弃用，请使用 --max-requests")
-        max_fetches = args.batch_size
-
-    with GatorFetcher(headless=not args.no_headless, save_html=args.save_html) as fetcher:
-        pending_articles = fetch_pending_articles(fetcher, index.get("pending_ids", []), index)
-        probed_articles = probe_new_articles(
-            fetcher,
-            index,
-            max_fetches=max_fetches,
-            max_consecutive_missing=max(1, args.max_miss),
-        )
-
-        article_map: Dict[int, Article] = {
-            article.article_id: article for article in pending_articles
-        }
-        for article in probed_articles:
-            article_map[article.article_id] = article
-
-        # 更新待下载列表（仅包含未下载的文章）
-        pending_set = {
-            int(article_id)
-            for article_id in index.get("pending_ids", [])
-            if not article_downloaded(article_id, index)
-        }
-        pending_set.update(
-            article_id
-            for article_id in article_map
-            if not article_downloaded(article_id, index)
-        )
-        index["pending_ids"] = sorted(pending_set)
-        write_index(index)
-
-        probed_ids = index.get("_last_probe_ids", [])
-        if probed_ids:
-            print(
-                f"\n🔍 本次探测 {len(probed_ids)} 个 ID，范围 {probed_ids[0]} - {probed_ids[-1]}"
-            )
-        else:
-            print("\n🔍 本次未进行新的 ID 探测（可能全部命中缺失列表）。")
-
-        if article_map:
-            print(f"🎯 待保存文章 {len(article_map)} 篇，开始写入...")
-            success, skipped, failed = download_articles(
-                list(article_map.values()),
-                index,
-                sleep_seconds=max(0.0, args.sleep),
-            )
-        else:
-            print("🎯 本次未发现需要下载的新文章。")
-            success = skipped = failed = 0
-
-    final_total = len(index.get("saved_ids", []))
-    final_downloaded = len(index.get("downloaded_ids", []))
-    print("\n✅ 任务完成")
-    print(f"   新增: {success} 篇，跳过: {skipped} 篇，失败: {failed} 篇")
-    print(f"   当前总量: {final_total} 篇探测，{final_downloaded} 篇已下载")
-    print(f"   最新探测 ID: {index.get('last_probed_id', 0)}")
-    print(f"   下一次探测将从 ID {index.get('next_probe_id', 1)} 开始")
+        max_download = args.batch_size
     
-    # 最终检查
-    if final_total != final_downloaded:
-        print(f"\n⚠️  注意：还有 {final_total - final_downloaded} 篇文章未完成下载")
+    to_download_batch = to_download[:max_download]
+    print(f"\n🚀 本次下载: {len(to_download_batch)} 篇 (剩余 {len(to_download) - len(to_download_batch)} 篇)")
+    
+    # 开始下载
+    articles_to_save: List[Article] = []
+    success_count = 0
+    skip_count = 0
+    fail_count = 0
+    
+    with GatorFetcher(headless=not args.no_headless, save_html=args.save_html) as fetcher:
+        for idx, article_id in enumerate(to_download_batch, 1):
+            print(f"\n📄 [{idx}/{len(to_download_batch)}] 下载 ID {article_id}...", end=" ")
+            
+            article = fetcher.fetch(article_id)
+            if article:
+                articles_to_save.append(article)
+                success_count += 1
+                print(f"✅ {article.title[:40]}...")
+            else:
+                record_missing_id(article_id, index)
+                fail_count += 1
+                print(f"❌ 未找到")
+            
+            if args.sleep > 0:
+                time.sleep(args.sleep)
+        
+        # 批量保存
+        if articles_to_save:
+            print(f"\n💾 开始保存 {len(articles_to_save)} 篇文章...")
+            saved, skipped, failed = download_articles(
+                articles_to_save,
+                index,
+                sleep_seconds=0,  # 已经在下载时sleep了
+            )
+        else:
+            print("\n⚠️  本次未成功下载任何文章")
+            saved = skipped = failed = 0
+    
+    # 最终统计
+    final_downloaded = len(index.get("downloaded_ids", []))
+    final_missing = len(index.get("missing_ids", []))
+    remaining = boundary - final_downloaded - final_missing
+    
+    print("\n" + "=" * 60)
+    print("✅ 下载完成")
+    print("=" * 60)
+    print(f"本次结果:")
+    print(f"   成功下载: {saved} 篇")
+    print(f"   跳过: {skipped} 篇")
+    print(f"   失败: {failed} 篇")
+    print(f"\n总体进度:")
+    print(f"   边界: ID {boundary}")
+    print(f"   已下载: {final_downloaded} 篇")
+    print(f"   已知缺失: {final_missing} 篇")
+    print(f"   剩余待下载: {remaining} 篇")
+    
+    if remaining > 0:
+        print(f"\n💡 提示: 再次运行本脚本可继续下载剩余 {remaining} 篇文章")
+    else:
+        print(f"\n🎉 恭喜! 边界内所有文章已下载完成!")
     
     return 0
 

@@ -34,19 +34,20 @@ jobs:
           playwright install chromium
           playwright install-deps
 
-      - name: 🔧 前置检查和修复
+      - name: � 阶段 1: 边界探测
         run: |
-          echo "=== 运行前置检查 ==="
+          echo "=== 探测文章边界 (轻量级检查) ==="
+          echo "职责: 快速探测边界,写入 last_probed_id 到 index.json"
           python scripts/pre_crawl_check.py
 
-      - name: � 运行爬虫 (探测到边界)
+      - name: 📥 阶段 2: 内容下载
         run: |
-          echo "=== 开始爬取新文章 ==="
+          echo "=== 下载文章内容 (增量更新) ==="
+          echo "职责: 从 index.json 读取边界,下载未下载的文章"
           echo "参数说明:"
-          echo "  --max-requests 1500: 单次最多请求 1500 个 ID"
-          echo "  --max-miss 25: 连续缺失 25 个 ID 后停止 (到达边界)"
+          echo "  --max-requests 500: 单次最多下载 500 篇文章"
           echo "  --sleep 0.8: 每次请求间隔 0.8 秒"
-          python crawler/fetch_reports.py --max-requests 1500 --max-miss 25 --sleep 0.8
+          python crawler/fetch_reports.py --max-requests 500 --sleep 0.8
         continue-on-error: true
 
       - name: 📊 更新文档元数据
