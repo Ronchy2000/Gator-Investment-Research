@@ -18,8 +18,16 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    WebDriverException,
+)
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parent
@@ -454,54 +462,85 @@ def download_articles(
 class GatorFetcher:
     def __init__(self, headless: bool = True, timeout: int = 20, save_html: bool = False):
         self.headless = headless
-        self.timeout = timeout * 1000  # ms for Playwright
+        self.timeout = timeout
         self.save_html = save_html
-        self.playwright = None
-        self.browser = None
-        self.context = None
-        self.page = None
+        self.driver: Optional[webdriver.Chrome] = None
 
     def __enter__(self) -> "GatorFetcher":
         ensure_structure()
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=self.headless)
-        self.context = self.browser.new_context(
-            user_agent=USER_AGENT,
-            viewport={"width": 1280, "height": 720},
-        )
-        self.page = self.context.new_page()
-        self.page.set_default_timeout(self.timeout)
+        options = Options()
+        if self.headless:
+            options.add_argument("--headless=new")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument(f"--user-agent={USER_AGENT}")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+
+        try:
+            self.driver = webdriver.Chrome(options=options)
+        except WebDriverException as exc:  # noqa: BLE001
+            raise RuntimeError(f"无法启动 Chrome WebDriver: {exc}") from exc
+
+        self.driver.set_page_load_timeout(self.timeout)
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
-        if self.context:
-            self.context.close()
-        if self.browser:
-            self.browser.close()
-        if self.playwright:
-            self.playwright.stop()
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception:
+                pass
+
+    def _wait_for_content(self) -> None:
+        assert self.driver is not None
+        try:
+            WebDriverWait(self.driver, self.timeout).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "body"))
+            )
+            WebDriverWait(self.driver, self.timeout).until(self._has_meaningful_text)
+        except TimeoutException:
+            pass
+
+    @staticmethod
+    def _has_meaningful_text(driver) -> bool:
+        try:
+            article = driver.find_element(By.CSS_SELECTOR, ".article")
+            if article.text and len(article.text.strip()) > 40:
+                return True
+        except NoSuchElementException:
+            pass
+        try:
+            body = driver.find_element(By.TAG_NAME, "body")
+            return len(body.text.strip()) > 200
+        except NoSuchElementException:
+            return False
 
     def fetch(self, article_id: int) -> Optional[Article]:
+        assert self.driver is not None
         url = f"{BASE_URL}/articles/{article_id}"
         try:
-            self.page.goto(url, wait_until="networkidle")
-            self.page.wait_for_selector(".article, article", timeout=self.timeout)
-        except PlaywrightTimeoutError:
-            print(f"[{article_id}] 加载超时或找不到文章内容")
+            self.driver.get(url)
+            self._wait_for_content()
+        except TimeoutException:
+            print(f"[{article_id}] 页面加载超时")
             return None
-        except Exception as exc:
+        except WebDriverException as exc:  # noqa: BLE001
             print(f"[{article_id}] 页面加载失败: {exc}")
             return None
 
-        html = self.page.content()
+        page_source = self.driver.page_source
 
         if self.save_html:
-            RAW_HTML_DIR.joinpath(f"article_{article_id}.html").write_text(html, encoding="utf-8")
+            RAW_HTML_DIR.joinpath(f"article_{article_id}.html").write_text(
+                page_source, encoding="utf-8"
+            )
 
-        if "找不到页面" in html or "404" in html:
+        if "找不到页面" in page_source or "404" in page_source:
             return None
 
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(page_source, "html.parser")
 
         def first_text(selectors: Iterable[str]) -> str:
             for selector in selectors:

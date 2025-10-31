@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Iterable, List
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parent
@@ -22,6 +22,8 @@ from scripts.generate_stats import (
 
 STATS_START = "<!-- stats:start -->"
 STATS_END = "<!-- stats:end -->"
+ARTICLES_START = "<!-- articles:start -->"
+ARTICLES_END = "<!-- articles:end -->"
 
 
 def render_stats_block(total: int, last_update: str) -> str:
@@ -48,6 +50,29 @@ def replace_block(content: str, block: str) -> str:
     return content + "\n\n" + block + "\n"
 
 
+def render_articles_block(files: Iterable[Path]) -> str:
+    lines = [ARTICLES_START, ""]
+    for file_path in files:
+        rel_path = file_path.relative_to(DOCS_DIR).as_posix()
+        title = file_path.stem
+        lines.append(f"- [{title}]({rel_path})")
+    if len(lines) == 2:
+        lines.append("- 暂无内容，稍后再来看看吧。")
+    lines.append("")
+    lines.append(ARTICLES_END)
+    return "\n".join(lines)
+
+
+def replace_articles_block(content: str, block: str) -> str:
+    if ARTICLES_START in content and ARTICLES_END in content:
+        start = content.index(ARTICLES_START)
+        end = content.index(ARTICLES_END) + len(ARTICLES_END)
+        return content[:start] + block + content[end:]
+    if content.endswith("\n"):
+        return content + block + "\n"
+    return content + "\n" + block + "\n"
+
+
 def update_category_readme(stats: Dict[str, object]) -> None:
     category_counts: Dict[str, int] = stats.get("categories", {})
 
@@ -56,7 +81,11 @@ def update_category_readme(stats: Dict[str, object]) -> None:
         if not readme_path.exists():
             continue
 
-        files = list_markdown_files(path)
+        files: List[Path] = sorted(
+            list_markdown_files(path),
+            key=lambda p: p.stem,
+            reverse=True,
+        )
         last_update = (
             stats["last_update"]
             if category == "全部研报"
@@ -64,7 +93,10 @@ def update_category_readme(stats: Dict[str, object]) -> None:
         )
         content = readme_path.read_text(encoding="utf-8")
         block = render_stats_block(category_counts.get(category, 0), last_update)
-        readme_path.write_text(replace_block(content, block), encoding="utf-8")
+        content = replace_block(content, block)
+        articles_block = render_articles_block(files)
+        content = replace_articles_block(content, articles_block)
+        readme_path.write_text(content, encoding="utf-8")
 
 
 def update_homepage(stats: Dict[str, object]) -> None:
