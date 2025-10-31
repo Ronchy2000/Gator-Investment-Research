@@ -34,31 +34,27 @@ jobs:
           playwright install chromium
           playwright install-deps
 
-      - name: � 前置检查和修复
+      - name: 🔧 前置检查和修复
         run: |
           echo "=== 运行前置检查 ==="
           python scripts/pre_crawl_check.py
 
-      - name: �🔍 诊断爬虫状态
-        run: |
-          echo "=== 运行诊断 ==="
-          python scripts/diagnose_crawler.py
-
-      - name: 🚀 运行爬虫 (增量更新)
+      - name: � 运行爬虫 (探测到边界)
         run: |
           echo "=== 开始爬取新文章 ==="
-          python crawler/fetch_reports.py --batch-size 80 --max-miss 20 --sleep 0.8
+          echo "参数说明:"
+          echo "  --max-requests 1500: 单次最多请求 1500 个 ID"
+          echo "  --max-miss 25: 连续缺失 25 个 ID 后停止 (到达边界)"
+          echo "  --sleep 0.8: 每次请求间隔 0.8 秒"
+          python crawler/fetch_reports.py --max-requests 1500 --max-miss 25 --sleep 0.8
         continue-on-error: true
 
       - name: 📊 更新文档元数据
         run: |
-          echo "=== 更新统计信息 ==="
-          python scripts/generate_stats.py
-          
-          echo "=== 更新分类 README ==="
+          echo "=== 更新分类 README (包含统计) ==="
           python scripts/update_category_meta.py
           
-          echo "=== 生成侧边栏 ==="
+          echo "=== 生成侧边栏导航 ==="
           python scripts/generate_sidebar.py
 
       - name: 🔍 最终诊断

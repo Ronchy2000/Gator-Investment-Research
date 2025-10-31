@@ -135,7 +135,7 @@ def diagnose():
     
     if not_downloaded:
         print("   1. 初始化 downloaded_ids (如果这些文章确实已存在):")
-        print("      python scripts/fix_index.py --init-downloaded")
+        print("      python scripts/pre_crawl_check.py")
     
     if pending_ids:
         print("   2. 完成待下载队列:")
@@ -144,11 +144,11 @@ def diagnose():
     next_probe = index_data.get('next_probe_id', 1)
     if next_probe < 1000:  # 假设应该有更多文章
         print(f"   3. 继续探测新文章 (当前准备从 ID {next_probe} 开始):")
-        print("      python crawler/fetch_reports.py --batch-size 100")
+        print("      python crawler/fetch_reports.py --max-requests 1500 --max-miss 25")
     
     if len(saved_ids) < 500:  # 如果总数少于预期
         print("   4. 考虑扫描历史区间填补缺失:")
-        print("      python crawler/fetch_reports.py --start-id 1 --end-id 500")
+        print("      python crawler/fetch_reports.py --start-id 1 --end-id 500 --max-miss 25")
     
     print("\n" + "=" * 60)
     print(f"诊断完成 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

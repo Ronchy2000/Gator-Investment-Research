@@ -24,12 +24,11 @@
 <br>
 
 <!-- GitHub徽章 -->
-[![Stars](https://img.shields.io/github/stars/ronchy2000/Python_Study?style=social)](https://github.com/ronchy2000/Python_Study/stargazers)
-[![Forks](https://img.shields.io/github/forks/ronchy2000/Python_Study?style=social)](https://github.com/ronchy2000/Python_Study/network/members)
-[![Last Update](https://img.shields.io/badge/dynamic/json?color=blue&label=最后更新&query=last_update&url=https://raw.githubusercontent.com/ronchy2000/Python_Study/master/爬虫学习/鳄鱼派研报/wiki_Gator_Investment_Research/docs/stats.json)](https://github.com/ronchy2000/Python_Study)
+[![Stars](https://img.shields.io/github/stars/Ronchy2000/Gator-Investment-Research?style=social)](https://github.com/Ronchy2000/Gator-Investment-Research/stargazers)
+[![Forks](https://img.shields.io/github/forks/Ronchy2000/Gator-Investment-Research?style=social)](https://github.com/Ronchy2000/Gator-Investment-Research/network/members)
+[![Last Commit](https://img.shields.io/github/last-commit/Ronchy2000/Gator-Investment-Research?label=最后更新&color=blue)](https://github.com/Ronchy2000/Gator-Investment-Research/commits)
 
 <br>
 
-[开始阅读](#鳄鱼派投资研报)
-[GitHub](https://github.com/ronchy2000/Python_Study)
-[关于项目](#关于项目)
+[开始阅读](#/?id=鳄鱼派投资研报)
+[GitHub](https://github.com/Ronchy2000/Gator-Investment-Research)

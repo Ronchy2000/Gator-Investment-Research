@@ -72,7 +72,7 @@
   <script>
     window.$docsify = {
       name: '🐊 鳄鱼派投资研报',
-      repo: 'https://github.com/ronchy2000/Python_Study',
+      repo: 'https://github.com/Ronchy2000/Gator-Investment-Research',
       loadSidebar: true,
       loadNavbar: false,
       coverpage: true,
@@ -81,6 +81,11 @@
       subMaxLevel: 2,
       auto2top: true,
       homepage: 'index.md',
+      
+      // 锚点滚动配置
+      routerMode: 'hash',
+      crossOriginLinks: [],
+      
       search: {
         paths: 'auto',
         placeholder: '🔍 搜索研报',
@@ -109,6 +114,19 @@
               html = `> 📅 最后更新: ${editTime}\n\n` + html;
             }
             return html;
+          });
+          
+          // 平滑滚动到锚点
+          hook.doneEach(function () {
+            const hash = window.location.hash;
+            if (hash && hash.includes('id=')) {
+              setTimeout(() => {
+                const target = document.querySelector(hash.split('?')[0].substring(1));
+                if (target) {
+                  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 100);
+            }
           });
         }
       ]
