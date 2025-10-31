@@ -83,11 +83,11 @@ jobs:
             
             git add -A
             git commit -m "🤖 自动更新: 新增 ${new_files} 篇研报
-
-- 新增文章: ${new_files} 篇
-- 修改文件: ${modified_files} 个
-- 更新时间: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-- 触发方式: ${{ github.event_name }}
+            
+            - 新增文章: ${new_files} 篇
+            - 修改文件: ${modified_files} 个
+            - 更新时间: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
+            - 触发方式: ${{ github.event_name }}"
             
             git push
             echo "✅ 更改已提交"
