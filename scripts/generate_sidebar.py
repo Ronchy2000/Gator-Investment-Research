@@ -64,7 +64,7 @@ def generate_sidebar(top_n: int = 10) -> None:
     sidebar_lines = [
         "<!-- 侧边栏导航 - 自动生成 -->",
         "",
-        "* [🏠 首页](README.md)",
+        "* [🏠 首页](HOME.md)",
         "* [📊 关于项目](about.md)",
         "",
     ]

@@ -130,7 +130,7 @@ def update_category_readme(stats: Dict[str, object]) -> None:
 
 
 def update_homepage(stats: Dict[str, object]) -> None:
-    homepage = DOCS_DIR / "README.md"
+    homepage = DOCS_DIR / "HOME.md"
     if not homepage.exists():
         return
 

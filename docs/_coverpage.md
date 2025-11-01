@@ -32,8 +32,8 @@
 
 <br>
 
-[开始阅读](./README)
 [GitHub](https://github.com/Ronchy2000/Gator-Investment-Research)
+[开始阅读](./HOME)
 
 <!-- 背景图片 -->
 ![](https://docsify.js.org/_media/bg.png)
