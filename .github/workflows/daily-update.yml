@@ -73,10 +73,13 @@ jobs:
           # 检查是否有更改
           if [ -n "$(git status --porcelain)" ]; then
             # 统计变更情况
-            new_articles=$(git status --porcelain | grep "^?? docs/.*\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
-            modified_articles=$(git status --porcelain | grep "^M.*docs/.*\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
-            modified_readmes=$(git status --porcelain | grep "^M.*README.md$" | wc -l | tr -d ' ')
-            modified_other=$(git status --porcelain | grep "^M " | grep -v "\.md$" | wc -l | tr -d ' ')
+            # 注意: docs/ 下的文章在子目录中 (全部研报/、宏观分析/、行业分析/)
+            # ?? 表示新增文件, M 表示修改文件
+            new_articles=$(git status --porcelain | grep "^?? docs/" | grep "\.md$" | grep -v "README.md" | grep -v "HOME.md" | grep -v "_sidebar.md" | grep -v "_coverpage.md" | grep -v "index.md" | grep -v "about.md" | wc -l | tr -d ' ')
+            modified_articles=$(git status --porcelain | grep "^ M docs/" | grep "\.md$" | grep -v "README.md" | grep -v "HOME.md" | grep -v "_sidebar.md" | grep -v "_coverpage.md" | grep -v "index.md" | grep -v "about.md" | wc -l | tr -d ' ')
+            modified_readmes=$(git status --porcelain | grep "^ M.*README.md$" | wc -l | tr -d ' ')
+            modified_home=$(git status --porcelain | grep "^ M.*HOME.md$" | wc -l | tr -d ' ')
+            modified_other=$(git status --porcelain | grep "^ M " | grep -v "\.md$" | wc -l | tr -d ' ')
             
             # 计算总文章变更（新增+修改）
             total_articles=$((new_articles + modified_articles))
@@ -85,6 +88,7 @@ jobs:
             echo "  - 新增文章: ${new_articles} 篇"
             echo "  - 更新文章: ${modified_articles} 篇"
             echo "  - 更新 README: ${modified_readmes} 个"
+            echo "  - 更新 HOME: ${modified_home} 个"
             echo "  - 其他文件: ${modified_other} 个"
             echo "  - 总计: ${total_articles} 篇文章变更"
             
@@ -92,7 +96,7 @@ jobs:
             git commit -m "🔄 Auto Update: ${total_articles} articles
             
             - New: ${new_articles} | Updated: ${modified_articles}
-            - READMEs: ${modified_readmes} | Others: ${modified_other}
+            - READMEs: ${modified_readmes} | HOME: ${modified_home} | Others: ${modified_other}
             - Time: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
             - Trigger: ${{ github.event_name }}"
             
