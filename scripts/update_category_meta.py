@@ -143,13 +143,80 @@ def update_category_readme(stats: Dict[str, object]) -> None:
 
 
 def update_homepage(stats: Dict[str, object]) -> None:
+    """更新 HOME.md 的统计块和最新收录列表"""
+    from urllib.parse import quote
+    import re
+    
     homepage = DOCS_DIR / "HOME.md"
     if not homepage.exists():
         return
 
     content = homepage.read_text(encoding="utf-8")
-    block = render_stats_block(stats["total_articles"], stats["last_update"])
-    homepage.write_text(replace_block(content, block), encoding="utf-8")
+    
+    # 更新统计块
+    stats_block = render_stats_block(stats["total_articles"], stats["last_update"])
+    content = replace_block(content, stats_block)
+    
+    # 更新最新收录列表
+    all_files = list(list_markdown_files(ARTICLE_CATEGORIES["全部研报"]))
+    
+    def extract_article_id(file_path: Path) -> int:
+        try:
+            file_content = file_path.read_text(encoding='utf-8')
+            match = re.search(r'文章ID[：:]\s*(\d+)', file_content)
+            if match:
+                return int(match.group(1))
+        except:
+            pass
+        return -1
+    
+    # 获取最新 8 篇文章
+    recent_files = sorted(all_files, key=extract_article_id, reverse=True)[:8]
+    
+    latest_lines = [
+        "### 🆕 最新收录",
+        "",
+        "<!-- latest:start -->",
+        "",
+        "以下是最近收录的 8 篇研报（按文章 ID 降序排列）：",
+        "",
+    ]
+    
+    for file_path in recent_files:
+        # 使用 URL 编码的相对路径
+        rel_path = f"/全部研报/{quote(file_path.name)}"
+        # 提取标题（去掉日期前缀）
+        title = file_path.stem
+        article_id = extract_article_id(file_path)
+        if article_id > 0:
+            latest_lines.append(f"- [{title}]({rel_path}) - **文章ID: {article_id}**")
+        else:
+            latest_lines.append(f"- [{title}]({rel_path})")
+    
+    latest_lines.extend([
+        "",
+        f"[查看所有 {stats['total_articles']} 篇研报 →](/全部研报/)",
+        "",
+        "<!-- latest:end -->",
+    ])
+    
+    latest_block = "\n".join(latest_lines)
+    
+    # 替换最新收录块
+    LATEST_START = "<!-- latest:start -->"
+    LATEST_END = "<!-- latest:end -->"
+    
+    if LATEST_START in content and LATEST_END in content:
+        start = content.index(LATEST_START)
+        # 找到前面的标题行
+        title_start = content.rfind("### 🆕 最新收录", 0, start)
+        if title_start != -1:
+            start = title_start
+        end = content.index(LATEST_END) + len(LATEST_END)
+        content = content[:start] + latest_block + content[end:]
+    
+    homepage.write_text(content, encoding="utf-8")
+    print("✅ 更新 HOME.md (统计 + 最新收录)")
 
 
 def generate_index_page(stats: Dict[str, object]) -> None:
@@ -227,7 +294,7 @@ def main() -> None:
     stats = generate_stats()
     update_category_readme(stats)
     update_homepage(stats)
-    generate_index_page(stats)
+    # generate_index_page(stats)  # 不再需要 index.md，HOME.md 已包含最新收录
 
 
 if __name__ == "__main__":
