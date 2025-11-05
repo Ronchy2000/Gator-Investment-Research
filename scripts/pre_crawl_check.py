@@ -99,18 +99,20 @@ def should_skip_probe(index: dict) -> tuple[bool, str]:
     if actual_max_id < last_probed:
         return True, f"实际文件最大 ID ({actual_max_id}) < 探测边界 ({last_probed})，文件可能丢失，请运行下载脚本补全"
     
-    # 情况 2: 实际文件最大 ID == 上次探测边界（检查是否有新文章）
+    # 情况 2: 实际文件最大 ID == 上次探测边界（继续探测新文章）
     if actual_max_id == last_probed:
         downloaded_ids = set(int(i) for i in index.get("downloaded_ids", []))
         
-        # 检查最后 10 个 ID 是否连续存在
+        # 检查边界内是否有缺失的 ID 需要补全
         recent_range = range(max(1, last_probed - 9), last_probed + 1)
         missing_in_range = [i for i in recent_range if i not in downloaded_ids]
         
-        if not missing_in_range:
-            return True, f"边界内文章已完整 (最大 ID {last_probed})，暂无新文章"
-        else:
+        if missing_in_range:
             return False, f"边界内有缺失 ID: {missing_in_range[:5]}{'...' if len(missing_in_range) > 5 else ''}，需要补全"
+        
+        # 边界内文章完整，但仍需探测是否有新文章 (last_probed + 1 往后)
+        # 不能假设没有新文章，必须实际探测才能确认
+        return False, f"边界内文章完整 (最大 ID {last_probed})，继续探测是否有新文章"
     
     # 情况 3: 实际文件最大 ID > 上次探测边界（有新文件）
     if actual_max_id > last_probed:
