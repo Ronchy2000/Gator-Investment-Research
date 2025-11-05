@@ -102,7 +102,20 @@ def replace_articles_block(content: str, block: str) -> str:
 
 
 def update_category_readme(stats: Dict[str, object]) -> None:
+    import re
+    
     category_counts: Dict[str, int] = stats.get("categories", {})
+
+    # 提取文章 ID 的辅助函数
+    def extract_article_id(file_path: Path) -> int:
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            match = re.search(r'文章ID[：:]\s*(\d+)', content)
+            if match:
+                return int(match.group(1))
+        except:
+            pass
+        return -1  # 没有 ID 的排最后
 
     for category, path in ARTICLE_CATEGORIES.items():
         readme_path = path / "README.md"
@@ -111,7 +124,7 @@ def update_category_readme(stats: Dict[str, object]) -> None:
 
         files: List[Path] = sorted(
             list_markdown_files(path),
-            key=lambda p: p.stem,
+            key=extract_article_id,  # 改为按文章 ID 排序
             reverse=True,
         )
         last_update = (

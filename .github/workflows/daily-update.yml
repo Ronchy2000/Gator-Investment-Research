@@ -70,13 +70,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
+          # 禁用文件名转义，确保 git status 输出原始文件名（重要：解决中文文件名统计问题）
+          git config core.quotepath off
+          
           # 检查是否有更改
           if [ -n "$(git status --porcelain)" ]; then
             # 统计变更情况
-            # 注意: docs/ 下的文章在子目录中 (全部研报/、宏观分析/、行业分析/)
+            # 注意: 每篇文章会在 全部研报/ 和分类目录中各保存一份，因此统一以 全部研报/ 为准避免重复计数
             # ?? 表示新增文件, M 表示修改文件
-            new_articles=$(git status --porcelain | grep "^?? docs/" | grep "\.md$" | grep -v "README.md" | grep -v "HOME.md" | grep -v "_sidebar.md" | grep -v "_coverpage.md" | grep -v "index.md" | grep -v "about.md" | wc -l | tr -d ' ')
-            modified_articles=$(git status --porcelain | grep "^ M docs/" | grep "\.md$" | grep -v "README.md" | grep -v "HOME.md" | grep -v "_sidebar.md" | grep -v "_coverpage.md" | grep -v "index.md" | grep -v "about.md" | wc -l | tr -d ' ')
+            new_articles=$(git status --porcelain | grep "^?? docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
+            modified_articles=$(git status --porcelain | grep "^ M docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
             modified_readmes=$(git status --porcelain | grep "^ M.*README.md$" | wc -l | tr -d ' ')
             modified_home=$(git status --porcelain | grep "^ M.*HOME.md$" | wc -l | tr -d ' ')
             modified_other=$(git status --porcelain | grep "^ M " | grep -v "\.md$" | wc -l | tr -d ' ')
