@@ -72,8 +72,11 @@
   <script>
     window.$docsify = {
       name: '🐊 鳄鱼派投资研报',
-      repo: 'https://github.com/Ronchy2000/Gator-Investment-Research',
-      loadSidebar: true,
+      repo: '',  // 去掉右上角 GitHub 角标
+      loadSidebar: '_sidebar.md',  // 强制使用根目录侧边栏，避免子路径加载不到
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'  // 适配直接进入子路径的情况
+      },
       loadNavbar: false,
       coverpage: true,
       onlyCover: true,  // 仅加载一次封面
