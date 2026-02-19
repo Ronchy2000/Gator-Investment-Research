@@ -1,5 +1,48 @@
 # 🐊 鳄鱼派投资研报 - 更新日志
 
+## 2026-02-19 - Docsify 配置修复与 EdgeOne 配置补全
+
+### ✅ 封面背景修复
+
+1. **修复封面背景失效**
+   - 将 `docs/_coverpage.md` 的背景图从失效外链改为本地资源
+   - 新增本地背景图文件: `docs/_media/cover-bg.svg`
+   - 解决原背景图 URL 返回 404 导致的封面无背景问题
+
+### ✅ Docsify 稳定性加固
+
+1. **统一并固定前端依赖版本**
+   - `docsify` 统一固定为 `4.13.1`
+   - `docsify-count` 固定为 `1.1.0`
+   - `docsify-pagination` 固定为 `2.10.1`
+   - `docsify-copy-code` 固定为 `3.0.2`
+   - `prismjs` 固定为 `1.30.0`
+   - 移除 `bootcss`/`unpkg` 混用，统一使用 `jsDelivr`
+
+2. **插件外链本地化**
+   - 新增 `docs/assets/switchLightDarkMode.js`
+   - 新增 `docs/assets/docsify-backTop.min.js`
+   - `index.html` 改为引用本地插件文件
+   - 避免 `@latest` 带来的不确定性和上游变更风险
+
+3. **修复锚点平滑滚动逻辑**
+   - 修复 `document.querySelector('/HOME')` 一类非法选择器问题
+   - 改为通过 `id` 参数解析并使用 `getElementById` 定位
+   - 避免带 `?id=` 的 hash 路由触发前端异常
+
+4. **移除误导性“最后更新”注入**
+   - 删除“每次访问都显示当天日期”的动态注入逻辑
+   - 避免将“访问日期”误显示为“文档更新时间”
+
+### ✅ EdgeOne 部署配置补全
+
+1. **新增根目录 EdgeOne 配置文件**
+   - 新增 `edgeone.json`
+   - 设置 `build.outputDirectory` 为 `docs`
+   - 满足 EdgeOne Pages 根目录配置要求
+
+---
+
 ## 2025-11-01 (深夜) - 最终优化 🎉
 
 ### 🎨 用户体验优化

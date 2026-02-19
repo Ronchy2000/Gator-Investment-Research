@@ -1,0 +1,6 @@
+{
+  "$schema": "https://edgeone.ai/schemas/project.config.json",
+  "build": {
+    "outputDirectory": "docs"
+  }
+}
