@@ -50,7 +50,31 @@ jobs:
           python crawler/fetch_reports.py --max-requests 9999 --sleep 0.8
         continue-on-error: true
 
+      - name: Detect Article Changes
+        id: detect_changes
+        run: |
+          # 禁用文件名转义，确保中文路径统计准确
+          git config core.quotepath off
+
+          # 仅按文章实体变更判断是否需要提交（排除 README / 元数据日期漂移）
+          new_articles=$(git status --porcelain | grep "^?? docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
+          modified_articles=$(git status --porcelain | grep "^ M docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
+          total_articles=$((new_articles + modified_articles))
+
+          echo "new_articles=${new_articles}" >> "$GITHUB_OUTPUT"
+          echo "modified_articles=${modified_articles}" >> "$GITHUB_OUTPUT"
+          echo "total_articles=${total_articles}" >> "$GITHUB_OUTPUT"
+
+          if [ "${total_articles}" -gt 0 ]; then
+            echo "article_changed=true" >> "$GITHUB_OUTPUT"
+            echo "✅ 检测到文章变更: ${total_articles} 篇 (新增 ${new_articles} / 更新 ${modified_articles})"
+          else
+            echo "article_changed=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ 未检测到文章变更，本次将跳过元数据更新与提交"
+          fi
+
       - name: Update Documentation Metadata
+        if: steps.detect_changes.outputs.article_changed == 'true'
         run: |
           echo "=== 更新分类 README (包含统计) ==="
           python scripts/update_category_meta.py
@@ -64,6 +88,7 @@ jobs:
           python scripts/diagnose_crawler.py
 
       - name: Commit Changes
+        if: steps.detect_changes.outputs.article_changed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -78,14 +103,14 @@ jobs:
             # 统计变更情况
             # 注意: 每篇文章会在 全部研报/ 和分类目录中各保存一份，因此统一以 全部研报/ 为准避免重复计数
             # ?? 表示新增文件, M 表示修改文件
-            new_articles=$(git status --porcelain | grep "^?? docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
-            modified_articles=$(git status --porcelain | grep "^ M docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
+            new_articles="${{ steps.detect_changes.outputs.new_articles }}"
+            modified_articles="${{ steps.detect_changes.outputs.modified_articles }}"
             modified_readmes=$(git status --porcelain | grep "^ M.*README.md$" | wc -l | tr -d ' ')
             modified_home=$(git status --porcelain | grep "^ M.*HOME.md$" | wc -l | tr -d ' ')
             modified_other=$(git status --porcelain | grep "^ M " | grep -v "\.md$" | wc -l | tr -d ' ')
             
             # 计算总文章变更（新增+修改）
-            total_articles=$((new_articles + modified_articles))
+            total_articles="${{ steps.detect_changes.outputs.total_articles }}"
             
             echo "📊 变更统计:"
             echo "  - 新增文章: ${new_articles} 篇"

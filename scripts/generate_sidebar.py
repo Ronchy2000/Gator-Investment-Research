@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
@@ -16,6 +15,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from config import ARTICLE_CATEGORIES, SIDEBAR_FILE, DOCS_DIR, ensure_structure
+from scripts.generate_stats import get_last_update_from_files, list_markdown_files
 
 
 def count_articles(category_path: Path) -> int:
@@ -70,10 +70,12 @@ def generate_sidebar(top_n: int = 10) -> None:
     ]
 
     total_articles = 0
+    all_files = []
 
     for category, path in ARTICLE_CATEGORIES.items():
         article_count = count_articles(path)
         total_articles += article_count
+        all_files.extend(list_markdown_files(path))
 
         icon = {"宏观分析": "📈", "行业分析": "🏭"}.get(category, "📑")
 
@@ -91,11 +93,12 @@ def generate_sidebar(top_n: int = 10) -> None:
 
         sidebar_lines.append("")
 
+    last_update = get_last_update_from_files(all_files)
     sidebar_lines.extend([
         "---",
         "",
         f"* 📚 **总计: {total_articles} 篇**",
-        f"* 🔄 最后更新: {datetime.now().strftime('%Y-%m-%d')}",
+        f"* 🔄 最后更新: {last_update}",
         "",
     ])
 
