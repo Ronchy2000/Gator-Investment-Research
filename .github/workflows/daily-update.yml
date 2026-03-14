@@ -74,15 +74,16 @@ jobs:
           git config core.quotepath off
           
           # 检查是否有更改
-          if [ -n "$(git status --porcelain)" ]; then
+          status_output="$(git status --porcelain)"
+          if [ -n "${status_output}" ]; then
             # 统计变更情况
             # 注意: 每篇文章会在 全部研报/ 和分类目录中各保存一份，因此统一以 全部研报/ 为准避免重复计数
             # ?? 表示新增文件, M 表示修改文件
-            new_articles=$(git status --porcelain | grep "^?? docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
-            modified_articles=$(git status --porcelain | grep "^ M docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ')
-            modified_readmes=$(git status --porcelain | grep "^ M.*README.md$" | wc -l | tr -d ' ')
-            modified_home=$(git status --porcelain | grep "^ M.*HOME.md$" | wc -l | tr -d ' ')
-            modified_other=$(git status --porcelain | grep "^ M " | grep -v "\.md$" | wc -l | tr -d ' ')
+            new_articles=$(printf "%s\n" "${status_output}" | grep "^?? docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ' || true)
+            modified_articles=$(printf "%s\n" "${status_output}" | grep "^ M docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ' || true)
+            modified_readmes=$(printf "%s\n" "${status_output}" | grep "^ M.*README.md$" | wc -l | tr -d ' ' || true)
+            modified_home=$(printf "%s\n" "${status_output}" | grep "^ M.*HOME.md$" | wc -l | tr -d ' ' || true)
+            modified_other=$(printf "%s\n" "${status_output}" | grep "^ M " | grep -v "\.md$" | wc -l | tr -d ' ' || true)
             
             # 计算总文章变更（新增+修改）
             total_articles=$((new_articles + modified_articles))
@@ -95,16 +96,20 @@ jobs:
             echo "  - 其他文件: ${modified_other} 个"
             echo "  - 总计: ${total_articles} 篇文章变更"
             
-            git add -A
-            git commit -m "🔄 Auto Update: ${total_articles} articles
-            
-            - New: ${new_articles} | Updated: ${modified_articles}
-            - READMEs: ${modified_readmes} | HOME: ${modified_home} | Others: ${modified_other}
-            - Time: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
-            - Trigger: ${{ github.event_name }}"
-            
-            git push
-            echo "✅ [SUCCESS] Changes committed and pushed"
+            if [ "${total_articles}" -gt 0 ]; then
+              git add -A
+              git commit -m "🔄 Auto Update: ${total_articles} articles
+              
+              - New: ${new_articles} | Updated: ${modified_articles}
+              - READMEs: ${modified_readmes} | HOME: ${modified_home} | Others: ${modified_other}
+              - Time: $(date -u +\"%Y-%m-%d %H:%M:%S UTC\")
+              - Trigger: ${{ github.event_name }}"
+              
+              git push
+              echo "✅ [SUCCESS] Changes committed and pushed"
+            else
+              echo "ℹ️ [INFO] No article changes detected, skip commit"
+            fi
           else
             echo "ℹ️ [INFO] No new changes to commit"
           fi

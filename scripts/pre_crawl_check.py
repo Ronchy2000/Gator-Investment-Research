@@ -78,6 +78,7 @@ def should_skip_probe(index: dict) -> tuple[bool, str]:
     跳过条件：
     1. 实际文件最大 ID == 探测边界，且边界附近文件连续 → 无新文章
     2. 实际文件最大 ID < 探测边界 → 文件丢失，需要重新下载（但不需要探测）
+       例外：若“探测边界本身”是 missing_ids（已知缺失边界），不能跳过，需继续向后探测
     
     需要探测：
     1. 首次运行（无历史边界）
@@ -97,6 +98,17 @@ def should_skip_probe(index: dict) -> tuple[bool, str]:
     
     # 情况 1: 实际文件最大 ID < 上次探测边界（文件丢失）
     if actual_max_id < last_probed:
+        missing_ids = set(int(i) for i in index.get("missing_ids", []))
+
+        # 关键修复：
+        # 如果边界 ID 本身就是已知缺失（例如 last_probed=758, actual_max=757, missing_ids 含 758），
+        # 继续跳过会导致后续新文章永远不再探测。
+        if last_probed in missing_ids and actual_max_id == last_probed - 1:
+            return False, (
+                f"边界 ID {last_probed} 在 missing_ids 中（已知缺失），"
+                f"继续从 ID {last_probed + 1} 探测新文章"
+            )
+
         return True, f"实际文件最大 ID ({actual_max_id}) < 探测边界 ({last_probed})，文件可能丢失，请运行下载脚本补全"
     
     # 情况 2: 实际文件最大 ID == 上次探测边界（继续探测新文章）
