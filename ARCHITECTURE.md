@@ -148,6 +148,10 @@ def check_article_exists(article_id: int, driver) -> bool:
 5. **转换保存**: 转换为 Markdown 并保存到分类目录
 6. **更新索引**: 更新 `downloaded_ids` 列表
 
+**重要说明（非全量重爬）**:
+- `fetch_reports.py` 默认是增量下载，不会重复下载 `downloaded_ids` 中已有文章
+- 工作流里的 `--max-requests 9999` 仅表示“尽量处理完本次待下载队列”，不是每次从 1 全量重下
+
 **执行时间**: ~20-40 分钟 (取决于待下载文章数量)
 
 ---
@@ -184,10 +188,20 @@ def check_article_exists(article_id: int, driver) -> bool:
    └─ 读取: last_probed_id = 686
    └─ 下载: [1, 686] 中未下载的文章
    
-3. update_category_meta  → 更新分类元数据
-4. generate_sidebar      → 生成侧边栏
-5. diagnose_crawler      → 健康检查
+3. Detect Article Changes → 检测是否有“文章实体”变更
+   └─ 无文章变更: 跳过元数据更新和提交
+   └─ 有文章变更: 继续后续步骤
+
+4. update_category_meta  → 更新分类元数据（仅有文章变更时）
+5. generate_sidebar      → 生成侧边栏（仅有文章变更时）
+6. Commit Changes        → 提交并推送（仅有文章变更时）
+7. diagnose_crawler      → 健康检查
 ```
+
+### 2026-03-14 修复说明
+- 修复 `pre_crawl_check.py` 的边界误跳过问题：
+  当 `last_probed_id` 本身属于 `missing_ids`（如 758）且实际文件最大 ID 为前一位（757）时，继续向后探测而不是跳过。
+- 修复工作流统计命令在 0 匹配时的失败风险（`grep ... || true`），避免无匹配导致 step 异常退出。
 
 ### 配置参数
 ```yaml

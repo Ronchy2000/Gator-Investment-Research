@@ -68,9 +68,12 @@
 
 **阶段 2: 内容下载**
 - 校验 JSON 与 Markdown 文件，保持数据一致
-- 增量下载未收录的文章（单次最多 500 篇）
+- 增量下载未收录的文章（不会重复下载已存在文章）
 - HTML → Markdown 转换（支持表格、列表、图片）
 - 自动更新分类和导航
+
+> 说明：`fetch_reports.py` 会按 `待下载 = [1, last_probed_id] - downloaded_ids - missing_ids` 计算下载队列。  
+> 即使工作流参数是 `--max-requests 9999`，也只是“本次尽量处理完待下载队列”，不是每次全量重爬。
 
 详细架构说明请查看 [ARCHITECTURE.md](ARCHITECTURE.md)
 
@@ -132,6 +135,11 @@ python crawler/fetch_reports.py --max-requests 500 --sleep 0.8
 **完整参数说明**:
 - `--max-requests 500`: 单次最多下载 500 篇
 - `--sleep 0.8`: 请求间隔 0.8 秒（避免频率限制）
+
+**增量逻辑**:
+- 每次先探测边界 (`last_probed_id`)
+- 只下载边界内“未下载且非已知缺失”的 ID
+- 已下载文章不会重复抓取和重复写入
 
 更多开发细节请参考 [ARCHITECTURE.md](ARCHITECTURE.md)
 
