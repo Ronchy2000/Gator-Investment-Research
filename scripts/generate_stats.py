@@ -35,9 +35,10 @@ def list_markdown_files(path: Path) -> List[Path]:
 
 def get_last_update_from_files(paths: Iterable[Path]) -> str:
     """
-    获取最后更新日期（稳定值）
-    1) 优先从文件名前缀提取日期（YYYY.MM.DD-）
-    2) 回退到文件修改时间
+    获取最后更新日期（数据实际更新日）
+    1) 从文件名前缀提取文章发布日期（YYYY.MM.DD-）
+    2) 读取文件修改日期（文件落盘/更新日期）
+    3) 取两者较晚值，避免“新增旧文”时最后更新不变化
     """
     file_list = list(paths)
     if not file_list:
@@ -53,11 +54,14 @@ def get_last_update_from_files(paths: Iterable[Path]) -> str:
         year, month, day = match.groups()
         extracted_dates.append(f"{int(year):04d}-{int(month):02d}-{int(day):02d}")
 
-    if extracted_dates:
-        return max(extracted_dates)
-
     latest_mtime = max(file_path.stat().st_mtime for file_path in file_list)
-    return datetime.fromtimestamp(latest_mtime).strftime("%Y-%m-%d")
+    mtime_date = datetime.fromtimestamp(latest_mtime).strftime("%Y-%m-%d")
+
+    if extracted_dates:
+        publish_date = max(extracted_dates)
+        return max(publish_date, mtime_date)
+
+    return mtime_date
 
 
 def ensure_index_defaults(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:

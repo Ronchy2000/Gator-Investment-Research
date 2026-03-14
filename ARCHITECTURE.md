@@ -293,6 +293,18 @@ python scripts/pre_crawl_check.py
 - **单篇文章**: ~1-2 秒
 - **批量下载**: ~1500 篇/次 (约 30-40 分钟)
 
+---
+
+## 🕒 最后更新日期逻辑
+
+`scripts/generate_stats.py` 的 `last_update` 采用以下规则：
+
+1. 从文章文件名前缀提取发布日期（`YYYY.MM.DD-`）
+2. 读取文章文件修改时间（落盘/更新日期）
+3. 取两者中的较晚值作为“最后更新”
+
+这样可避免“新增的是历史旧文”时，页面最后更新日期不变化的问题。
+
 ### 资源消耗
 - **CPU**: 中等 (Selenium + Chrome)
 - **内存**: ~500MB (Chrome headless)
@@ -339,5 +351,5 @@ python crawler/fetch_reports.py --start-id 400 --end-id 450
 
 ---
 
-**最后更新**: 2025-11-01
+**最后更新**: 2026-03-14
 **维护者**: @Ronchy2000
