@@ -36,4 +36,4 @@
 [开始阅读](./HOME)
 
 <!-- 背景图片 -->
-![](https://docsify.js.org/_media/bg.png)
+![](_media/cover-bg.svg)

@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 
-[📖 在线阅读](https://gator-investment-research.vercel.app/) | [📋 更新日志](CHANGELOG.md) | [🏗️ 技术架构](ARCHITECTURE.md)
+[📖 在线阅读](https://gator.ronchy2000.top) | [📋 更新日志](CHANGELOG.md) | [🏗️ 技术架构](ARCHITECTURE.md)
 
 </div>
 
@@ -109,7 +109,7 @@ Gator-Investment-Research/
 | **内容解析** | BeautifulSoup | HTML 解析转换 |
 | **文档框架** | Docsify | 静态文档生成 |
 | **自动化** | GitHub Actions | CI/CD 定时任务 |
-| **托管服务** | GitHub Pages | 静态网站托管 |
+| **托管服务** | EdgeOne Pages | 静态网站托管 |
 
 ---
 
@@ -174,6 +174,6 @@ MIT License © [Ronchy2000](https://github.com/Ronchy2000)
 
 Made with ❤️ by [Ronchy2000](https://github.com/Ronchy2000)
 
-[🏠 在线阅读](https://gator-investment-research.vercel.app/) | [📮 反馈问题](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
+[🏠 在线阅读](https://gator.ronchy2000.top) | [📮 反馈问题](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
 
 </div>

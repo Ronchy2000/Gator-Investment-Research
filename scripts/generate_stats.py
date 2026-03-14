@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -34,13 +35,29 @@ def list_markdown_files(path: Path) -> List[Path]:
 
 def get_last_update_from_files(paths: Iterable[Path]) -> str:
     """
-    获取最后更新日期
-    
-    ⚠️ 改进 (2025-11-01):
-    - 使用当前日期，而不是文件修改时间
-    - 更准确反映网站的更新时间
+    获取最后更新日期（稳定值）
+    1) 优先从文件名前缀提取日期（YYYY.MM.DD-）
+    2) 回退到文件修改时间
     """
-    return datetime.now().strftime("%Y-%m-%d")
+    file_list = list(paths)
+    if not file_list:
+        return "暂无"
+
+    date_pattern = re.compile(r"^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})-")
+    extracted_dates: List[str] = []
+
+    for file_path in file_list:
+        match = date_pattern.match(file_path.stem)
+        if not match:
+            continue
+        year, month, day = match.groups()
+        extracted_dates.append(f"{int(year):04d}-{int(month):02d}-{int(day):02d}")
+
+    if extracted_dates:
+        return max(extracted_dates)
+
+    latest_mtime = max(file_path.stat().st_mtime for file_path in file_list)
+    return datetime.fromtimestamp(latest_mtime).strftime("%Y-%m-%d")
 
 
 def ensure_index_defaults(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
