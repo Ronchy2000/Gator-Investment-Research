@@ -35,6 +35,7 @@ from config import INDEX_FILE, ARTICLE_CATEGORIES
 # 探测参数
 COARSE_PROBE_STEP = 50      # 粗探测步长：每隔 50 个 ID 采样
 COARSE_PROBE_MAX = 1500     # 粗探测上限：探测到 ID 1500
+INITIAL_DENSE_PROBE_WINDOW = COARSE_PROBE_STEP  # 起点保护：先密集扫描首个区间，避免漏掉 852 这类非采样点
 FINE_PROBE_RANGE = 50       # 细探测范围：从最后存在点往后探测 50 个 ID
 FINE_PROBE_SAFETY = 3       # 细探测安全边界：往前回退 3 个 ID 作为起点
 MAX_CONSECUTIVE_MISS = 25   # 连续缺失 25 个认为到达边界
@@ -195,13 +196,31 @@ def coarse_probe_boundary(driver, start_id: int, max_id: int, step: int, origina
     """
     print(f"\n🔍 粗探测阶段 (步长 {step}，范围 {start_id}-{max_id})")
     print(f"   原边界: ID {original_boundary}")
+    dense_end = min(max_id, start_id + INITIAL_DENSE_PROBE_WINDOW - 1)
+    print(f"   起点保护: 先密集检查 ID {start_id}-{dense_end}")
+    if dense_end < max_id:
+        print(f"   后续采样: 从 ID {dense_end + 1} 起每隔 {step} 个 ID 采样")
     print("=" * 60)
     
     last_found_id = 0
-    consecutive_miss = 0
     total_found = 0
-    
-    for article_id in range(start_id, max_id + 1, step):
+
+    # 先把起点附近的首个区间顺扫一遍，避免仅检查 851/901/951... 这种固定采样线
+    # 导致漏掉 852 这类“起点缺失、后一个 ID 存在”的新增文章。
+    for article_id in range(start_id, dense_end + 1):
+        exists = check_article_exists(article_id, driver)
+
+        if exists:
+            last_found_id = article_id
+            total_found += 1
+            print(f"  ✅ ID {article_id}: 存在 (起点密集扫描命中)")
+        else:
+            print(f"  ❌ ID {article_id}: 不存在")
+
+        time.sleep(0.3)
+
+    consecutive_miss = 0
+    for article_id in range(dense_end + 1, max_id + 1, step):
         exists = check_article_exists(article_id, driver)
         
         if exists:
