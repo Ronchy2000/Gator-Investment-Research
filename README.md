@@ -9,6 +9,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Ronchy2000/Gator-Investment-Research/daily-update.yml?label=daily-sync)](https://github.com/Ronchy2000/Gator-Investment-Research/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+[![Repo Visits](https://hits.sh/github.com/Ronchy2000/Gator-Investment-Research.svg?style=flat-square&label=visits&color=5BCDA5)](https://hits.sh/github.com/Ronchy2000/Gator-Investment-Research/)
 
 [📖 在线阅读](https://gator.ronchy2000.top) | [📋 更新日志](CHANGELOG.md) | [🏗️ 技术架构](ARCHITECTURE.md)
 
