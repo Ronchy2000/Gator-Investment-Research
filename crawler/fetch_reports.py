@@ -56,6 +56,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from config import ARTICLE_CATEGORIES, INDEX_FILE, RAW_HTML_DIR, ensure_structure  # noqa: E402
+from scripts.article_metadata import build_storage_filename  # noqa: E402
 
 
 BASE_URL = "http://h5.2025eyp.com"
@@ -291,8 +292,7 @@ def detect_category(title: str, preview: str, explicit: Optional[str] = None) ->
 
 
 def build_filename(article: Article) -> str:
-    prefix = f"{article.date}-" if article.date else ""
-    return sanitize_filename(f"{prefix}{article.title}") + ".md"
+    return build_storage_filename(article.article_id, article.date)
 
 
 def ensure_index_defaults(data: Optional[Dict[str, Any]]) -> Dict[str, Any]:

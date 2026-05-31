@@ -14,7 +14,8 @@ ROOT_DIR = SCRIPT_DIR.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from config import ARTICLE_CATEGORIES, SIDEBAR_FILE, DOCS_DIR, ensure_structure
+from config import ARTICLE_CATEGORIES, SIDEBAR_FILE, DOCS_DIR, category_slug, ensure_structure
+from scripts.article_metadata import parse_article_metadata
 from scripts.generate_stats import get_last_update_from_files, list_markdown_files
 
 
@@ -41,16 +42,7 @@ def get_article_list(category_path: Path) -> List[Tuple[str, str]]:
         if file_path.suffix != ".md" or file_path.name.lower() == "readme.md":
             continue
 
-        title = file_path.stem
-        # 期望文件名格式 YYYY.MM.DD-标题
-        if (
-            len(title) > 11
-            and title[4] == "."
-            and title[7] == "."
-            and title[10] == "-"
-        ):
-            title = title[11:]
-
+        title = parse_article_metadata(file_path).title
         rel_path = file_path.relative_to(DOCS_DIR).as_posix()
         articles.append((title, rel_path))
 
@@ -86,7 +78,7 @@ def generate_sidebar(top_n: int = 10) -> None:
             sidebar_lines.append(f"  * [{title}]({rel_path})")
 
         if len(articles) > top_n:
-            readme_rel = path.joinpath("README.md").relative_to(DOCS_DIR).as_posix()
+            readme_rel = f"{category_slug(category)}/README.md"
             sidebar_lines.append(
                 f"  * [... 查看更多 {len(articles) - top_n} 篇]({readme_rel})"
             )

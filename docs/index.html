@@ -73,6 +73,53 @@
   <div id="app">加载中...</div>
   
   <script>
+    (function redirectLegacyRoutes() {
+      function encodeHashPath(path) {
+        return "#/" + path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+      }
+
+      function findLegacyTarget(routeMap) {
+        const candidates = [];
+        const decodedHash = window.location.hash.startsWith("#/")
+          ? decodeURIComponent(window.location.hash.slice(1))
+          : "";
+        const decodedPathname = decodeURIComponent(window.location.pathname);
+
+        if (decodedHash) {
+          candidates.push(decodedHash);
+          candidates.push(decodedHash.replace(/\.md$/i, ""));
+        }
+        if (decodedPathname && decodedPathname !== "/" && decodedPathname !== "/index.html") {
+          candidates.push(decodedPathname);
+          candidates.push(decodedPathname.replace(/\.md$/i, ""));
+        }
+
+        for (const candidate of candidates) {
+          if (routeMap[candidate]) {
+            return routeMap[candidate];
+          }
+        }
+        return null;
+      }
+
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", "/legacy-routes.json", false);
+        xhr.send(null);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const target = findLegacyTarget(JSON.parse(xhr.responseText));
+          if (target) {
+            const nextUrl = `${window.location.origin}/${encodeHashPath(target)}`;
+            if (nextUrl !== window.location.href) {
+              window.location.replace(nextUrl);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("legacy route redirect skipped", error);
+      }
+    })();
+
     window.$docsify = {
       name: '🐊 鳄鱼派投资研报',
       repo: '',  // 去掉右上角 GitHub 角标

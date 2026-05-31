@@ -50,16 +50,18 @@ jobs:
           python crawler/fetch_reports.py --max-requests 9999 --sleep 0.8
         continue-on-error: true
 
+      - name: Normalize ASCII Article Paths
+        run: |
+          echo "=== 规范化部署路径 (ASCII only) ==="
+          python scripts/migrate_ascii_article_paths.py
+
       - name: Detect Article Changes
         id: detect_changes
         run: |
-          # 禁用文件名转义，确保中文路径统计准确
-          git config core.quotepath off
-
           # 仅按文章实体变更判断是否需要提交（排除 README / 元数据日期漂移）
           status_output="$(git status --porcelain)"
-          new_articles=$(printf "%s\n" "${status_output}" | grep "^?? docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ' || true)
-          modified_articles=$(printf "%s\n" "${status_output}" | grep "^ M docs/全部研报/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ' || true)
+          new_articles=$(printf "%s\n" "${status_output}" | grep "^?? docs/all-reports/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ' || true)
+          modified_articles=$(printf "%s\n" "${status_output}" | grep "^ M docs/all-reports/" | grep "\.md$" | grep -v "README.md" | wc -l | tr -d ' ' || true)
           total_articles=$((new_articles + modified_articles))
 
           echo "new_articles=${new_articles}" >> "$GITHUB_OUTPUT"
@@ -95,15 +97,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # 禁用文件名转义，确保 git status 输出原始文件名（重要：解决中文文件名统计问题）
-          git config core.quotepath off
-          
+
           # 检查是否有更改
           status_output="$(git status --porcelain)"
           if [ -n "${status_output}" ]; then
             # 统计变更情况
-            # 注意: 每篇文章会在 全部研报/ 和分类目录中各保存一份，因此统一以 全部研报/ 为准避免重复计数
+            # 注意: 每篇文章会在 all-reports/ 和分类目录中各保存一份，因此统一以 all-reports/ 为准避免重复计数
             # ?? 表示新增文件, M 表示修改文件
             new_articles="${{ steps.detect_changes.outputs.new_articles }}"
             modified_articles="${{ steps.detect_changes.outputs.modified_articles }}"

@@ -98,9 +98,9 @@ Gator-Investment-Research/
 │   └── diagnose_crawler.py    # 健康诊断
 ├── docs/                      # 文档目录（网站内容）
 │   ├── index.json             # 索引数据
-│   ├── 全部研报/
-│   ├── 宏观分析/
-│   └── 行业分析/
+│   ├── all-reports/
+│   ├── macro-analysis/
+│   └── industry-analysis/
 ├── ARCHITECTURE.md            # 架构文档
 ├── CHANGELOG.md               # 更新日志
 └── requirements.txt           # 依赖清单
