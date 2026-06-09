@@ -1,17 +1,17 @@
 {
-  "last_update": "2026-06-05",
-  "total_articles": 903,
+  "last_update": "2026-06-09",
+  "total_articles": 906,
   "categories": {
-    "全部研报": 903,
-    "宏观分析": 234,
-    "行业分析": 634
+    "全部研报": 906,
+    "宏观分析": 236,
+    "行业分析": 635
   },
   "version": "1.2.0",
   "index": {
-    "saved_total": 903,
+    "saved_total": 906,
     "missing_total": 52,
     "pending_total": 0,
-    "last_probed_id": 955,
-    "next_probe_id": 956
+    "last_probed_id": 958,
+    "next_probe_id": 959
   }
 }
