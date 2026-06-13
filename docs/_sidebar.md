@@ -3,7 +3,7 @@
 * [🏠 首页](HOME.md)
 * [📊 关于项目](about.md)
 
-* 📑 **全部研报(909)**
+* 📑 **全部研报(913)**
   * [AI计算机研报](all-reports/2025.05.13-1.md)
   * [创新药行业深度解析](all-reports/2025.05.13-2.md)
   * [化工行业观察](all-reports/2025.05.13-3.md)
@@ -14,9 +14,9 @@
   * [化工行业周期深度解析](all-reports/2025.05.15-11.md)
   * [半导体行业观察](all-reports/2025.05.15-12.md)
   * [风电行业观察](all-reports/2025.05.15-13.md)
-  * [... 查看更多 899 篇](all-reports/README.md)
+  * [... 查看更多 903 篇](all-reports/README.md)
 
-* 📈 **宏观分析(237)**
+* 📈 **宏观分析(238)**
   * [创新药行业深度解析](macro-analysis/2025.05.13-2.md)
   * [化工行业观察](macro-analysis/2025.05.13-3.md)
   * [农林牧渔行业观察](macro-analysis/2025.05.14-4.md)
@@ -27,9 +27,9 @@
   * [2025.5.19医药行业观察](macro-analysis/2025.05.19-18.md)
   * [2025.5.19人形机器人行业观察](macro-analysis/2025.05.19-20.md)
   * [2025.5.19服装制造行业观察](macro-analysis/2025.05.19-21.md)
-  * [... 查看更多 227 篇](macro-analysis/README.md)
+  * [... 查看更多 228 篇](macro-analysis/README.md)
 
-* 🏭 **行业分析(636)**
+* 🏭 **行业分析(638)**
   * [半导体行业观察](industry-analysis/2025.05.15-12.md)
   * [风电行业观察](industry-analysis/2025.05.15-13.md)
   * [机器人行业观察](industry-analysis/2025.05.15-14.md)
@@ -40,9 +40,9 @@
   * [物业管理行业观察](industry-analysis/2025.05.15-8.md)
   * [证券行业观察](industry-analysis/2025.05.15-9.md)
   * [2025.5.19煤炭开采行业观察](industry-analysis/2025.05.19-19.md)
-  * [... 查看更多 626 篇](industry-analysis/README.md)
+  * [... 查看更多 628 篇](industry-analysis/README.md)
 
 ---
 
-* 📚 **总计: 1782 篇**
-* 🔄 最后更新: 2026-06-10
+* 📚 **总计: 1789 篇**
+* 🔄 最后更新: 2026-06-13
