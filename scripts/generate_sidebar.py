@@ -58,6 +58,8 @@ def generate_sidebar(top_n: int = 10) -> None:
         "",
         "* [🏠 首页](HOME.md)",
         "* [📊 关于项目](about.md)",
+        "* ✍️ **投资随笔**",
+        "  * [宽基指数：新三年计划](investment-notes/2026.06.30-index-plan.md)",
         "",
     ]
 

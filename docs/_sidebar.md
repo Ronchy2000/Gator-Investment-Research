@@ -2,6 +2,8 @@
 
 * [🏠 首页](HOME.md)
 * [📊 关于项目](about.md)
+* ✍️ **投资随笔**
+  * [宽基指数：新三年计划](investment-notes/2026.06.30-index-plan.md)
 
 * 📑 **全部研报(913)**
   * [AI计算机研报](all-reports/2025.05.13-1.md)
