@@ -6,7 +6,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import requests
 
@@ -74,7 +74,7 @@ def load_credentials(path: Path = DEFAULT_CREDENTIAL_FILE) -> Credentials:
     )
 
 
-def _error_code(payload: Any) -> int | None:
+def _error_code(payload: Any) -> Optional[int]:
     if not isinstance(payload, dict):
         return None
     for key in ("ret", "errCode", "err_code", "code"):

@@ -6,6 +6,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlsplit
 
 
@@ -28,7 +29,7 @@ def _inside(path: Path, root: Path) -> bool:
     return True
 
 
-def _local_public_path(value: str) -> Path | None:
+def _local_public_path(value: str) -> Optional[Path]:
     parsed = urlsplit(value)
     if parsed.scheme or parsed.netloc or not parsed.path.startswith("/"):
         return None

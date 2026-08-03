@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -37,7 +38,7 @@ def _copy(value: str, field: str) -> None:
     print(f"已将 {SECRET_NAMES[field]} 复制到剪贴板，未在终端显示凭据内容。")
 
 
-def _upload(values: dict[str, str], repository: str | None) -> None:
+def _upload(values: dict[str, str], repository: Optional[str]) -> None:
     gh = shutil.which("gh")
     if not gh:
         raise SystemExit(
