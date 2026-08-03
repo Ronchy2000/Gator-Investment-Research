@@ -213,7 +213,7 @@ class WeChatArticleDownloader:
             raise
 
         return DownloadedArticle(
-            article_id=article_key,
+            article_id=summary.article_id,
             title=title,
             source_url=_canonical_url(summary.url),
             description=description,
