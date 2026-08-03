@@ -1,355 +1,94 @@
-# 鳄鱼派研报爬虫 - 架构说明
+# 系统架构
 
-## 🏗️ 系统架构
+当前开发分支将项目从旧研报爬虫和 Docsify 前端迁移为“单公众号同步 + Astro 静态站点”。
 
-本项目采用**两阶段爬取策略**,分离边界探测和内容下载:
+## 数据流
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    GitHub Actions Daily Workflow                │
-│                      (每天 UTC 0:00 执行)                        │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-         ┌────────────────────┴────────────────────┐
-         │                                         │
-    ┌────▼─────┐                            ┌─────▼────┐
-    │ 阶段 1    │                            │ 阶段 2    │
-    │ 边界探测  │                            │ 内容下载  │
-    └──────────┘                            └──────────┘
-         │                                         │
-         │  scripts/pre_crawl_check.py            │  crawler/fetch_reports.py
-         │  • 轻量级页面检查                       │  • 完整内容解析
-         │  • 粗探测 (步长 50)                    │  • 增量下载
-         │  • 细探测 (逐个检查)                   │  • Markdown 转换
-         │  • 写入边界到 index.json               │  • 分类保存
-         │                                         │
-         └────────────┬────────────────────────────┘
-                      │
-                 ┌────▼─────┐
-                 │  输出     │
-                 │ index.json │
-                 │ • 边界信息  │
-                 │ • 已下载 ID │
-                 │ • 缺失 ID   │
-                 └───────────┘
-```
-
----
-
-## 🔍 核心发现: SPA 页面检测逻辑
-
-### 关键特征 (2025-11-01 验证)
-
-这是一个**单页应用 (SPA)**,所有 URL 都返回相同的 HTML 框架,真实内容通过 JavaScript 动态加载。
-
-#### ✅ 文章存在的标识
-```
-页面长度: 通常 > 1000 字符
-内容结构: 标题 + 日期 + 正文
-示例 (ID 1):
-  "AI计算机研报
-   2025-05-13 14:45 星期二
-   未来十年，无论是在工业，零售，司法，教育，都将会感受到AI的便捷..."
+```text
+微信读书扫码凭据
+      |
+      v
+weread.111965.xyz 文章列表
+      |
+      v
+wechat_sync/sync.py
+      |
+      +-- 下载 mp.weixin.qq.com 正文
+      +-- 本地化封面和正文图片
+      +-- 写入 Markdown frontmatter + HTML 正文
+      +-- 成功后更新 wechat_sync/index.json
+      |
+      v
+src/content/articles + public/article-assets
+      |
+      v
+Astro Content Collections
+      |
+      +-- 首页和最近文章
+      +-- 日期归档
+      +-- 静态文章页
+      +-- 全文搜索索引
+      +-- RSS + sitemap
+      |
+      v
+Cloudflare Pages / dist
 ```
 
-#### ❌ 文章不存在的标识
-```
-页面长度: 约 36-50 字符
-唯一内容: "鳄鱼派声明：文章内容仅供参考，不构成投资建议。投资者据此操作，风险自担。"
-```
-
-### 检测代码 (核心逻辑)
-
-```python
-def check_article_exists(article_id: int, driver) -> bool:
-    """
-    ⚠️ 关键: 这是 SPA,需要等待 3.5 秒让 JS 加载完成
-    
-    判断标准:
-    1. 文章不存在: 只有免责声明 (< 150 字符)
-    2. 文章存在: 有完整内容 (> 150 字符)
-    """
-    url = f"http://h5.2025eyp.com/articles/{article_id}"
-    driver.get(url)
-    
-    # 关键: 等待时间必须足够 (2 秒不够，3.5 秒稳定)
-    time.sleep(3.5)
-    
-    body = driver.find_element(By.TAG_NAME, "body")
-    visible_text = body.text.strip()
-    
-    # 只有免责声明 → 文章不存在
-    if "鳄鱼派声明" in visible_text and len(visible_text) < 150:
-        return False
-    
-    # 有实际内容 → 文章存在
-    return len(visible_text) > 150
-```
-
----
-
-## 📝 脚本分工
-
-### 1. `scripts/pre_crawl_check.py` - 边界探测
-
-**职责**: 快速探测文章边界,不下载完整内容
-
-**策略**:
-- **增量探测**: 从上次边界 (`last_probed_id + 1`) 继续探测
-- **粗探测**: 每隔 50 个 ID 采样 (快速定位大致边界)
-- **细探测**: 在粗探测边界附近逐个检查 (精确定位)
-- **停止条件**: 连续 10 个 ID 不存在
-
-**输出**: 
-```json
-{
-  "last_probed_id": 686,
-  "next_probe_id": 687,
-  "probe_history": [
-    {"start": 687, "stop": 720, "found": 720, "ts": 1761935282}
-  ]
-}
-```
-
-**执行时间**: 
-- 首次探测: ~5-10 分钟 (全量扫描 1-686)
-- 增量探测: ~1-2 分钟 (只扫描新增部分 687+)
-
----
-
-### 2. `crawler/fetch_reports.py` - 内容下载
-
-**职责**: 下载文章完整内容并转换为 Markdown (**不再探测边界**)
-
-**启动验证** (2025-11-01 新增):
-```
-1. 扫描所有 MD 文件,提取 article_id
-2. 对比 downloaded_ids:
-   - 文件丢失: JSON 有记录但文件不存在 → 从 downloaded_ids 移除
-   - 额外文件: 文件存在但 JSON 无记录 → 添加到 downloaded_ids
-3. 双向同步,确保 JSON 与文件一致
-```
-
-**模式**:
-- **增量模式** (默认): 读取 `last_probed_id`,下载边界内未下载的文章
-- **手动模式**: `--start-id` 和 `--end-id` 指定范围
-
-**关键参数**:
-```bash
---max-requests 500   # 单次最多下载 500 篇文章
---sleep 0.8          # 每次请求间隔 0.8 秒
-```
-
-**下载流程**:
-1. **文件验证**: 扫描 MD 文件,同步 `downloaded_ids`
-2. **读取边界**: 从 `index.json` 读取 `last_probed_id`
-3. **计算待下载**: `[1, boundary] - downloaded_ids - missing_ids`
-4. **批量下载**: 按顺序下载未下载的文章
-5. **转换保存**: 转换为 Markdown 并保存到分类目录
-6. **更新索引**: 更新 `downloaded_ids` 列表
-
-**重要说明（非全量重爬）**:
-- `fetch_reports.py` 默认是增量下载，不会重复下载 `downloaded_ids` 中已有文章
-- 工作流里的 `--max-requests 9999` 仅表示“尽量处理完本次待下载队列”，不是每次从 1 全量重下
-
-**执行时间**: ~20-40 分钟 (取决于待下载文章数量)
-
----
-
-## 🔢 边界信息
-
-### 当前边界 (2025-11-01)
-- **最大 ID**: 686
-- **已探测**: 638 篇
-- **已下载**: 638 篇
-- **探测范围**: ID 1 - 686
-- **分类统计**:
-  - 全部研报: 638 篇
-  - 宏观分析: 159 篇
-  - 行业分析: 452 篇
-
-### 历史变化
-```
-2025-06-14: ~468 篇 (旧逻辑,误判导致停止早)
-2025-10-31: ~686 篇 (修复检测逻辑后正确边界)
-2025-11-01: 638 篇完整下载 (增量下载完成,边界验证通过)
-```
-
----
-
-## ⚡ GitHub Actions 工作流
-
-### 执行顺序
-```
-1. pre_crawl_check.py    → 边界探测 (5-10 分钟)
-   └─ 输出: last_probed_id = 686 写入 index.json
-   
-2. fetch_reports.py      → 内容下载 (20-40 分钟)
-   └─ 读取: last_probed_id = 686
-   └─ 下载: [1, 686] 中未下载的文章
-   
-3. Detect Article Changes → 检测是否有“文章实体”变更
-   └─ 无文章变更: 跳过元数据更新和提交
-   └─ 有文章变更: 继续后续步骤
-
-4. update_category_meta  → 更新分类元数据（仅有文章变更时）
-5. generate_sidebar      → 生成侧边栏（仅有文章变更时）
-6. Commit Changes        → 提交并推送（仅有文章变更时）
-7. diagnose_crawler      → 健康检查
-```
-
-### 2026-03-14 修复说明
-- 修复 `pre_crawl_check.py` 的边界误跳过问题：
-  当 `last_probed_id` 本身属于 `missing_ids`（如 758）且实际文件最大 ID 为前一位（757）时，继续向后探测而不是跳过。
-- 修复工作流统计命令在 0 匹配时的失败风险（`grep ... || true`），避免无匹配导致 step 异常退出。
-
-### 配置参数
-```yaml
-- name: 阶段 1 - 边界探测
-  run: python scripts/pre_crawl_check.py
-
-- name: 阶段 2 - 内容下载
-  run: python crawler/fetch_reports.py --max-requests 500 --sleep 0.8
-```
-
----
-
-## 🐛 常见问题
+## 同步层
 
-### 1. 为什么探测结果不准确?
-
-**原因**: SPA 页面需要足够的等待时间让 JavaScript 执行
-**解决**: 增加 `time.sleep(3.5)` (原来是 2 秒)
+### 凭据
 
-### 2. 为什么有些 ID 显示不存在但实际存在?
-
-**原因**: 
-- 等待时间不足 (< 3 秒)
-- 判断阈值过严 (< 100 字符)
-
-**解决**: 
-- 等待时间: 2 秒 → 3.5 秒
-- 判断阈值: 100 字符 → 150 字符
+`wechat_sync/auth.py` 在可信的本地设备完成微信读书扫码，凭据写入被 Git 忽略的 `data/wechat/credentials.json`。GitHub Actions 通过 `WEREAD_VID` 和 `WEREAD_TOKEN` Secrets 读取相同凭据。
 
-### 3. 为什么 ID 不连续?
+### 列表和增量判断
 
-**答**: 文章 ID 分布不连续是正常现象,可能原因:
-- 文章被删除
-- ID 预留但未发布
-- 测试文章不公开
-
-### 4. JSON 记录的 downloaded_ids 与实际文件不一致怎么办?
+`wechat_sync/client.py` 访问固定的微信读书中转接口。`wechat_sync/sync.py` 读取 `wechat_sync/account.json` 和已提交的 `wechat_sync/index.json`：
 
-**场景**:
-- 手动删除了 MD 文件,但 JSON 还有记录
-- 手动添加了 MD 文件,但 JSON 没有记录
+1. 按页获取目标公众号文章列表。
+2. 过滤 `2026-06-15` 以前的内容。
+3. 遇到已保存 URL 或早于起始日期的文章后停止翻页。
+4. 只处理尚未进入索引的 URL。
+5. 单篇成功后立即原子更新索引；失败文章留待下次重试。
 
-**解决** (2025-11-01 自动修复):
-```bash
-# fetch_reports.py 启动时会自动验证并同步
-python crawler/fetch_reports.py
-```
+第一页因中转缓存暂时为空时会最多重试三次。HTTP 401 和 429 会分别报告凭据失效和频率限制。
 
-输出示例:
-```
-🔍 验证已下载文件...
-⚠️  发现 5 篇文件丢失 (JSON 有记录但文件不存在)
-   丢失 ID: [12, 45, 67, 89, 123]
-📥 发现 3 篇额外文件 (文件存在但 JSON 未记录)
-   额外 ID: [400, 401, 402]
-✅ 已同步 downloaded_ids: 468 篇
-```
+### 正文和媒体
 
-### 5. 如何从头重新探测边界?
+`wechat_sync/downloader.py` 直接请求微信公众号文章：
 
-**方法 1**: 删除 `last_probed_id`
-```bash
-python -c "import json; d=json.load(open('docs/index.json')); d['last_probed_id']=0; open('docs/index.json','w').write(json.dumps(d,indent=2,ensure_ascii=False))"
-```
+- 接受包含文本或图片的正文节点，纯图片文章不会被误判为空正文。
+- 删除脚本、表单和事件属性。
+- 将微信懒加载图片地址转换为本地路径。
+- 每篇文章在临时目录下载完整后再替换正式资源目录。
+- 单个媒体限制为 25 MiB。
+- 将文章写入 `src/content/articles/YYYY-MM-DD-<id>.md`。
 
-**方法 2**: 手动编辑 `docs/index.json`
-```json
-{
-  "last_probed_id": 0,
-  "next_probe_id": 1
-}
-```
+## 展示层
 
-然后运行:
-```bash
-python scripts/pre_crawl_check.py
-```
+Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构建阶段输出真实 HTML。
 
----
+- `src/pages/index.astro`：最新文章、统计、月份入口。
+- `src/pages/archive.astro`：按月和日期浏览全部文章。
+- `src/pages/articles/[id].astro`：文章正文、原文入口和前后导航。
+- `src/components/SearchDialog.astro`：标题、摘要、日期与正文客户端全文搜索。
+- `src/layouts/BaseLayout.astro`：全局导航、明暗主题、SEO 和页脚。
+- `src/pages/rss.xml.js`：RSS 订阅源。
 
-## 📊 性能指标
+站点仅使用少量原生 JavaScript 处理搜索、主题、阅读进度和图片放大，不引入 React/Vue 等运行时框架。
 
-### 探测速度
-- **粗探测**: ~0.5 秒/ID (步长 50)
-- **细探测**: ~0.3 秒/ID (逐个检查)
-- **完整探测**: ~5-10 分钟 (1-686)
+## 自动化
 
-### 下载速度
-- **单篇文章**: ~1-2 秒
-- **批量下载**: ~1500 篇/次 (约 30-40 分钟)
+`.github/workflows/wechat-sync.yml` 每天北京时间 08:30 运行，也支持手动触发：
 
----
+1. 安装最小 Python 依赖。
+2. 最多读取 5 页文章列表，页面和文章请求间隔 3 秒。
+3. 只暂存文章 Markdown、本地资源和同步索引。
+4. 即使某篇失败，也先提交本轮已成功内容，再让工作流以失败状态提示处理。
 
-## 🕒 最后更新日期逻辑
+Cloudflare Pages 监听内容提交并执行 `npm run build`，静态输出目录为 `dist`。
 
-`scripts/generate_stats.py` 的 `last_update` 采用以下规则：
+## 分支迁移
 
-1. 从文章文件名前缀提取发布日期（`YYYY.MM.DD-`）
-2. 读取文章文件修改时间（落盘/更新日期）
-3. 取两者中的较晚值作为“最后更新”
-
-这样可避免“新增的是历史旧文”时，页面最后更新日期不变化的问题。
-
-### 资源消耗
-- **CPU**: 中等 (Selenium + Chrome)
-- **内存**: ~500MB (Chrome headless)
-- **网络**: ~100-200 请求/次
-
----
-
-## 🔧 维护建议
-
-### 1. 定期检查边界
-```bash
-python scripts/pre_crawl_check.py
-```
-
-### 2. 手动补漏
-如果发现缺失的 ID,可以手动下载:
-```bash
-python crawler/fetch_reports.py --start-id 400 --end-id 450
-```
-
-### 3. 清理缓存
-定期清理 `data/raw_html/` 中的临时文件
-
----
-
-## 📚 相关文件
-
-- `scripts/pre_crawl_check.py` - 边界探测脚本
-- `crawler/fetch_reports.py` - 内容下载脚本
-- `config.py` - 配置文件 (路径、分类等)
-- `docs/index.json` - 索引文件 (边界、下载记录)
-- `.github/workflows/daily-update.yml` - GitHub Actions 配置
-
----
-
-## 🎯 未来优化
-
-1. ~~**并发探测**: 使用多线程加速边界探测~~ (已优化: 增量探测)
-2. ~~**智能重试**: 对失败的 ID 自动重试 3 次~~ (已实现: missing_ids 机制)
-3. ~~**增量更新**: 只下载更新后的文章~~ (已实现: downloaded_ids 追踪)
-4. **监控告警**: 边界变化、下载失败时发送通知
-5. **内容去重**: 检测重复文章并合并
-6. **质量评分**: 为研报添加质量评分系统
-
----
-
-**最后更新**: 2026-03-14
-**维护者**: @Ronchy2000
+- 当前生产默认分支继续保留旧 Docsify 站点。
+- `feature/wechat-mp-sync` 用于同步器和 Astro 新站开发。
+- Cloudflare Pages Preview 确认后，将旧默认分支建立历史标签或历史分支，再把新站分支提升为默认分支。

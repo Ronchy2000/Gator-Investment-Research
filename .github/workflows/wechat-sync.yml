@@ -1,0 +1,68 @@
+name: WeChat Article Sync
+
+on:
+  schedule:
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wechat-article-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      WEREAD_VID: ${{ secrets.WEREAD_VID }}
+      WEREAD_TOKEN: ${{ secrets.WEREAD_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-wechat.txt
+
+      - name: Install synchronizer dependencies
+        run: pip install -r requirements-wechat.txt
+
+      - name: Synchronize articles
+        id: synchronize
+        continue-on-error: true
+        run: python -m wechat_sync.sync --max-pages 5 --delay 3
+
+      - name: Detect generated changes
+        id: changes
+        shell: bash
+        run: |
+          status="$(git status --porcelain -- src/content/articles public/article-assets wechat_sync/index.json)"
+          if [[ -n "$status" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit synchronized content
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/content/articles public/article-assets wechat_sync/index.json
+          git commit -m "content: sync WeChat articles"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Report synchronization failure
+        if: steps.synchronize.outcome == 'failure'
+        run: |
+          echo "Article synchronization failed. Check for expired credentials, rate limiting, or an unavailable article." >> "$GITHUB_STEP_SUMMARY"
+          exit 1

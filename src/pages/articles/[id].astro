@@ -1,0 +1,451 @@
+---
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { articleHref, formatDate, isImageOnly, readingMinutes, sortArticles } from "../../lib/articles";
+
+interface Props {
+  entry: CollectionEntry<"articles">;
+  newer?: CollectionEntry<"articles">;
+  older?: CollectionEntry<"articles">;
+}
+
+export async function getStaticPaths() {
+  const articles = sortArticles(await getCollection("articles"));
+  return articles.map((entry, index) => ({
+    params: { id: entry.id },
+    props: {
+      entry,
+      newer: articles[index - 1],
+      older: articles[index + 1],
+    },
+  }));
+}
+
+const { entry, newer, older } = Astro.props;
+const { Content } = await render(entry);
+const minutes = readingMinutes(entry.body || "");
+const imageOnly = isImageOnly(entry.body || "");
+---
+
+<BaseLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  image={entry.data.cover || "/favicon.svg"}
+  article
+>
+  <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
+  <article class="article-page">
+    <header class="article-header">
+      <a class="back-link" href="/archive/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"></path></svg>
+        返回归档
+      </a>
+      <div class="article-kicker">
+        <span>WECHAT ARCHIVE</span>
+        <span>{entry.data.source}</span>
+      </div>
+      <h1>{entry.data.title}</h1>
+      <p class="article-description">{entry.data.description}</p>
+      <div class="article-meta">
+        <time datetime={entry.data.publishedAt.toISOString()}>{formatDate(entry.data.publishedAt)}</time>
+        <span>约 {minutes} 分钟</span>
+        {imageOnly && <span class="image-label">图片文章</span>}
+        <a href={entry.data.sourceUrl} target="_blank" rel="noopener noreferrer">微信公众号原文 ↗</a>
+      </div>
+    </header>
+
+    <div class="article-rule" aria-hidden="true"><span></span><span></span></div>
+
+    <div class="article-body">
+      <Content />
+    </div>
+
+    <footer class="article-end">
+      <div>
+        <span>END OF ARTICLE</span>
+        <strong>原文版权归作者所有</strong>
+      </div>
+      <a href={entry.data.sourceUrl} target="_blank" rel="noopener noreferrer">查看微信原文 ↗</a>
+    </footer>
+  </article>
+
+  <nav class="article-pagination" aria-label="文章翻页">
+    <div>
+      {newer ? (
+        <a href={articleHref(newer)}>
+          <span>较新一篇</span>
+          <strong>{newer.data.title}</strong>
+        </a>
+      ) : (
+        <span class="pagination-empty">已经是最新文章</span>
+      )}
+    </div>
+    <div>
+      {older ? (
+        <a href={articleHref(older)}>
+          <span>较早一篇</span>
+          <strong>{older.data.title}</strong>
+        </a>
+      ) : (
+        <span class="pagination-empty">已经是最早文章</span>
+      )}
+    </div>
+  </nav>
+
+  <dialog class="image-viewer" data-image-viewer aria-label="查看大图">
+    <button type="button" data-image-close aria-label="关闭图片">关闭 ×</button>
+    <img data-image-preview alt="" />
+  </dialog>
+
+  <script>
+    const progress = document.querySelector<HTMLElement>("[data-reading-progress]");
+    const updateProgress = () => {
+      if (!progress) return;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
+    };
+    document.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+
+    const viewer = document.querySelector<HTMLDialogElement>("[data-image-viewer]");
+    const preview = document.querySelector<HTMLImageElement>("[data-image-preview]");
+    document.querySelectorAll<HTMLImageElement>(".article-body img").forEach((image) => {
+      image.tabIndex = 0;
+      image.setAttribute("role", "button");
+      image.setAttribute("aria-label", "点击查看大图");
+      const openImage = () => {
+        if (!viewer || !preview) return;
+        preview.src = image.currentSrc || image.src;
+        preview.alt = image.alt;
+        viewer.showModal();
+      };
+      image.addEventListener("click", openImage);
+      image.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") openImage();
+      });
+    });
+    document.querySelector<HTMLElement>("[data-image-close]")?.addEventListener("click", () => viewer?.close());
+    viewer?.addEventListener("click", (event) => {
+      if (event.target === viewer) viewer.close();
+    });
+  </script>
+</BaseLayout>
+
+<style>
+  .reading-progress {
+    position: fixed;
+    z-index: 30;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--signal);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .article-page {
+    width: min(900px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .article-header {
+    padding-block: 65px 50px;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 70px;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  .back-link svg {
+    width: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.5;
+  }
+
+  .article-kicker {
+    display: flex;
+    justify-content: space-between;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .article-header h1 {
+    margin: 22px 0 28px;
+    font-family: var(--serif);
+    font-size: clamp(45px, 7.5vw, 82px);
+    font-weight: 550;
+    letter-spacing: -0.05em;
+    line-height: 1.12;
+  }
+
+  .article-description {
+    max-width: 720px;
+    margin: 0;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.8;
+  }
+
+  .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 25px;
+    align-items: center;
+    margin-top: 35px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .article-meta a {
+    margin-left: auto;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--line-strong);
+    color: var(--ink);
+  }
+
+  .article-meta a:hover {
+    color: var(--accent);
+  }
+
+  .image-label {
+    padding: 2px 7px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .article-rule {
+    display: grid;
+    grid-template-columns: 1fr 80px;
+    gap: 8px;
+  }
+
+  .article-rule span {
+    height: 5px;
+    background: var(--ink);
+  }
+
+  .article-rule span:last-child {
+    background: var(--accent);
+  }
+
+  .article-body {
+    width: min(760px, 100%);
+    margin: 70px auto 90px;
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.95;
+  }
+
+  .article-body :global(.wechat-article > :first-child) {
+    margin-top: 0;
+  }
+
+  .article-body :global(.wechat-article p),
+  .article-body :global(.wechat-article section) {
+    max-width: 100%;
+    margin-block: 1.15em;
+  }
+
+  .article-body :global(.wechat-article img) {
+    display: block;
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 30px auto;
+    cursor: zoom-in;
+  }
+
+  .article-body :global(.wechat-article img:focus-visible) {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+
+  .article-body :global(.wechat-article a) {
+    border-bottom: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .article-body :global(.wechat-article table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 14px;
+  }
+
+  .article-body :global(.wechat-article td),
+  .article-body :global(.wechat-article th) {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+  }
+
+  :global(:root[data-theme="dark"] .article-body .wechat-article *) {
+    border-color: var(--line) !important;
+    background-color: transparent !important;
+    color: var(--ink) !important;
+  }
+
+  :global(:root[data-theme="dark"] .article-body .wechat-article a) {
+    color: var(--accent) !important;
+  }
+
+  .article-end {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 30px;
+    padding: 35px 0;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .article-end > div {
+    display: grid;
+    gap: 7px;
+  }
+
+  .article-end span {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .article-end strong {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+  }
+
+  .article-end > a {
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--ink);
+    font-size: 12px;
+  }
+
+  .article-pagination {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: min(1120px, calc(100% - 40px));
+    margin: 85px auto 0;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .article-pagination > div {
+    min-height: 145px;
+    padding: 25px 30px;
+  }
+
+  .article-pagination > div:first-child {
+    border-right: 1px solid var(--line);
+  }
+
+  .article-pagination a {
+    display: grid;
+    gap: 12px;
+  }
+
+  .article-pagination a:hover strong {
+    color: var(--accent);
+  }
+
+  .article-pagination span {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .article-pagination strong {
+    font-family: var(--serif);
+    font-size: clamp(18px, 2vw, 25px);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .pagination-empty {
+    display: block;
+    padding-top: 30px;
+  }
+
+  .image-viewer {
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    max-height: none;
+    padding: 60px 30px 30px;
+    border: 0;
+    background: rgba(10, 11, 10, 0.94);
+  }
+
+  .image-viewer::backdrop {
+    background: rgba(10, 11, 10, 0.94);
+  }
+
+  .image-viewer button {
+    position: fixed;
+    top: 20px;
+    right: 25px;
+    padding: 7px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: transparent;
+    color: white;
+  }
+
+  .image-viewer img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100vh - 90px);
+    margin: auto;
+    object-fit: contain;
+  }
+
+  @media (max-width: 680px) {
+    .article-header {
+      padding-top: 40px;
+    }
+
+    .back-link {
+      margin-bottom: 48px;
+    }
+
+    .article-meta a {
+      width: 100%;
+      margin-left: 0;
+      border-bottom: 0;
+    }
+
+    .article-body {
+      margin-top: 50px;
+      font-size: 17px;
+    }
+
+    .article-end,
+    .article-pagination {
+      align-items: start;
+      grid-template-columns: 1fr;
+      flex-direction: column;
+    }
+
+    .article-pagination > div:first-child {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+</style>

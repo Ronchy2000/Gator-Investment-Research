@@ -1,0 +1,173 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="关于本站" description="获得信息差文章归档站点的内容来源、同步方式和免责声明。">
+  <article class="about page-width">
+    <header>
+      <span class="eyebrow">ABOUT THE ARCHIVE</span>
+      <h1>让信息可回看，<br />让原文可抵达。</h1>
+      <p>一个为“获得信息差”微信公众号建立的静态文章归档。</p>
+    </header>
+
+    <div class="about-grid">
+      <aside>
+        <span>01 / 内容</span>
+        <span>02 / 技术</span>
+        <span>03 / 声明</span>
+      </aside>
+      <div class="about-content">
+        <section>
+          <span>01</span>
+          <div>
+            <h2>内容来源</h2>
+            <p>
+              本站同步整理“获得信息差”微信公众号发布的文章，保留发布日期、正文图片和微信公众号原文链接。站内内容用于改善日期浏览和全文检索体验，不对原文进行 AI 改写。
+            </p>
+          </div>
+        </section>
+        <section>
+          <span>02</span>
+          <div>
+            <h2>静态优先</h2>
+            <p>
+              网站使用 Astro 在构建阶段生成独立 HTML，由 Cloudflare Pages 托管。文章和图片均保存在仓库中，页面不依赖浏览器运行时加载 Markdown，因此直链更稳定，也更适合长期归档。
+            </p>
+          </div>
+        </section>
+        <section>
+          <span>03</span>
+          <div>
+            <h2>免责声明</h2>
+            <p>
+              本站内容仅作信息整理与交流，不构成任何投资建议。文章版权归原作者所有；投资有风险，请基于自身情况独立判断并承担相应责任。
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="about-links">
+      <a href="/archive/">浏览文章归档 <span>→</span></a>
+      <a href="https://cn-marketdata.com/" target="_blank" rel="noopener noreferrer">
+        友情链接：CN Market Data <span>↗</span>
+      </a>
+      <a href="https://github.com/Ronchy2000/Gator-Investment-Research" target="_blank" rel="noopener noreferrer">
+        查看 GitHub 仓库 <span>↗</span>
+      </a>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .page-width {
+    width: min(1120px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .about > header {
+    padding-block: 100px 85px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .about h1 {
+    margin: 16px 0 26px;
+    font-family: var(--serif);
+    font-size: clamp(54px, 9vw, 112px);
+    font-weight: 500;
+    letter-spacing: -0.07em;
+    line-height: 1;
+  }
+
+  .about > header p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 20px;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    gap: 70px;
+    padding-block: 80px;
+  }
+
+  .about-grid aside {
+    display: grid;
+    align-content: start;
+    gap: 9px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .about-content {
+    display: grid;
+  }
+
+  .about-content section {
+    display: grid;
+    grid-template-columns: 50px 1fr;
+    gap: 20px;
+    padding: 0 0 55px;
+    border-top: 1px solid var(--line);
+  }
+
+  .about-content section > span {
+    padding-top: 18px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .about-content h2 {
+    margin: 13px 0 14px;
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 500;
+  }
+
+  .about-content p {
+    max-width: 700px;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.9;
+  }
+
+  .about-links {
+    display: grid;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .about-links a {
+    display: flex;
+    justify-content: space-between;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+    font-family: var(--serif);
+    font-size: 19px;
+  }
+
+  .about-links a:hover {
+    color: var(--accent);
+  }
+
+  @media (max-width: 720px) {
+    .about > header {
+      padding-block: 70px 55px;
+    }
+
+    .about-grid {
+      grid-template-columns: 1fr;
+      gap: 35px;
+    }
+
+    .about-grid aside {
+      grid-auto-flow: column;
+      justify-content: start;
+      gap: 18px;
+    }
+  }
+</style>

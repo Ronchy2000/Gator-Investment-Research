@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gator.ronchy2000.top/sitemap-index.xml

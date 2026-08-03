@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="获得信息差">
+  <rect width="64" height="64" rx="12" fill="#171916"/>
+  <path d="M15 17h34v5H15zm0 12h34v5H15zm0 12h21v5H15z" fill="#f2f0e9"/>
+  <rect x="41" y="40" width="8" height="8" fill="#42b983"/>
+</svg>

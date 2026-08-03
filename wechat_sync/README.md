@@ -26,6 +26,7 @@ python -m wechat_sync.sync
 - 首次补齐范围内的全部历史文章，后续根据 `wechat_sync/index.json` 只下载新增文章。
 - 将正文保存到 `src/content/articles/`。
 - 将封面和正文图片保存到 `public/article-assets/`，并把正文图片地址替换为本地路径。
+- 正文只要包含文本或图片即视为有效，因此内容完全由图片组成的文章也能正常增量同步。
 - 单篇失败时不写入完成索引，使后续运行可以自动重试。
 
 ## 凭据

@@ -1,0 +1,533 @@
+---
+import { getCollection } from "astro:content";
+import ArticleRow from "../components/ArticleRow.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { articleHref, formatDate, formatMonth, monthKey, readingMinutes, sortArticles } from "../lib/articles";
+
+const articles = sortArticles(await getCollection("articles"));
+const featured = articles[0];
+const recent = articles.slice(1, 11);
+const firstArticle = articles.at(-1);
+const monthCounts = new Map<string, { label: string; count: number }>();
+for (const article of articles) {
+  const key = monthKey(article.data.publishedAt);
+  const current = monthCounts.get(key);
+  monthCounts.set(key, {
+    label: formatMonth(article.data.publishedAt),
+    count: (current?.count || 0) + 1,
+  });
+}
+---
+
+<BaseLayout description="获得信息差公众号文章归档，按日同步市场信息、行业观察与投资研究。">
+  <section class="hero page-width">
+    <div class="hero-copy">
+      <span class="eyebrow">DAILY MARKET INTELLIGENCE</span>
+      <h1>获得<br /><em>信息差</em></h1>
+      <p>
+        把每天值得关注的市场信息，整理成一条可检索、可回看的时间线。少一点噪声，多一点判断依据。
+      </p>
+      <div class="hero-actions">
+        <a class="primary-action" href={featured ? articleHref(featured) : "/archive/"}>
+          阅读最新
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+        </a>
+        <button class="text-action" type="button" data-search-open>
+          搜索全部文章 <span>⌘ K</span>
+        </button>
+      </div>
+    </div>
+
+    {featured && (
+      <a class="featured-card" href={articleHref(featured)}>
+        <div class="featured-topline">
+          <span>NO. {String(articles.length).padStart(3, "0")}</span>
+          <span>LATEST BRIEFING</span>
+        </div>
+        <div class="featured-image">
+          {featured.data.cover ? (
+            <img src={featured.data.cover} alt="" loading="eager" />
+          ) : (
+            <span>差</span>
+          )}
+        </div>
+        <div class="featured-content">
+          <time datetime={featured.data.publishedAt.toISOString()}>{formatDate(featured.data.publishedAt)}</time>
+          <h2>{featured.data.title}</h2>
+          <p>{featured.data.description}</p>
+          <span class="featured-read">约 {readingMinutes(featured.body || "")} 分钟阅读</span>
+        </div>
+      </a>
+    )}
+  </section>
+
+  <section class="metrics page-width" aria-label="网站统计">
+    <div>
+      <span>ARCHIVE</span>
+      <strong>{articles.length}</strong>
+      <small>篇文章</small>
+    </div>
+    <div>
+      <span>STARTED</span>
+      <strong>{firstArticle ? formatDate(firstArticle.data.publishedAt) : "—"}</strong>
+      <small>归档起点</small>
+    </div>
+    <div>
+      <span>UPDATED</span>
+      <strong>{featured ? formatDate(featured.data.publishedAt) : "—"}</strong>
+      <small>最近更新</small>
+    </div>
+    <div>
+      <span>SOURCE</span>
+      <strong>获得信息差</strong>
+      <small>微信公众号</small>
+    </div>
+  </section>
+
+  <section class="latest-section page-width">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">LATEST ENTRIES</span>
+        <h2>最近更新</h2>
+      </div>
+      <p>按发布日期倒序排列，标题、摘要和正文均可全文搜索。</p>
+    </div>
+    <div class="article-list">
+      {recent.map((article, index) => <ArticleRow article={article} number={index + 2} />)}
+    </div>
+    <a class="archive-link" href="/archive/">
+      查看完整归档
+      <span>{articles.length} ARTICLES</span>
+    </a>
+  </section>
+
+  <section class="archive-overview page-width">
+    <div class="archive-statement">
+      <span class="eyebrow">THE ARCHIVE</span>
+      <h2>日期是最诚实的目录。</h2>
+      <p>观点会随市场变化，发布日期不会。每一篇内容保留原始日期和微信公众号原文入口。</p>
+    </div>
+    <div class="month-grid">
+      {[...monthCounts.entries()].map(([key, month], index) => (
+        <a href={`/archive/#month-${key}`}>
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <strong>{month.label}</strong>
+          <small>{month.count} 篇</small>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="source-note page-width">
+    <div>
+      <span>公众号同步归档</span>
+      <h2>线上阅读，原文直达。</h2>
+    </div>
+    <p>
+      本站同步整理“获得信息差”微信公众号内容，便于按日期浏览和全文检索。文章保留原文链接，版权归原作者所有。
+    </p>
+    <a href="/about/">了解本站 →</a>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-width {
+    width: min(1320px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+    gap: clamp(40px, 7vw, 110px);
+    align-items: center;
+    min-height: 680px;
+    padding-block: 80px;
+  }
+
+  .hero-copy h1 {
+    max-width: 750px;
+    margin: 22px 0 28px;
+    font-family: var(--serif);
+    font-size: clamp(72px, 10vw, 150px);
+    font-weight: 500;
+    letter-spacing: -0.08em;
+    line-height: 0.82;
+  }
+
+  .hero-copy h1 em {
+    color: transparent;
+    font-style: normal;
+    -webkit-text-stroke: 1.5px var(--ink);
+  }
+
+  .hero-copy > p {
+    max-width: 560px;
+    margin: 0;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: clamp(17px, 2vw, 22px);
+    line-height: 1.75;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-top: 38px;
+  }
+
+  .primary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 34px;
+    min-height: 52px;
+    padding: 0 20px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 14px;
+  }
+
+  .primary-action:hover {
+    background: var(--accent);
+  }
+
+  .primary-action svg {
+    width: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.5;
+  }
+
+  .text-action {
+    padding: 0 0 5px;
+    border: 0;
+    border-bottom: 1px solid var(--line-strong);
+    background: transparent;
+    font-size: 13px;
+  }
+
+  .text-action span {
+    margin-left: 8px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .featured-card {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    background: var(--paper-raised);
+    box-shadow: var(--shadow);
+    transform: rotate(1deg);
+    transition: transform 220ms ease;
+  }
+
+  .featured-card:hover {
+    transform: rotate(0deg) translateY(-5px);
+  }
+
+  .featured-topline {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 13px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .featured-image {
+    display: grid;
+    aspect-ratio: 16 / 8;
+    place-items: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+    background: var(--accent-soft);
+  }
+
+  .featured-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.72) contrast(1.06);
+  }
+
+  .featured-image span {
+    font-family: var(--serif);
+    font-size: 90px;
+  }
+
+  .featured-content {
+    padding: 26px 28px 28px;
+  }
+
+  .featured-content time,
+  .featured-read {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .featured-content h2 {
+    margin: 12px 0;
+    font-family: var(--serif);
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 550;
+    line-height: 1.25;
+  }
+
+  .featured-content p {
+    display: -webkit-box;
+    margin: 0 0 20px;
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 13px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .metrics > div {
+    display: grid;
+    padding: 25px 24px;
+    border-right: 1px solid var(--line);
+  }
+
+  .metrics > div:last-child {
+    border-right: 0;
+  }
+
+  .metrics span,
+  .metrics small {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.09em;
+  }
+
+  .metrics strong {
+    margin: 7px 0 4px;
+    font-family: var(--serif);
+    font-size: clamp(22px, 2.6vw, 34px);
+    font-weight: 500;
+  }
+
+  .latest-section {
+    padding-block: 110px 80px;
+  }
+
+  .section-heading {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: end;
+    margin-bottom: 45px;
+  }
+
+  .section-heading h2,
+  .archive-statement h2,
+  .source-note h2 {
+    margin: 8px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(42px, 6vw, 76px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+  }
+
+  .section-heading p {
+    max-width: 450px;
+    margin: 0 0 6px auto;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .article-list {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .archive-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(430px, 100%);
+    margin: 35px 0 0 auto;
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--ink);
+    font-size: 14px;
+  }
+
+  .archive-link span {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .archive-overview {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(45px, 8vw, 120px);
+    padding-block: 90px;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .archive-statement h2 {
+    max-width: 520px;
+    font-size: clamp(38px, 5vw, 65px);
+  }
+
+  .archive-statement p {
+    max-width: 470px;
+    color: var(--ink-soft);
+  }
+
+  .month-grid {
+    display: grid;
+    align-content: start;
+  }
+
+  .month-grid a {
+    display: grid;
+    grid-template-columns: 38px 1fr auto;
+    align-items: center;
+    gap: 15px;
+    padding: 23px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .month-grid a:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .month-grid a:hover strong {
+    color: var(--accent);
+  }
+
+  .month-grid span,
+  .month-grid small {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .month-grid strong {
+    font-family: var(--serif);
+    font-size: 25px;
+    font-weight: 500;
+  }
+
+  .source-note {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 35px;
+    align-items: end;
+    padding-block: 55px;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .source-note h2 {
+    font-size: clamp(30px, 4vw, 50px);
+  }
+
+  .source-note > div > span {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .source-note p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .source-note > a {
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--ink);
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  @media (max-width: 920px) {
+    .hero {
+      grid-template-columns: 1fr;
+      min-height: auto;
+      padding-block: 70px;
+    }
+
+    .featured-card {
+      width: min(620px, 100%);
+      transform: none;
+    }
+
+    .metrics {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .metrics > div:nth-child(2) {
+      border-right: 0;
+    }
+
+    .metrics > div:nth-child(-n + 2) {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .archive-overview,
+    .source-note {
+      grid-template-columns: 1fr;
+    }
+
+    .source-note {
+      align-items: start;
+    }
+
+    .source-note > a {
+      width: max-content;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .hero-copy h1 {
+      font-size: clamp(68px, 25vw, 108px);
+    }
+
+    .hero-actions {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .metrics {
+      grid-template-columns: 1fr;
+    }
+
+    .metrics > div {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metrics > div:last-child {
+      border-bottom: 0;
+    }
+
+    .section-heading {
+      grid-template-columns: 1fr;
+    }
+
+    .section-heading p {
+      margin-left: 0;
+    }
+
+    .latest-section {
+      padding-top: 80px;
+    }
+  }
+</style>

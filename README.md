@@ -1,191 +1,100 @@
-# 🐊 鳄鱼派投资研报
+# 获得信息差
 
-<div align="center">
+“获得信息差”微信公众号的静态文章归档站。文章按发布日期同步为 Markdown，正文图片保存在本地，由 Astro 构建为独立 HTML 后部署到 Cloudflare Pages。
 
-![Logo](https://img.icons8.com/color/150/000000/alligator.png)
+开发工作位于 `feature/wechat-mp-sync` 分支；原 `master` 暂时保留旧版 Docsify 研报站历史。
 
-**真实研报每日同步 · 开源整理与展示**
+## 当前能力
 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Ronchy2000/Gator-Investment-Research/daily-update.yml?label=daily-sync)](https://github.com/Ronchy2000/Gator-Investment-Research/actions)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
-[![Repo Visits](https://hits.sh/github.com/Ronchy2000/Gator-Investment-Research.svg?style=flat-square&label=visits&color=5BCDA5)](https://hits.sh/github.com/Ronchy2000/Gator-Investment-Research/)
+- 同步单一微信公众号，不包含小红书、B 站等无关平台。
+- 首次补齐 `2026-06-15` 起的历史文章，后续根据索引增量更新。
+- 同时支持文本文章和内容完全由图片组成的文章。
+- 正文、封面和图片全部本地化，避免微信远程图片防盗链失效。
+- Astro 静态生成首页、日期归档、文章详情、RSS 和 sitemap。
+- 提供标题与正文全文搜索、明暗主题、阅读时间、图片放大和前后文章导航。
 
-[📖 在线阅读](https://gator.ronchy2000.top) | [📋 更新日志](CHANGELOG.md) | [🏗️ 技术架构](ARCHITECTURE.md)
+## 本地开发
 
-</div>
+环境要求：
 
----
+- Node.js `>=22.12.0`
+- Python `>=3.9`
 
-## 📖 项目简介
+启动前端：
 
-**鳄鱼派投资研报**是一个开源的历史研报归档项目，曾使用脚本同步券商与研究机构公开发布的研报，并转换成 Markdown，按分类与日期整理，方便快速查阅。站内研报均为公开数据的原文呈现，不使用 AI 生成或润色。
-
-> 备注：本站现已停止内容更新，后续内容将统一发布于“获得信息差”微信公众号。本站保留历史研报归档，供检索与查阅。
-
-### 💡 核心特性
-
-- ✅ **真实来源** - 收录公开研报，保留标题与发布日期
-- 🗃️ **历史归档** - 保留已收录研报，方便持续查阅
-- 🗂️ **清晰分类** - 宏观/行业双分类，导航与全文搜索
-- 📱 **多端适配** - 桌面、平板、手机均可流畅浏览
-- 📈 **数据统计** - 自动生成数量与更新时间
-
-### 📌 数据说明
-
-- 只收录券商/研究机构公开发布的研报
-- 网页内容转换为 Markdown，尽量保持原有结构
-- 文件名记录日期与标题，便于按时间回溯
-- 不使用 AI 生成或改写任何研报内容
-- 页面“最后更新”按两类时间取较晚值：文章发布日期（文件名前缀）与实际入库日期（文件修改时间）
-
-### 📊 内容统计
-
-> 数据来自每日同步的公开研报，分类随新增自动更新
-
-```
-📚 研报总数: 持续增长中（每日同步）
-宏观分析: 政策、经济、市场趋势
-🏭 行业分析: 多个重点行业与细分赛道
-🔄 更新频率: 每日 08:00 (UTC+8)
-```
-
----
-
-## ✨ 功能特性
-
-### 📄 内容展示
-
-- **研报分类**: 宏观分析、行业分析双重分类体系，按日期归档
-- **正文呈现**: Markdown 转换，尽量保留原文结构和重点
-- **全文搜索**: 支持关键词搜索，快速定位内容
-- **元数据提取**: 提取日期、分类等基础信息，便于筛选
-
-### 🔄 自动化流程
-
-系统采用自动化脚本每日运行：
-
-**阶段 1: 增量探测**
-- 记录上次抓取位置，继续查找新文章
-- 处理 SPA 动态页面（等待 3.5s，阈值 150 字符）
-- 性能表现：首次 ~10 分钟，日常增量 ~1-2 分钟
-
-**阶段 2: 内容下载**
-- 校验 JSON 与 Markdown 文件，保持数据一致
-- 增量下载未收录的文章（不会重复下载已存在文章）
-- HTML → Markdown 转换（支持表格、列表、图片）
-- 自动更新分类和导航
-
-> 说明：`fetch_reports.py` 会按 `待下载 = [1, last_probed_id] - downloaded_ids - missing_ids` 计算下载队列。  
-> 即使工作流参数是 `--max-requests 9999`，也只是“本次尽量处理完待下载队列”，不是每次全量重爬。
-
-详细架构说明请查看 [ARCHITECTURE.md](ARCHITECTURE.md)
-
----
-
-## 🏗️ 技术架构
-
-### 项目结构
-
-```
-Gator-Investment-Research/
-├── .github/workflows/
-│   └── daily-update.yml       # 自动化工作流
-├── crawler/
-│   └── fetch_reports.py       # 内容下载（阶段2）
-├── scripts/
-│   ├── pre_crawl_check.py     # 边界探测（阶段1）
-│   ├── update_category_meta.py # 更新分类信息
-│   ├── generate_sidebar.py    # 生成导航
-│   └── diagnose_crawler.py    # 健康诊断
-├── docs/                      # 文档目录（网站内容）
-│   ├── index.json             # 索引数据
-│   ├── all-reports/
-│   ├── macro-analysis/
-│   └── industry-analysis/
-├── ARCHITECTURE.md            # 架构文档
-├── CHANGELOG.md               # 更新日志
-└── requirements.txt           # 依赖清单
-```
-
-### 技术栈
-
-| 组件 | 技术 | 用途 |
-|-----|------|------|
-| **爬虫引擎** | Selenium | 浏览器自动化（SPA 支持） |
-| **内容解析** | BeautifulSoup | HTML 解析转换 |
-| **文档框架** | Docsify | 静态文档生成 |
-| **自动化** | GitHub Actions | CI/CD 定时任务 |
-| **托管服务** | EdgeOne Pages | 静态网站托管 |
-
----
-
-## 📚 开发文档
-
-### 核心脚本说明
-
-**边界探测** (`scripts/pre_crawl_check.py`)
 ```bash
-# 增量探测新文章边界
-python scripts/pre_crawl_check.py
+npm install
+npm run dev
 ```
 
-**内容下载** (`crawler/fetch_reports.py`)
+生产构建输出目录为 `dist/`：
+
 ```bash
-# 下载未收录的文章（增量模式）
-python crawler/fetch_reports.py --max-requests 500 --sleep 0.8
+npm run build
 ```
 
-**完整参数说明**:
-- `--max-requests 500`: 单次最多下载 500 篇
-- `--sleep 0.8`: 请求间隔 0.8 秒（避免频率限制）
+## 文章同步
 
-**增量逻辑**:
-- 每次先探测边界 (`last_probed_id`)
-- 只下载边界内“未下载且非已知缺失”的 ID
-- 已下载文章不会重复抓取和重复写入
+首次扫码和初始化：
 
-更多开发细节请参考 [ARCHITECTURE.md](ARCHITECTURE.md)
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-wechat.txt
+python -m wechat_sync.auth
+python -m wechat_sync.initialize
+```
 
----
+执行同步：
 
-## 🤝 参与贡献
+```bash
+python -m wechat_sync.sync --max-pages 20 --delay 2
+```
 
-欢迎提出建议和改进意见！
+详细说明见 [wechat_sync/README.md](wechat_sync/README.md)。本地凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库。
 
-- 🐛 [报告问题](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
-- 💡 [功能建议](https://github.com/Ronchy2000/Gator-Investment-Research/discussions)
+## 目录结构
 
----
+```text
+src/
+  components/             Astro 页面组件
+  content/articles/       微信文章 Markdown
+  content.config.ts       内容集合 schema
+  layouts/                全局页面布局
+  pages/                  首页、归档、文章页和 RSS
+  styles/                 全局设计系统
+public/
+  article-assets/         本地化文章图片
+wechat_sync/
+  auth.py                 本地扫码登录
+  client.py               微信读书中转接口客户端
+  downloader.py           正文解析与图片本地化
+  sync.py                 首次回补与增量同步入口
+  index.json              已完成文章索引
+```
 
-## 📄 开源协议
+## Cloudflare Pages
 
-MIT License © [Ronchy2000](https://github.com/Ronchy2000)
+建议构建设置：
 
----
+| 配置 | 值 |
+| --- | --- |
+| Production branch | 完成迁移后使用新的默认分支 |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Node.js | `22` |
 
-## ⚠️ 免责声明
+`wrangler.toml`、静态缓存头和基础安全响应头已经写入仓库。站点域名配置在 `astro.config.mjs`。
 
-1. 本项目仅供**学习和研究**使用
-2. 研报内容版权归**原作者**所有，如有疑问请联系处理
-3. 本项目不使用 AI 生成或改写研报，只做公开信息整理
-4. 不构成任何**投资建议**；投资有风险，决策需谨慎
+GitHub Actions 同步时需要配置：
 
----
+- `WEREAD_VID`
+- `WEREAD_TOKEN`
 
-## 📜 相关文档
+## 免责声明
 
-- [📋 CHANGELOG.md](CHANGELOG.md) - 版本更新日志
-- [🏗️ ARCHITECTURE.md](ARCHITECTURE.md) - 技术架构详解
+本站仅用于公开信息整理和阅读，不构成任何投资建议。文章版权归原作者所有；投资有风险，请独立判断并承担相应责任。
 
----
+## 许可证
 
-<div align="center">
-
-**觉得不错？给个 Star ⭐️ 吧！**
-
-Made with ❤️ by [Ronchy2000](https://github.com/Ronchy2000)
-
-[🏠 在线阅读](https://gator.ronchy2000.top) | [📮 反馈问题](https://github.com/Ronchy2000/Gator-Investment-Research/issues)
-
-</div>
+项目代码采用 [MIT License](LICENSE)。第三方代码归属见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

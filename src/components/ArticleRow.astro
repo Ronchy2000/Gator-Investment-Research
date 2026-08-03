@@ -1,0 +1,130 @@
+---
+import type { ArticleEntry } from "../lib/articles";
+import { articleHref, formatDate, isImageOnly, readingMinutes } from "../lib/articles";
+
+interface Props {
+  article: ArticleEntry;
+  number?: number;
+}
+
+const { article, number } = Astro.props;
+const imageOnly = isImageOnly(article.body || "");
+---
+
+<article class="article-row">
+  {number && <span class="article-number">{String(number).padStart(2, "0")}</span>}
+  <time datetime={article.data.publishedAt.toISOString()}>{formatDate(article.data.publishedAt)}</time>
+  <a href={articleHref(article)}>
+    <h3>{article.data.title}</h3>
+    <p>{article.data.description || "打开文章查看完整内容。"}</p>
+  </a>
+  <div class="article-tags">
+    {imageOnly && <span>图集</span>}
+    <span>{readingMinutes(article.body || "")} 分钟</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h13M13 6l6 6-6 6"></path>
+    </svg>
+  </div>
+</article>
+
+<style>
+  .article-row {
+    display: grid;
+    grid-template-columns: 44px 100px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 18px;
+    padding: 24px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .article-number,
+  time,
+  .article-tags {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .article-number {
+    color: var(--accent);
+  }
+
+  .article-row h3 {
+    margin: -4px 0 7px;
+    font-family: var(--serif);
+    font-size: clamp(19px, 2.4vw, 25px);
+    font-weight: 550;
+    line-height: 1.35;
+    transition: color 140ms ease;
+  }
+
+  .article-row a:hover h3 {
+    color: var(--accent);
+  }
+
+  .article-row p {
+    display: -webkit-box;
+    max-width: 760px;
+    margin: 0;
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 13px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .article-tags {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+    white-space: nowrap;
+  }
+
+  .article-tags span:first-child:not(:last-of-type) {
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    color: var(--accent);
+  }
+
+  .article-tags svg {
+    width: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+  }
+
+  @media (max-width: 760px) {
+    .article-row {
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 9px 14px;
+      padding: 21px 0;
+    }
+
+    .article-number {
+      display: none;
+    }
+
+    .article-row a {
+      grid-column: 2;
+      grid-row: 1 / 3;
+    }
+
+    .article-tags {
+      grid-column: 1;
+      justify-content: flex-start;
+    }
+
+    .article-tags svg {
+      display: none;
+    }
+
+    .article-row h3 {
+      margin-top: 0;
+      font-size: 19px;
+    }
+  }
+</style>

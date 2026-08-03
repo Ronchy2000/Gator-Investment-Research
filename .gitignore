@@ -6,6 +6,9 @@
 *.pyd
 .Python
 .venv/
+node_modules/
+dist/
+.astro/
 
 # Data and cache
 data/

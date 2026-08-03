@@ -1,0 +1,133 @@
+---
+import SearchDialog from "../components/SearchDialog.astro";
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  article?: boolean;
+}
+
+const {
+  title = "获得信息差",
+  description = "按日整理值得关注的市场信息与投资观察。",
+  image = "/favicon.svg",
+  article = false,
+} = Astro.props;
+const pageTitle = title === "获得信息差" ? title : `${title} | 获得信息差`;
+const siteUrl = Astro.site ?? Astro.url.origin;
+const canonical = new URL(Astro.url.pathname, siteUrl);
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title="获得信息差" href="/rss.xml" />
+    <meta name="theme-color" content="#f2f0e9" />
+    <meta property="og:type" content={article ? "article" : "website"} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, siteUrl)} />
+    <script is:inline>
+      (() => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem("site-theme");
+        } catch {}
+        const preferred = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = saved || preferred;
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="page-grid" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="获得信息差首页">
+        <span class="brand-mark">差</span>
+        <span class="brand-copy">
+          <strong>获得信息差</strong>
+          <small>MARKET INTELLIGENCE</small>
+        </span>
+      </a>
+
+      <nav class="desktop-nav" aria-label="主导航">
+        <a href="/" aria-current={currentPath === "/" ? "page" : undefined}>首页</a>
+        <a href="/archive/" aria-current={currentPath.startsWith("/archive") ? "page" : undefined}>归档</a>
+        <a href="/about/" aria-current={currentPath.startsWith("/about") ? "page" : undefined}>关于</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="header-button search-button" type="button" data-search-open aria-label="搜索文章">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5"></circle>
+            <path d="m15.5 15.5 4 4"></path>
+          </svg>
+          <span>搜索</span>
+          <kbd>⌘ K</kbd>
+        </button>
+        <button class="header-button theme-button" type="button" data-theme-toggle aria-label="切换明暗主题">
+          <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.5"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 15.5A8.2 8.2 0 0 1 8.5 4 8.2 8.2 0 1 0 20 15.5Z"></path>
+          </svg>
+        </button>
+        <details class="mobile-menu">
+          <summary aria-label="打开导航"><span></span><span></span></summary>
+          <nav aria-label="移动端导航">
+            <a href="/">首页</a>
+            <a href="/archive/">归档</a>
+            <a href="/about/">关于</a>
+            <button type="button" data-search-open>搜索文章</button>
+          </nav>
+        </details>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-mark">差</span>
+        <div>
+          <strong>获得信息差</strong>
+          <p>把信息按日期放好，让判断回到你手里。</p>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="/archive/">文章归档</a>
+        <a href="/rss.xml">RSS</a>
+        <a href="https://cn-marketdata.com/" target="_blank" rel="noopener noreferrer">CN Market Data</a>
+        <a href="https://github.com/Ronchy2000/Gator-Investment-Research" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+      <p class="footer-note">内容仅供信息交流，不构成任何投资建议。</p>
+    </footer>
+
+    <SearchDialog />
+    <script>
+      const root = document.documentElement;
+      const themeButton = document.querySelector<HTMLElement>("[data-theme-toggle]");
+      themeButton?.addEventListener("click", () => {
+        const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+        root.dataset.theme = nextTheme;
+        try {
+          localStorage.setItem("site-theme", nextTheme);
+        } catch {}
+      });
+    </script>
+  </body>
+</html>
