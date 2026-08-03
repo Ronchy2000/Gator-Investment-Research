@@ -164,8 +164,11 @@ Secret 保存后，不要等待第二天的定时任务，立即进行一次正�
 工作流会依次执行凭据检查、文章增量同步、内容完整性检查和 Astro 构建。只有发现内容变化且全部检查成功时，才会创建提交：
 
 ```text
-content: sync WeChat articles
+content: sync 1 WeChat article
+content: sync 3 WeChat articles
 ```
+
+提交标题中的数字是该次成功写入归档的文章数量。单篇失败会进入重试队列，不计入成功数量。
 
 验收标准：
 

@@ -107,11 +107,21 @@ jobs:
 
       - name: Commit synchronized content
         if: steps.changes.outputs.changed == 'true'
+        env:
+          ARTICLES_SYNCED: ${{ steps.synchronize.outputs.articles_synced }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/content/articles public/article-assets wechat_sync/index.json
-          git commit -m "content: sync WeChat articles"
+          if [[ ! "$ARTICLES_SYNCED" =~ ^[0-9]+$ ]]; then
+            ARTICLES_SYNCED="$(git diff --cached --name-only --diff-filter=A -- src/content/articles | wc -l | tr -d ' ')"
+          fi
+          if [[ "$ARTICLES_SYNCED" == "1" ]]; then
+            article_label="article"
+          else
+            article_label="articles"
+          fi
+          git commit -m "content: sync ${ARTICLES_SYNCED} WeChat ${article_label}"
           git pull --rebase origin master
           git push origin HEAD:master
 

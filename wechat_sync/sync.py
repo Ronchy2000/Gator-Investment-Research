@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import date, datetime
@@ -21,6 +22,15 @@ ACCOUNT_PATH = Path(__file__).resolve().parent / "account.json"
 INDEX_PATH = Path(__file__).resolve().parent / "index.json"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 MAX_LIST_PAGES = 40
+
+
+def _write_actions_outputs(succeeded: int, failed: int) -> None:
+    output_path = os.environ.get("GITHUB_OUTPUT", "").strip()
+    if not output_path:
+        return
+    with Path(output_path).open("a", encoding="utf-8") as output:
+        output.write(f"articles_synced={succeeded}\n")
+        output.write(f"articles_failed={failed}\n")
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -335,6 +345,7 @@ def main() -> int:
     except (OSError, ValueError, WeReadRelayError) as error:
         print(f"同步失败: {error}", file=sys.stderr)
         return 1
+    _write_actions_outputs(succeeded, failed)
     print(f"同步完成：新增 {succeeded} 篇，失败 {failed} 篇")
     return 1 if failed else 0
 
