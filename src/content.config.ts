@@ -27,6 +27,7 @@ const reports = defineCollection({
     source: z.string(),
     sourceUrl: z.string().url(),
     description: z.string().default(""),
+    summary: z.array(z.string()).min(1),
     category: z.enum(["宏观分析", "行业分析", "其他"]),
     reportId: z.number().int().positive(),
     legacyStem: z.string(),

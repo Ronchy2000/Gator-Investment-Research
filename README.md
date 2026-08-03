@@ -2,7 +2,7 @@
 
 “获得信息差”微信公众号的静态文章归档站。文章按发布日期同步为 Markdown，正文图片保存在本地，由 Astro 构建为独立 HTML 后部署到 Cloudflare Pages。
 
-开发工作位于 `feature/wechat-mp-sync` 分支；原 `master` 暂时保留旧版 Docsify 研报站历史。
+`master` 是当前 Astro 生产站；原 Docsify 站完整保存在 `legacy/docsify-archive`，仅作为历史快照保留，不再修改。
 
 ## 当前能力
 
@@ -11,9 +11,11 @@
 - 同时支持文本文章和内容完全由图片组成的文章。
 - 正文、封面和图片全部本地化，避免微信远程图片防盗链失效。
 - 去重迁移旧站 913 篇历史研报，保留宏观、行业、其他分类及旧链接跳转。
+- 为历史研报生成 2-6 条完整句摘要，并清理模板引用、OCR 编号、失效列表和折叠表格。
 - 独立保留“宽基指数：新三年计划”投资随笔及其本地配图。
 - Astro 静态生成首页、日期归档、文章详情、RSS 和 sitemap。
 - 提供公众号/历史研报全文搜索、分类与年份筛选、明暗主题、阅读时间和前后文章导航。
+- 使用本地品牌 Logo，并在页脚通过不蒜子展示累计访客数和累计浏览量。
 
 ## 本地开发
 
@@ -69,6 +71,7 @@ src/
   styles/                 全局设计系统
 public/
   article-assets/         本地化文章图片
+  brand/                  网站 Logo 等品牌资源
   report-assets/          历史研报图片或失效说明占位图
 wechat_sync/
   auth.py                 本地扫码登录
@@ -86,12 +89,14 @@ scripts/
 
 | 配置 | 值 |
 | --- | --- |
-| Production branch | 完成迁移后使用新的默认分支 |
+| Production branch | `master` |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | Node.js | `22` |
 
 `wrangler.toml`、静态缓存头和基础安全响应头已经写入仓库。站点域名配置在 `astro.config.mjs`。
+
+访问统计使用不蒜子 `3.6.9` 官方 CDN，页脚元素分别读取全站 PV 与 UV。统计服务不可用时只显示占位符，不影响静态页面、搜索或文章阅读。
 
 GitHub Actions 同步时需要配置：
 
@@ -101,6 +106,12 @@ GitHub Actions 同步时需要配置：
 ## 免责声明
 
 本站仅用于公开信息整理和阅读，不构成任何投资建议。文章版权归原作者所有；投资有风险，请独立判断并承担相应责任。
+
+## 分支说明
+
+- `master`：Astro 生产站、微信公众号增量同步和 Cloudflare Pages 部署来源。
+- `legacy/docsify-archive`：切换前的旧 Docsify 站，只读保留。
+- `feature/wechat-mp-sync`：新站迁移过程的功能分支，与首次上线提交保持一致，便于追溯。
 
 ## 许可证
 

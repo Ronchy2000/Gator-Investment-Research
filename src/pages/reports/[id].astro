@@ -37,7 +37,15 @@ const minutes = readingMinutes(report.body || "");
         <span>{report.data.category}</span>
       </div>
       <h1>{report.data.title}</h1>
-      <p>{report.data.description}</p>
+      <section class="report-summary" aria-labelledby="report-summary-title">
+        <div class="summary-label">
+          <span id="report-summary-title">报告摘要</span>
+          <small>SUMMARY</small>
+        </div>
+        <ol>
+          {report.data.summary.map((point) => <li>{point}</li>)}
+        </ol>
+      </section>
       <div class="report-meta">
         <time datetime={report.data.publishedAt.toISOString()}>{formatDate(report.data.publishedAt)}</time>
         <span>约 {minutes} 分钟</span>
@@ -127,12 +135,57 @@ const minutes = readingMinutes(report.body || "");
     line-height: 1.12;
   }
 
-  .report-header > p {
-    max-width: 730px;
+  .report-summary {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 28px;
+    margin-top: 36px;
+    padding-block: 24px;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .summary-label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  .summary-label small {
+    color: var(--ink-faint);
+    font-size: 9px;
+  }
+
+  .report-summary ol {
+    display: grid;
+    gap: 13px;
+    margin: 0;
+    padding: 0;
+    counter-reset: summary;
+    list-style: none;
+  }
+
+  .report-summary li {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 10px;
+    margin: 0;
     color: var(--ink-soft);
     font-family: var(--serif);
-    font-size: 18px;
-    line-height: 1.8;
+    font-size: 16px;
+    line-height: 1.75;
+    counter-increment: summary;
+  }
+
+  .report-summary li::before {
+    color: var(--signal);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 2.8;
+    content: "0" counter(summary);
   }
 
   .report-meta {
@@ -189,6 +242,12 @@ const minutes = readingMinutes(report.body || "");
 
   .report-body :global(h3) {
     font-size: 23px;
+  }
+
+  .report-body :global(h4) {
+    color: var(--ink-soft);
+    font-size: 18px;
+    font-weight: 650;
   }
 
   .report-body :global(p),
@@ -300,6 +359,16 @@ const minutes = readingMinutes(report.body || "");
 
     .back-link {
       margin-bottom: 48px;
+    }
+
+    .report-summary {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .summary-label {
+      flex-direction: row;
+      align-items: baseline;
     }
 
     .report-meta a {

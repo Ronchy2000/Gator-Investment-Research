@@ -12,7 +12,7 @@ interface Props {
 const {
   title = "获得信息差",
   description = "按日整理公众号市场信息，并保留 913 篇历史公开研报。",
-  image = "/favicon.svg",
+  image = "/brand/huode-xinxicha-logo.jpg",
   article = false,
 } = Astro.props;
 const pageTitle = title === "获得信息差" ? title : `${title} | 获得信息差`;
@@ -30,7 +30,8 @@ const currentPath = Astro.url.pathname;
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/jpeg" href="/brand/huode-xinxicha-logo.jpg" />
+    <link rel="apple-touch-icon" href="/brand/huode-xinxicha-logo.jpg" />
     <link rel="alternate" type="application/rss+xml" title="获得信息差" href="/rss.xml" />
     <meta name="theme-color" content="#f2f0e9" />
     <meta property="og:type" content={article ? "article" : "website"} />
@@ -82,7 +83,7 @@ const currentPath = Astro.url.pathname;
     <div class="page-grid" aria-hidden="true"></div>
     <header class="site-header">
       <a class="brand" href="/" aria-label="获得信息差首页">
-        <span class="brand-mark">差</span>
+        <img class="brand-logo" src="/brand/huode-xinxicha-logo.jpg" alt="" width="42" height="42" />
         <span class="brand-copy">
           <strong>获得信息差</strong>
           <small>MARKET INTELLIGENCE</small>
@@ -133,18 +134,28 @@ const currentPath = Astro.url.pathname;
 
     <footer class="site-footer">
       <div class="footer-brand">
-        <span class="brand-mark">差</span>
+        <img class="brand-logo" src="/brand/huode-xinxicha-logo.jpg" alt="" width="46" height="46" loading="lazy" />
         <div>
           <strong>获得信息差</strong>
           <p>把信息按日期放好，让判断回到你手里。</p>
         </div>
       </div>
-      <div class="footer-links">
-        <a href="/archive/">公众号文章</a>
-        <a href="/reports/">历史研报</a>
-        <a href="/rss.xml">RSS</a>
-        <a href="https://cn-marketdata.com/" target="_blank" rel="noopener noreferrer">CN Market Data</a>
-        <a href="https://github.com/Ronchy2000/Gator-Investment-Research" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <div class="footer-side">
+        <div class="footer-links">
+          <a href="/archive/">公众号文章</a>
+          <a href="/reports/">历史研报</a>
+          <a href="/rss.xml">RSS</a>
+          <a href="https://cn-marketdata.com/" target="_blank" rel="noopener noreferrer">CN Market Data</a>
+          <a href="https://github.com/Ronchy2000/Gator-Investment-Research" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+        <div class="footer-traffic" aria-label="网站访问统计">
+          <span class="traffic-label">SITE SIGNAL / BUSUANZI</span>
+          <div aria-live="polite">
+            <span><strong id="busuanzi_site_uv">—</strong><small>累计访客</small></span>
+            <i aria-hidden="true"></i>
+            <span><strong id="busuanzi_site_pv">—</strong><small>累计浏览</small></span>
+          </div>
+        </div>
       </div>
       <p class="footer-note">内容仅供信息交流，不构成任何投资建议。</p>
     </footer>
@@ -161,5 +172,6 @@ const currentPath = Astro.url.pathname;
         } catch {}
       });
     </script>
+    <script is:inline src="https://cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
   </body>
 </html>

@@ -119,17 +119,14 @@ img {
   gap: 12px;
 }
 
-.brand-mark {
-  display: inline-grid;
+.brand-logo {
+  display: block;
   width: 42px;
   height: 42px;
-  place-items: center;
   flex: 0 0 auto;
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--serif);
-  font-size: 22px;
-  font-weight: 700;
+  border: 1px solid var(--ink);
+  object-fit: cover;
+  box-shadow: 3px 3px 0 var(--accent);
 }
 
 .brand-copy {
@@ -270,10 +267,11 @@ main {
   gap: 15px;
 }
 
-.footer-brand .brand-mark {
-  border: 1px solid color-mix(in srgb, var(--paper) 40%, transparent);
-  background: transparent;
-  color: inherit;
+.footer-brand .brand-logo {
+  width: 46px;
+  height: 46px;
+  border-color: color-mix(in srgb, var(--paper) 45%, transparent);
+  box-shadow: 3px 3px 0 var(--signal);
 }
 
 .footer-brand strong {
@@ -294,6 +292,55 @@ main {
   justify-content: flex-end;
   gap: 10px 24px;
   font-size: 13px;
+}
+
+.footer-side {
+  display: grid;
+  justify-items: end;
+  gap: 28px;
+}
+
+.footer-traffic {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.traffic-label {
+  color: color-mix(in srgb, var(--paper) 48%, transparent);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.footer-traffic > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.footer-traffic > div > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.footer-traffic strong {
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.footer-traffic small {
+  color: color-mix(in srgb, var(--paper) 62%, transparent);
+  font-size: 10px;
+}
+
+.footer-traffic i {
+  width: 18px;
+  height: 1px;
+  background: color-mix(in srgb, var(--paper) 26%, transparent);
 }
 
 .footer-links a:hover {
@@ -550,6 +597,11 @@ main {
     justify-content: flex-start;
   }
 
+  .footer-side,
+  .footer-traffic {
+    justify-items: start;
+  }
+
   .footer-note {
     grid-column: 1;
     text-align: left;
@@ -565,7 +617,7 @@ main {
     font-size: 16px;
   }
 
-  .brand-mark {
+  .brand-logo {
     width: 38px;
     height: 38px;
   }

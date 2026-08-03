@@ -56,7 +56,7 @@ for (const article of articles) {
           {featured.data.cover ? (
             <img src={featured.data.cover} alt="" loading="eager" />
           ) : (
-            <span>差</span>
+            <img class="fallback-logo" src="/brand/huode-xinxicha-logo.jpg" alt="" loading="eager" />
           )}
         </div>
         <div class="featured-content">
@@ -290,9 +290,12 @@ for (const article of articles) {
     filter: saturate(0.72) contrast(1.06);
   }
 
-  .featured-image span {
-    font-family: var(--serif);
-    font-size: 90px;
+  .featured-image .fallback-logo {
+    width: 120px;
+    height: 120px;
+    border: 1px solid var(--ink);
+    object-fit: cover;
+    filter: none;
   }
 
   .featured-content {

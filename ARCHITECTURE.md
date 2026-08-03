@@ -1,6 +1,6 @@
 # 系统架构
 
-当前开发分支将项目从旧研报爬虫和 Docsify 前端迁移为“单公众号同步 + Astro 静态站点”。
+当前 `master` 已将项目从旧研报爬虫和 Docsify 前端迁移为“单公众号同步 + Astro 静态站点”。旧站原样保存在 `legacy/docsify-archive`。
 
 ## 数据流
 
@@ -81,9 +81,13 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 - `src/layouts/BaseLayout.astro`：全局导航、明暗主题、SEO 和页脚。
 - `src/pages/rss.xml.js`：RSS 订阅源。
 
-`scripts/migrate_legacy_reports_to_astro.py` 从 `docs/all-reports` 读取 913 篇唯一正文，转换 frontmatter 并保留原分类。唯一包含远程图片的旧文因源站失效而使用明确的本地占位图，原图片链接仍保留供追溯。
+`scripts/migrate_legacy_reports_to_astro.py` 从 `docs/all-reports` 读取 913 篇唯一正文，转换 frontmatter 并保留原分类。迁移器优先从原文“摘要、核心观点、核心结论、投资要点”等章节提取 2-6 条完整句摘要；缺少这些章节时，先保留正文总论，再从全文选取带有结论信号的主题句。该过程只摘录原文，不生成原文不存在的判断。
+
+旧站为每篇文章自动添加的首段引用不具备统一的强调语义，因此迁移时移除。正文还会统一清理残缺导语、OCR 编号和孤立编号，恢复列表、章节标签及少量折叠表格；真正由作者写入正文的 Markdown 引用仍可作为重点提示。唯一包含远程图片的旧文因源站失效而使用明确的本地占位图，原图片链接仍保留供追溯。
 
 站点仅使用少量原生 JavaScript 处理搜索、主题、阅读进度和图片放大，不引入 React/Vue 等运行时框架。
+
+品牌资源统一使用 `public/brand/huode-xinxicha-logo.jpg`，用于页头、页脚、favicon、默认社交分享图和无封面占位。页脚通过不蒜子 `3.6.9` 官方 CDN 展示全站 PV/UV；统计脚本属于非关键增强，加载失败不会阻塞内容页面。
 
 ## 自动化
 
@@ -96,8 +100,8 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 Cloudflare Pages 监听内容提交并执行 `npm run build`，静态输出目录为 `dist`。
 
-## 分支迁移
+## 分支布局
 
-- 当前生产默认分支继续保留旧 Docsify 站点。
-- `feature/wechat-mp-sync` 用于同步器和 Astro 新站开发。
-- Cloudflare Pages Preview 确认后，将旧默认分支建立历史标签或历史分支，再把新站分支提升为默认分支。
+- `master`：Astro 生产站，也是定时微信公众号同步任务的提交目标。
+- `legacy/docsify-archive`：切换前的旧 `master` 快照，内容冻结，不再改动。
+- `feature/wechat-mp-sync`：保留迁移开发记录；首次上线后不再作为生产部署来源。
