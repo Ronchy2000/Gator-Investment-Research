@@ -1,0 +1,10 @@
+{
+  "name": "获得信息差",
+  "mp_id": "MP_WXS_3690344459",
+  "cover_url": "https://wx.qlogo.cn/mmhead/5mxuSU5RGhYx1RQtvFGSytgH1vmOnW9eYcibQHLOuhSLpMiaHLsBjjnphcGb7wSS0lcnqoqIvibXSc/0",
+  "intro": "消息汇集地儿，帮你检索收集最前沿的内容",
+  "seed_article_url": "https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g",
+  "earliest_date": "2026-06-15",
+  "sync_mode": "full_then_incremental",
+  "initialized_at": "2026-08-03T03:03:17+00:00"
+}
