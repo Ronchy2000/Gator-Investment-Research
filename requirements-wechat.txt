@@ -1,0 +1,2 @@
+qrcode[pil]>=7.4
+requests>=2.31

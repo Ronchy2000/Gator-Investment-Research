@@ -7,7 +7,19 @@
 - 将当前 `master` 保留为历史站点分支，不再继续开发旧研报爬虫。
 - 将新分支合并或提升为新的默认分支。
 - 只同步一个指定微信公众号，不引入小红书、B 站、抖音、视频号等无关模块。
-- 使用 GitHub Actions 定时获取新文章，生成适合现有 Docsify 站点的 Markdown 和本地媒体资源。
+- 使用 GitHub Actions 定时获取新文章，生成 Markdown、本地媒体资源和 Astro 静态页面。
+
+### 1.1 已确认范围
+
+- 目标公众号：`获得信息差`
+- 首篇日期：`2026-06-15`
+- 已知首批文章：
+  - `大模型之战：为什么价格差这么多？`
+  - `6.15鸡蛋商品调研：梅雨影响鸡蛋价格？`
+- 用于解析公众号 `mpId` 的种子文章：
+  - `https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g`
+- 首次运行：补齐 `2026-06-15` 起的全部历史文章。
+- 后续运行：只获取并提交新文章。
 
 ## 2. 上游评估
 
@@ -109,8 +121,9 @@ GitHub Actions (每日一次 / 手动触发)
     +-- 遇到已保存 URL 立即停止翻页
     +-- 下载新增文章正文和图片
     +-- 转换为 Markdown
-    +-- 更新 docs/wechat/index.json
-    +-- 更新 Docsify 首页和侧栏
+    +-- 更新 data/wechat/index.json
+    +-- 更新 Astro 内容集合和首页索引
+    +-- 构建静态 HTML、RSS 和 sitemap
     +-- 仅在有新增内容时提交
 ```
 
@@ -123,15 +136,35 @@ wechat_sync/
   downloader.py         # 微信文章正文与媒体下载
   converter.py          # HTML -> Markdown
   sync.py               # 单公众号增量同步入口
-docs/wechat/
-  index.json            # 已保存 URL、发布时间和文章路径
-  articles/             # Markdown 文章
-  assets/               # 本地图片
+src/content/articles/
+  YYYY-MM-DD-slug.md     # 带 frontmatter 的 Markdown 文章
+public/article-assets/
+  <article-id>/          # 每篇文章的本地图片和媒体
+data/wechat/
+  index.json             # 已保存 URL、发布时间和文章路径
+src/pages/
+  index.astro            # 首页
+  articles/[...slug].astro
 .github/workflows/
   wechat-sync.yml
 ```
 
-### 5.2 建议 Secrets 与配置
+### 5.2 展示层决策：Astro 静态站点
+
+新站推荐从 Docsify 迁移到 Astro，但继续以 Markdown 作为文章事实来源。
+
+选择 Astro 的原因：
+
+- 构建时为每篇文章生成真实 HTML，不依赖浏览器加载 Markdown。
+- 使用正常路径而不是 Hash 路由，文章直链和图片相对路径更稳定。
+- 适合生成文章列表、日期归档、RSS、sitemap、Open Graph 和阅读时间。
+- Content Collections 可以校验标题、日期、原文链接等 frontmatter 字段。
+- Cloudflare Pages 原生支持 Git 仓库构建，配置为 `npm run build`，输出目录为 `dist`。
+- 开发分支可以使用 Cloudflare Pages Preview Deployment，切换默认分支前不影响当前线上站点。
+
+保持纯静态输出，不引入 Astro SSR、Cloudflare Functions、D1 或其他运行时服务。这样部署复杂度仍接近 Docsify，但文章页面的可靠性和可扩展性更好。
+
+### 5.3 建议 Secrets 与配置
 
 敏感配置：
 
@@ -169,17 +202,20 @@ docs/wechat/
 
 ### 阶段 A：最小同步器
 
-- 获取目标公众号的一篇有效文章链接。
+- 使用已提供的种子文章链接解析并固定公众号 `mpId`。
 - 本地扫码生成 `vid/token`。
 - 解析并固定 `WECHAT_MP_ID`。
 - 实现单页文章列表和增量去重。
 - 实现正文、图片和 Markdown 保存。
+- 首次补齐 `2026-06-15` 起的全部历史文章。
 
 ### 阶段 B：手动 Actions
 
 - 添加仅支持手动触发的工作流。
 - 配置 Secrets。
 - 验证新增文章提交格式和凭证错误提示。
+- 搭建 Astro 静态页面、RSS 和 sitemap。
+- 使用 Cloudflare Pages 开发分支预览地址检查内容。
 
 ### 阶段 C：定时运行
 
@@ -194,14 +230,20 @@ docs/wechat/
 - 修改 GitHub Pages/托管平台的构建分支。
 - 确认新站点稳定后再删除或归档旧 Python 入口；旧历史分支永久保留。
 
-## 8. 开发前仍需的信息
+## 8. 下一步所需操作
 
-开始实现最小同步器前，需要：
+公众号、种子链接、历史范围和展示方案已经确定。实现登录工具后，需要用户完成一次微信扫码，以生成 `WEREAD_VID` 和 `WEREAD_TOKEN`。凭证只写入被 Git 忽略的本地数据文件，之后由用户配置到 GitHub Secrets。
 
-1. 目标微信公众号任意一篇公开文章链接，用于解析固定 `mpId`。
-2. 确认目标公众号是否为“获得信息差”。
-3. 确认同步范围：只保存新文章，还是首次补齐全部历史文章。
-4. 确认文章输出是否继续使用当前 Docsify Markdown 站点。
+本地扫码命令：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-wechat.txt
+python -m wechat_sync.auth
+```
+
+二维码保存在 `data/wechat/login-qrcode.png`，登录凭证保存在 `data/wechat/credentials.json`。两个路径均受 `.gitignore` 保护。
 
 ## 9. 决策摘要
 
@@ -210,5 +252,8 @@ docs/wechat/
 - GitHub Actions 可用于低频单公众号同步。
 - 凭证使用 GitHub Secrets；首次登录和失效轮换必须在本地扫码完成。
 - 不依赖 Cache、Artifact 或仓库文件保存凭证。
+- 首次补齐“获得信息差”自 `2026-06-15` 起的全部历史文章，之后增量同步。
+- 新站使用 Astro 生成静态 HTML，文章内容继续保存为 Markdown。
+- Cloudflare Pages 先部署开发分支预览，稳定后再切换生产分支。
 - 不直接复制完整上游应用，固定提交后移植最小代码并保留 MIT 归属声明。
 - 在手动工作流稳定前，不启用定时任务，也不替换 `master`。

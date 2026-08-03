@@ -5,6 +5,7 @@
 *.pyo
 *.pyd
 .Python
+.venv/
 
 # Data and cache
 data/
