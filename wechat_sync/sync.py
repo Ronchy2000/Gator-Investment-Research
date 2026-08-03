@@ -24,6 +24,7 @@ CONFIG_PATH = Path(__file__).resolve().parent / "accounts.json"
 INDEX_ROOT = Path(__file__).resolve().parent / "indexes"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 MAX_LIST_PAGES_PER_ACCOUNT = 40
+LIST_PAGE_SIZE = 50
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -210,11 +211,15 @@ def _collect_articles(
     indexed_urls: set[str],
     backfill_complete: bool,
     backfill_next_page: int,
+    known_history_remaining: bool,
+    history_page_limit: Optional[int],
     max_pages: int,
     delay_seconds: float,
 ) -> CollectionState:
     collected: dict[str, ArticleSummary] = {}
     pages_used = 0
+    inspected_pages: set[int] = set()
+    reached_history_boundary = False
 
     # Once historical backfill has started, always inspect the newest pages first.
     if indexed_ids:
@@ -223,6 +228,7 @@ def _collect_articles(
         for page in range(1, max_pages + 1):
             rows = _fetch_page(client, account.mp_id, page)
             pages_used += 1
+            inspected_pages.add(page)
             if not rows:
                 if page == 1:
                     raise WeReadRelayError(
@@ -267,21 +273,40 @@ def _collect_articles(
         start_page = 1 if not indexed_ids else max(1, backfill_next_page - 1)
         prior_urls: set[str] = set()
         last_page = start_page - 1
-        for page in range(start_page, start_page + max_pages - pages_used):
+        candidate_page = start_page
+        while pages_used < max_pages:
+            page = candidate_page
+            candidate_page += 1
+            if known_history_remaining and history_page_limit is not None:
+                page = ((page - 1) % history_page_limit) + 1
+                if len(inspected_pages) >= history_page_limit:
+                    break
+            if page in inspected_pages:
+                continue
             rows = _fetch_page(client, account.mp_id, page)
             pages_used += 1
+            inspected_pages.add(page)
             last_page = page
             if not rows:
                 if page == 1:
-                    raise WeReadRelayError(
-                        f"{account.name} 文章列表第一页为空，中转服务可能尚未刷新数据"
-                    )
+                    if not indexed_ids:
+                        raise WeReadRelayError(
+                            f"{account.name} 文章列表第一页为空，中转服务可能尚未刷新数据"
+                        )
+                if known_history_remaining:
+                    if pages_used < max_pages:
+                        time.sleep(delay_seconds)
+                    continue
                 backfill_complete = True
                 break
 
             page_articles = [_normalize_article(row) for row in rows]
             page_urls = {_url_key(article.url) for article in page_articles}
             if page_urls and page_urls.issubset(prior_urls):
+                if known_history_remaining:
+                    if pages_used < max_pages:
+                        time.sleep(delay_seconds)
+                    continue
                 backfill_complete = True
                 break
             prior_urls.update(page_urls)
@@ -295,11 +320,19 @@ def _collect_articles(
 
             if any(article.published_at.date() < account.earliest for article in page_articles):
                 backfill_complete = True
+                reached_history_boundary = True
                 break
             if pages_used < max_pages:
                 time.sleep(delay_seconds)
 
-        backfill_next_page = max(backfill_next_page, last_page + 1)
+        if known_history_remaining and not reached_history_boundary:
+            backfill_complete = False
+            if history_page_limit is not None:
+                backfill_next_page = ((candidate_page - 1) % history_page_limit) + 1
+            else:
+                backfill_next_page = last_page + 1
+        else:
+            backfill_next_page = max(backfill_next_page, last_page + 1)
 
     return CollectionState(
         articles=sorted(collected.values(), key=lambda article: article.published_at),
@@ -353,11 +386,13 @@ def _synchronize_account(
         account.reported_count is not None
         and len(existing_entries) < account.reported_count
     )
-    if credential_pool_size > previous_pool_size and backfill_complete:
+    backfill_next_page = max(1, int(index.get("backfillNextPage", 1)))
+    if credential_pool_size > previous_pool_size:
         backfill_complete = False
+        backfill_next_page = 1
         print(
             f"[{account.name}] 账号池由 {previous_pool_size} 个增至 "
-            f"{credential_pool_size} 个，重新探测历史分页断点"
+            f"{credential_pool_size} 个，从第 1 页重新探测稀疏历史窗口"
         )
     elif known_history_remaining and backfill_complete:
         backfill_complete = False
@@ -371,7 +406,13 @@ def _synchronize_account(
         indexed_ids=indexed_ids,
         indexed_urls=indexed_urls,
         backfill_complete=backfill_complete,
-        backfill_next_page=max(1, int(index.get("backfillNextPage", 1))),
+        backfill_next_page=backfill_next_page,
+        known_history_remaining=known_history_remaining,
+        history_page_limit=(
+            (account.reported_count + LIST_PAGE_SIZE - 1) // LIST_PAGE_SIZE
+            if known_history_remaining and account.reported_count is not None
+            else None
+        ),
         max_pages=max_pages,
         delay_seconds=delay_seconds,
     )

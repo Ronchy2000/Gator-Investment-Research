@@ -6,9 +6,9 @@
     "name": "像鳄鱼一样思考"
   },
   "earliestDate": "2000-01-01",
-  "updatedAt": "2026-08-03T21:23:51.124538+08:00",
-  "credentialPoolSize": 3,
-  "backfillComplete": true,
+  "updatedAt": "2026-08-03T21:26:34.574487+08:00",
+  "credentialPoolSize": 4,
+  "backfillComplete": false,
   "backfillNextPage": 11,
   "pendingArticles": [],
   "articles": [

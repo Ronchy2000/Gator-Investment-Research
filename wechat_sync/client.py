@@ -323,6 +323,7 @@ class WeReadClient:
             except (
                 CredentialsExpiredError,
                 RateLimitedError,
+                RelayNetworkError,
                 RelayServerError,
             ) as error:
                 last_switchable_error = error
