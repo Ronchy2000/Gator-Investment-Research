@@ -4,6 +4,11 @@
 
 `master` 是当前 Astro 生产站；原 Docsify 站完整保存在 `legacy/docsify-archive`，仅作为历史快照保留，不再修改。
 
+## 站点入口
+
+- [当前站点：获得信息差](https://gator.ronchy2000.top/)：由 `master` 构建，持续同步微信公众号新文章，并保留已迁移的历史研报。
+- [旧版站点：鳄鱼派投资研报](https://gator0.ronchy2000.top/)：由 `legacy/docsify-archive` 构建，只读保留旧 Docsify 界面和迁移前内容。
+
 ## 当前能力
 
 - 同步单一微信公众号，不包含小红书、B 站等无关平台。
@@ -56,12 +61,12 @@ npm run build
 
 ## 文章同步
 
-首次扫码和初始化：
+首次扫码和初始化。已有 `.venv` 时不要重复创建，直接执行 `source .venv/bin/activate`：
 
 ```bash
-python3 -m venv .venv
+test -d .venv || python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-wechat.txt
+python -m pip install -r requirements-wechat.txt
 python -m wechat_sync.auth
 python -m wechat_sync.initialize
 ```
@@ -128,7 +133,7 @@ GitHub Actions 每天北京时间 `08:30` 自动同步。必须配置两个独�
 ## 分支说明
 
 - `master`：Astro 生产站、微信公众号增量同步和 Cloudflare Pages 部署来源。
-- `legacy/docsify-archive`：切换前的旧 Docsify 站，只读保留。
+- `legacy/docsify-archive`：切换前的旧 Docsify 站，只读部署在 [gator0.ronchy2000.top](https://gator0.ronchy2000.top/)。
 - `feature/wechat-mp-sync`：新站迁移过程的功能分支，与首次上线提交保持一致，便于追溯。
 
 ## 许可证

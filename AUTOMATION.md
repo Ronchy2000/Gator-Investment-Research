@@ -47,14 +47,23 @@ Cloudflare Pages 的接入方法见 [DEPLOYMENT.md](DEPLOYMENT.md)。Cloudflare 
 
 ## 三、本地扫码获取凭据
 
-所有命令都在仓库根目录执行：
+所有命令都在仓库根目录执行。下面的第一条命令只会在 `.venv` 不存在时创建环境；如果已经存在，会直接复用，不会覆盖：
 
 ```bash
 cd /Users/ronchylu/Documents/Developer/Workshop/Gator-Investment-Research
-python3 -m venv .venv
+test -d .venv || python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements-wechat.txt
+python -m pip install -r requirements-wechat.txt
+python -m wechat_sync.auth
+```
+
+`.venv` 是仓库专用的隔离环境。激活只会临时调整当前终端的命令路径，依赖也只安装到 `.venv`，不会修改系统 Python 或其他项目。扫码结束后可以执行 `deactivate` 退出环境。
+
+如果 `.venv` 已经存在且此前成功运行过扫码工具，本次轮换可以跳过创建和安装，只执行：
+
+```bash
+cd /Users/ronchylu/Documents/Developer/Workshop/Gator-Investment-Research
+source .venv/bin/activate
 python -m wechat_sync.auth
 ```
 
@@ -64,6 +73,8 @@ python -m wechat_sync.auth
 2. 使用微信扫码，并在手机上确认登录。
 3. 终端提示成功后，凭据写入 `data/wechat/credentials.json`。
 4. 临时二维码会被清理，不需要上传二维码、扫码 UUID 或轮询记录。
+
+如果本地已经有 `data/wechat/credentials.json`，重新扫码会原子覆盖旧凭据，这是轮换 GitHub Secrets 时的预期行为；不会修改已下载文章或同步索引。
 
 真正需要保存到 GitHub 的只有两个字段：
 
