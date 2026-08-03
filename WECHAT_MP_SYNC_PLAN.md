@@ -121,7 +121,7 @@ GitHub Actions (每日一次 / 手动触发)
     +-- 遇到已保存 URL 立即停止翻页
     +-- 下载新增文章正文和图片
     +-- 转换为 Markdown
-    +-- 更新 data/wechat/index.json
+    +-- 更新 wechat_sync/index.json
     +-- 更新 Astro 内容集合和首页索引
     +-- 构建静态 HTML、RSS 和 sitemap
     +-- 仅在有新增内容时提交
@@ -140,7 +140,7 @@ src/content/articles/
   YYYY-MM-DD-slug.md     # 带 frontmatter 的 Markdown 文章
 public/article-assets/
   <article-id>/          # 每篇文章的本地图片和媒体
-data/wechat/
+wechat_sync/
   index.json             # 已保存 URL、发布时间和文章路径
 src/pages/
   index.astro            # 首页
@@ -202,12 +202,12 @@ src/pages/
 
 ### 阶段 A：最小同步器
 
-- 使用已提供的种子文章链接解析并固定公众号 `mpId`。
-- 本地扫码生成 `vid/token`。
-- 解析并固定 `WECHAT_MP_ID`。
-- 实现单页文章列表和增量去重。
-- 实现正文、图片和 Markdown 保存。
-- 首次补齐 `2026-06-15` 起的全部历史文章。
+- [x] 使用已提供的种子文章链接解析并固定公众号 `mpId`。
+- [x] 本地扫码生成 `vid/token`。
+- [x] 解析并固定 `WECHAT_MP_ID`。
+- [x] 实现文章列表获取和增量去重。
+- [x] 实现正文、图片和 Markdown 保存。
+- [x] 首次补齐 `2026-06-15` 起的全部 49 篇历史文章。
 
 ### 阶段 B：手动 Actions
 
@@ -232,7 +232,7 @@ src/pages/
 
 ## 8. 下一步所需操作
 
-公众号、种子链接、历史范围和展示方案已经确定。实现登录工具后，需要用户完成一次微信扫码，以生成 `WEREAD_VID` 和 `WEREAD_TOKEN`。凭证只写入被 Git 忽略的本地数据文件，之后由用户配置到 GitHub Secrets。
+本地扫码、公众号初始化、同步器实现和首次历史回补已经完成。下一步是将本地 `vid/token` 配置到 GitHub Secrets，添加手动 Actions 工作流，再搭建 Astro 页面并接入 Cloudflare Pages 开发分支预览。
 
 本地扫码命令：
 
