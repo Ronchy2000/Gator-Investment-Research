@@ -23,6 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONTENT_DIR = PROJECT_ROOT / "src" / "content" / "articles"
 DEFAULT_ASSET_ROOT = PROJECT_ROOT / "public" / "article-assets"
 MAX_ASSET_BYTES = 25 * 1024 * 1024
+CSS_URL_RE = re.compile(r"url\(\s*(['\"]?)([^'\")]+)\1\s*\)", re.IGNORECASE)
 
 
 class ArticleDownloadError(RuntimeError):
@@ -147,21 +148,36 @@ class WeChatArticleDownloader:
                 raise ArticleDownloadError(
                     f"正文节点不存在，微信返回页面标题：{page_title or '未知'}"
                 )
-            if not content.get_text(strip=True) and content.find("img") is None:
+            visible_text = content.get_text(" ", strip=True)
+            has_background_image = any(
+                CSS_URL_RE.search(str(node.get("style", "")))
+                for node in content.find_all(style=True)
+            )
+            if (
+                not visible_text
+                and content.find(["img", "image"]) is None
+                and not has_background_image
+            ):
                 raise ArticleDownloadError("正文节点不包含文本或图片")
 
             title = self._metadata(soup, "og:title") or summary.title
             description = self._metadata(soup, "og:description")
-            if not description:
-                description = content.get_text(" ", strip=True)[:180]
 
             self._sanitize(content)
-            asset_count = self._localize_content_images(
+            asset_count, usable_image_count = self._localize_content_images(
                 content,
                 summary.url,
                 article_key,
                 temporary_asset_dir,
             )
+            if not visible_text and usable_image_count == 0:
+                raise ArticleDownloadError("纯图片正文未能解析出可用图片")
+            if not description:
+                description = (
+                    visible_text[:180]
+                    if visible_text
+                    else f"图片文章，共 {usable_image_count} 张正文图片。"
+                )
 
             cover_path = ""
             cover_url = summary.cover_url or self._metadata(soup, "og:image")
@@ -248,17 +264,28 @@ class WeChatArticleDownloader:
         article_url: str,
         article_key: str,
         asset_dir: Path,
-    ) -> int:
+    ) -> tuple[int, int]:
         downloaded: dict[str, str] = {}
         asset_count = 0
-        for image_index, image in enumerate(content.find_all("img"), start=1):
+        usable_image_count = 0
+        for image_index, image in enumerate(
+            content.find_all(["img", "image"]),
+            start=1,
+        ):
             raw_url = str(
                 image.get("data-src")
                 or image.get("data-original")
                 or image.get("src")
+                or image.get("href")
+                or image.get("xlink:href")
                 or ""
             ).strip()
-            if not raw_url or raw_url.startswith("data:"):
+            if not raw_url:
+                image.decompose()
+                continue
+            if raw_url.startswith("data:"):
+                usable_image_count += 1
+                image["loading"] = "lazy"
                 continue
             asset_url = _absolute_url(raw_url, article_url)
             local_path = downloaded.get(asset_url)
@@ -272,13 +299,48 @@ class WeChatArticleDownloader:
                 )
                 downloaded[asset_url] = local_path
                 asset_count += 1
-            image["src"] = local_path
+            if image.name == "image":
+                image["href"] = local_path
+                image.attrs.pop("xlink:href", None)
+            else:
+                image["src"] = local_path
             image.attrs.pop("data-src", None)
             image.attrs.pop("data-original", None)
             image.attrs.pop("srcset", None)
             image.attrs.pop("data-srcset", None)
             image["loading"] = "lazy"
-        return asset_count
+            usable_image_count += 1
+
+        background_index = 0
+        for node in content.find_all(style=True):
+            style = str(node.get("style", ""))
+
+            def replace_background(match: re.Match[str]) -> str:
+                nonlocal asset_count, background_index, usable_image_count
+                raw_url = match.group(2).strip()
+                if raw_url.startswith("data:"):
+                    usable_image_count += 1
+                    return match.group(0)
+                if not raw_url or raw_url.startswith("#"):
+                    return match.group(0)
+                asset_url = _absolute_url(raw_url, article_url)
+                local_path = downloaded.get(asset_url)
+                if local_path is None:
+                    background_index += 1
+                    local_path = self._download_asset(
+                        asset_url,
+                        f"background-{background_index:03d}",
+                        article_key,
+                        asset_dir,
+                        article_url,
+                    )
+                    downloaded[asset_url] = local_path
+                    asset_count += 1
+                usable_image_count += 1
+                return f"url('{local_path}')"
+
+            node["style"] = CSS_URL_RE.sub(replace_background, style)
+        return asset_count, usable_image_count
 
     def _download_asset(
         self,

@@ -73,32 +73,35 @@ def login(
         pass
 
     started_at = time.monotonic()
-    while time.monotonic() - started_at < timeout_seconds:
-        time.sleep(3)
-        poll_response = requests.get(
-            f"{platform_url}/api/v2/login/platform/{login_id}",
-            timeout=30,
-        )
-        poll_response.raise_for_status()
-        login_result = poll_response.json()
-        vid = login_result.get("vid")
-        token = login_result.get("token")
-        if vid and token:
-            credential = {
-                "vid": str(vid),
-                "token": str(token),
-                "nickname": login_result.get("username") or f"WeRead_{vid}",
-                "save_time": int(time.time()),
-                "platform_url": platform_url,
-            }
-            _write_credentials(credential_path, credential)
-            print(f"登录成功，凭证已安全保存至：{credential_path}")
-            print("请勿提交 data/ 目录或在终端中打印 token。")
-            return True
+    try:
+        while time.monotonic() - started_at < timeout_seconds:
+            time.sleep(3)
+            poll_response = requests.get(
+                f"{platform_url}/api/v2/login/platform/{login_id}",
+                timeout=30,
+            )
+            poll_response.raise_for_status()
+            login_result = poll_response.json()
+            vid = login_result.get("vid")
+            token = login_result.get("token")
+            if vid and token:
+                credential = {
+                    "vid": str(vid),
+                    "token": str(token),
+                    "nickname": login_result.get("username") or f"WeRead_{vid}",
+                    "save_time": int(time.time()),
+                    "platform_url": platform_url,
+                }
+                _write_credentials(credential_path, credential)
+                print(f"登录成功，凭证已安全保存至：{credential_path}")
+                print("请勿提交 data/ 目录或在终端中打印 token。")
+                return True
 
-        message = login_result.get("message")
-        if message:
-            print(f"等待扫码：{message}")
+            message = login_result.get("message")
+            if message:
+                print(f"等待扫码：{message}")
+    finally:
+        qr_path.unlink(missing_ok=True)
 
     print("扫码登录已超时，请重新运行命令。")
     return False

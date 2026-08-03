@@ -2,11 +2,18 @@ name: WeChat Article Sync
 
 on:
   schedule:
+    # 08:30 Asia/Shanghai (GitHub cron uses UTC).
     - cron: "30 0 * * *"
   workflow_dispatch:
+    inputs:
+      max_pages:
+        description: Maximum article-list pages to inspect
+        required: false
+        default: "20"
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: wechat-article-sync
@@ -14,17 +21,30 @@ concurrency:
 
 jobs:
   sync:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       WEREAD_VID: ${{ secrets.WEREAD_VID }}
       WEREAD_TOKEN: ${{ secrets.WEREAD_TOKEN }}
+      WEREAD_PLATFORM_URL: ${{ secrets.WEREAD_PLATFORM_URL }}
+      SYNC_MAX_PAGES: ${{ inputs.max_pages || '20' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Check synchronization credentials
+        id: credentials
+        continue-on-error: true
+        shell: bash
+        run: |
+          if [[ -z "$WEREAD_VID" || -z "$WEREAD_TOKEN" ]]; then
+            echo "Missing WEREAD_VID or WEREAD_TOKEN repository secret." >&2
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -38,11 +58,13 @@ jobs:
 
       - name: Synchronize articles
         id: synchronize
+        if: steps.credentials.outcome == 'success'
         continue-on-error: true
-        run: python -m wechat_sync.sync --max-pages 5 --delay 3
+        run: python -m wechat_sync.sync --max-pages "$SYNC_MAX_PAGES" --delay 3
 
       - name: Detect generated changes
         id: changes
+        if: always()
         shell: bash
         run: |
           status="$(git status --porcelain -- src/content/articles public/article-assets wechat_sync/index.json)"
@@ -52,6 +74,27 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Validate generated archive
+        id: integrity
+        if: steps.changes.outputs.changed == 'true'
+        run: python -m wechat_sync.validate
+
+      - name: Set up Node.js
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install website dependencies
+        if: steps.changes.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Build production website
+        id: build
+        if: steps.changes.outputs.changed == 'true'
+        run: npm run build
+
       - name: Commit synchronized content
         if: steps.changes.outputs.changed == 'true'
         run: |
@@ -59,10 +102,48 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/content/articles public/article-assets wechat_sync/index.json
           git commit -m "content: sync WeChat articles"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git pull --rebase origin master
+          git push origin HEAD:master
 
-      - name: Report synchronization failure
-        if: steps.synchronize.outcome == 'failure'
+      - name: Close resolved synchronization alert
+        if: >-
+          ${{ always() && !failure() &&
+              steps.credentials.outcome == 'success' &&
+              steps.synchronize.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          echo "Article synchronization failed. Check for expired credentials, rate limiting, or an unavailable article." >> "$GITHUB_STEP_SUMMARY"
+          issue_number="$(gh issue list --state open --search '微信公众号自动同步失败 in:title' --json number --jq '.[0].number // empty' || true)"
+          if [[ -n "$issue_number" ]]; then
+            gh issue close "$issue_number" --comment "自动同步已恢复：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" || true
+          fi
+
+      - name: Report automation failure
+        if: >-
+          ${{ always() &&
+              (failure() ||
+               steps.credentials.outcome == 'failure' ||
+               steps.synchronize.outcome == 'failure') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          {
+            echo "## 微信公众号自动同步失败"
+            echo
+            echo "请检查微信读书凭据、公开中转服务限流、文章资源下载或 Astro 构建日志。"
+            echo
+            echo "运行记录：${run_url}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          issue_number="$(gh issue list --state open --search '微信公众号自动同步失败 in:title' --json number --jq '.[0].number // empty' || true)"
+          body="$(printf '自动同步未完成。请查看运行记录：%s\n\n若日志提示 401，请在本地重新扫码并更新 WEREAD_VID、WEREAD_TOKEN；若提示 429，请等待下次定时任务。' "$run_url")"
+          if [[ -n "$issue_number" ]]; then
+            gh issue comment "$issue_number" --body "$body" || true
+          else
+            gh issue create --title "微信公众号自动同步失败" --body "$body" --label "automation" || \
+              gh issue create --title "微信公众号自动同步失败" --body "$body" || true
+          fi
           exit 1

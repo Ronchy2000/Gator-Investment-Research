@@ -24,20 +24,35 @@ python -m wechat_sync.sync
 
 - 从 `wechat_sync/account.json` 读取唯一目标公众号和最早收录日期。
 - 首次补齐范围内的全部历史文章，后续根据 `wechat_sync/index.json` 只下载新增文章。
+- 使用文章 ID 和规范化原文链接双重去重。
+- 下载失败项写入 `pendingArticles`，下次执行时优先重试，避免跨页后漏文。
 - 将正文保存到 `src/content/articles/`。
 - 将封面和正文图片保存到 `public/article-assets/`，并把正文图片地址替换为本地路径。
-- 正文只要包含文本或图片即视为有效，因此内容完全由图片组成的文章也能正常增量同步。
+- 纯图片正文必须至少解析出一张可用图片，所有远程正文图片成功本地化后才会入库。
 - 单篇失败时不写入完成索引，使后续运行可以自动重试。
 
 ## 凭据
 
 本地扫码凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库。
-GitHub Actions 使用以下 Secrets：
+GitHub Actions 使用以下两个独立 Secrets：
 
 - `WEREAD_VID`
 - `WEREAD_TOKEN`
 
-凭据失效后，需要重新运行 `python -m wechat_sync.auth` 并更新 Secrets。
+不要把整个 JSON 凭据作为一个 Secret，也不要上传二维码图片、扫码 UUID 或轮询记录。可使用项目提供的安全上传命令：
+
+```bash
+python -m wechat_sync.github_secrets --repo Ronchy2000/Gator-Investment-Research
+```
+
+如果没有 GitHub CLI，可以不回显凭据地逐项复制到剪贴板：
+
+```bash
+python -m wechat_sync.github_secrets --copy vid
+python -m wechat_sync.github_secrets --copy token
+```
+
+凭据没有可供 Action 自动使用的 refresh token。收到 401 告警后，需要重新运行 `python -m wechat_sync.auth` 并更新 Secrets。详细运维说明见 [../AUTOMATION.md](../AUTOMATION.md)。
 
 ## 同步参数
 

@@ -74,6 +74,17 @@ def load_credentials(path: Path = DEFAULT_CREDENTIAL_FILE) -> Credentials:
     )
 
 
+def _error_code(payload: Any) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+    for key in ("ret", "errCode", "err_code", "code"):
+        try:
+            return int(payload[key])
+        except (KeyError, TypeError, ValueError):
+            continue
+    return None
+
+
 class WeReadClient:
     def __init__(self, credentials: Credentials, timeout_seconds: int = 30):
         self._credentials = credentials
@@ -104,19 +115,27 @@ class WeReadClient:
             timeout=self._timeout_seconds,
             **kwargs,
         )
-        if response.status_code == 401:
+        response_text = (response.text or "").strip()
+        if response.status_code == 401 or "WeReadError401" in response_text:
             raise CredentialsExpiredError("微信读书登录凭证已失效，请重新扫码")
-        if response.status_code == 429:
+        if response.status_code == 429 or "WeReadError429" in response_text:
             raise RateLimitedError("微信读书中转服务触发频率限制，请稍后再试")
         if response.status_code != 200:
-            detail = (response.text or "").strip()[:300]
+            detail = response_text[:300]
             raise WeReadRelayError(
                 f"微信读书中转服务返回 HTTP {response.status_code}: {detail}"
             )
         try:
-            return response.json()
+            payload = response.json()
         except ValueError as error:
             raise WeReadRelayError("微信读书中转服务返回了无效 JSON") from error
+
+        code = _error_code(payload)
+        if code == 200003:
+            raise CredentialsExpiredError("微信读书登录凭证已失效，请重新扫码")
+        if code == 200013:
+            raise RateLimitedError("微信读书中转服务触发频率限制，请稍后再试")
+        return payload
 
     def resolve_account(self, article_url: str) -> list[WeChatAccount]:
         payload = self._request_json(

@@ -9,6 +9,7 @@
 - 同步单一微信公众号，不包含小红书、B 站等无关平台。
 - 首次补齐 `2026-06-15` 起的历史文章，后续根据索引增量更新。
 - 同时支持文本文章和内容完全由图片组成的文章。
+- 下载失败的文章进入持久化重试队列，不会因跨页或部分成功而永久遗漏。
 - 正文、封面和图片全部本地化，避免微信远程图片防盗链失效。
 - 去重迁移旧站 913 篇历史研报，保留宏观、行业、其他分类及旧链接跳转。
 - 为历史研报生成 2-6 条完整句摘要，并清理模板引用、OCR 编号、失效列表和折叠表格。
@@ -55,7 +56,7 @@ python -m wechat_sync.initialize
 python -m wechat_sync.sync --max-pages 20 --delay 2
 ```
 
-详细说明见 [wechat_sync/README.md](wechat_sync/README.md)。本地凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库。
+详细说明见 [AUTOMATION.md](AUTOMATION.md)。本地凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库。
 
 ## 目录结构
 
@@ -77,10 +78,9 @@ wechat_sync/
   auth.py                 本地扫码登录
   client.py               微信读书中转接口客户端
   downloader.py           正文解析与图片本地化
+  github_secrets.py       安全上传或复制 Actions Secrets
   sync.py                 首次回补与增量同步入口
   index.json              已完成文章索引
-scripts/
-  migrate_legacy_reports_to_astro.py  一次性历史研报迁移器
 ```
 
 ## Cloudflare Pages
@@ -98,10 +98,12 @@ scripts/
 
 访问统计使用不蒜子 `3.6.9` 官方 CDN，页脚元素分别读取全站 PV 与 UV。统计服务不可用时只显示占位符，不影响静态页面、搜索或文章阅读。
 
-GitHub Actions 同步时需要配置：
+GitHub Actions 每天北京时间 `08:30` 自动同步。必须配置两个独立的 Repository Secrets：
 
 - `WEREAD_VID`
 - `WEREAD_TOKEN`
+
+不需要自行创建 GitHub PAT；提交使用每次工作流自动生成的 `GITHUB_TOKEN`。扫码登录态不包含可自动刷新的 refresh token，正常情况下长期有效；收到 401 告警时需要在本地重新扫码并轮换上述两个 Secrets。完整配置、上传命令和故障处理见 [AUTOMATION.md](AUTOMATION.md)。
 
 ## 免责声明
 
