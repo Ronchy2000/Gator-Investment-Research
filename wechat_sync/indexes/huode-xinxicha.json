@@ -6,9 +6,10 @@
     "name": "获得信息差"
   },
   "earliestDate": "2026-06-15",
-  "updatedAt": "2026-08-03T16:53:52.071442+08:00",
+  "updatedAt": "2026-08-03T18:47:44.675647+08:00",
+  "credentialPoolSize": 2,
   "backfillComplete": true,
-  "backfillNextPage": 1,
+  "backfillNextPage": 3,
   "pendingArticles": [],
   "articles": [
     {
