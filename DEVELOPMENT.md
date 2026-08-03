@@ -75,8 +75,8 @@ public/
   note-assets/            投资随笔图片
   report-assets/          历史研报图片或失效说明占位图
 wechat_sync/
-  auth.py                 本地扫码登录
-  client.py               微信读书中转接口客户端
+  auth.py                 本地扫码并维护有序登录账号池
+  client.py               微信读书中转接口与账号故障转移客户端
   downloader.py           微信正文解析与媒体本地化
   github_secrets.py       安全上传或复制 Actions Secrets
   initialize.py           首次账户与索引初始化

@@ -2,14 +2,15 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # 18:30 Asia/Shanghai, after both daily publications (GitHub cron uses UTC).
+    # 10:00 and 18:30 Asia/Shanghai (GitHub cron uses UTC).
+    - cron: "0 2 * * *"
     - cron: "30 10 * * *"
   workflow_dispatch:
     inputs:
       max_pages:
-        description: Maximum article-list pages to inspect per account
+        description: Maximum article-list pages to inspect per WeChat source
         required: false
-        default: "20"
+        default: "10"
 
 permissions:
   contents: write
@@ -25,10 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      WEREAD_ACCOUNTS: ${{ secrets.WEREAD_ACCOUNTS }}
       WEREAD_VID: ${{ secrets.WEREAD_VID }}
       WEREAD_TOKEN: ${{ secrets.WEREAD_TOKEN }}
       WEREAD_PLATFORM_URL: ${{ secrets.WEREAD_PLATFORM_URL }}
-      SYNC_MAX_PAGES: ${{ inputs.max_pages || '20' }}
+      SYNC_MAX_PAGES: ${{ inputs.max_pages || '10' }}
 
     steps:
       - name: Checkout
@@ -41,17 +43,16 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          if [[ -z "$WEREAD_VID" || -z "$WEREAD_TOKEN" ]]; then
-            echo "::error title=Repository Secret 名称或配置错误::未读取到 WEREAD_VID 或 WEREAD_TOKEN。Secret 名称必须完整包含 WEREAD_ 前缀，VID 和 TOKEN 无效。"
+          if [[ -z "$WEREAD_ACCOUNTS" && ( -z "$WEREAD_VID" || -z "$WEREAD_TOKEN" ) ]]; then
+            echo "::error title=Repository Secret 名称或配置错误::未读取到 WEREAD_ACCOUNTS，也没有可兼容使用的 WEREAD_VID/WEREAD_TOKEN。"
             {
               echo "## Repository Secrets 配置错误"
               echo
-              echo '请在 `Settings -> Secrets and variables -> Actions` 中确认以下两个完整名称：'
+              echo '请在 `Settings -> Secrets and variables -> Actions` 中创建：'
               echo
-              echo '- `WEREAD_VID`'
-              echo '- `WEREAD_TOKEN`'
+              echo '- `WEREAD_ACCOUNTS`（推荐，支持有序账号池）'
               echo
-              echo '`VID` 和 `TOKEN` 是错误名称，工作流无法读取；修改名称不需要重新扫码。'
+              echo '旧版 `WEREAD_VID` 与 `WEREAD_TOKEN` 同时存在时仍可兼容运行，但只能使用一个账号。'
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -154,7 +155,7 @@ jobs:
             echo "## 微信公众号自动同步失败"
             echo
             if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
-              echo '未读取到 `WEREAD_VID` 或 `WEREAD_TOKEN`。请确认 Repository Secret 名称完整，不能写成 `VID` 或 `TOKEN`。'
+              echo '未读取到 `WEREAD_ACCOUNTS`，也没有同时读取到旧版 `WEREAD_VID` 与 `WEREAD_TOKEN`。'
             else
               echo "请检查微信读书凭据、公开中转服务限流、文章资源下载或 Astro 构建日志。"
             fi
@@ -164,9 +165,9 @@ jobs:
 
           issue_number="$(gh issue list --state open --search '微信公众号自动同步失败 in:title' --json number --jq '.[0].number // empty' || true)"
           if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
-            guidance='未读取到 `WEREAD_VID` 或 `WEREAD_TOKEN`。请在 Repository secrets 中使用完整名称；`VID` 和 `TOKEN` 无效。名称错误时不需要重新扫码。'
+            guidance='请上传账号池 Secret `WEREAD_ACCOUNTS`；旧版 `WEREAD_VID` 与 `WEREAD_TOKEN` 仅作为单账号兼容后备。'
           else
-            guidance='若日志提示 401，请在本地重新扫码并更新 `WEREAD_VID`、`WEREAD_TOKEN`；若提示 429，请等待下次定时任务。'
+            guidance='若所有账号均提示 401，请在本地重新扫码并更新 `WEREAD_ACCOUNTS`；若所有账号均提示 429，请等待下次定时任务。'
           fi
           body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then

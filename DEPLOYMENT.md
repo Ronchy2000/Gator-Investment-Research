@@ -64,7 +64,7 @@
 NODE_VERSION=22.16.0
 ```
 
-新构建系统通常会读取仓库根目录的 `.nvmrc`，无需重复设置。不要把 `WEREAD_VID` 或 `WEREAD_TOKEN` 添加到 Cloudflare 环境变量。
+新构建系统通常会读取仓库根目录的 `.nvmrc`，无需重复设置。不要把 `WEREAD_ACCOUNTS`、`WEREAD_VID` 或 `WEREAD_TOKEN` 添加到 Cloudflare 环境变量。
 
 保存后手动触发一次 `Retry deployment` 或推送一个正常提交，确认构建日志中执行的是 `npm run build`，最终上传目录是 `dist`。
 
@@ -93,7 +93,7 @@ https://gator.ronchy2000.top
 完成 Git 集成后，无需 Cloudflare API Token。每天的发布过程为：
 
 ```text
-北京时间 08:30
+北京时间 10:00 / 18:30
   -> GitHub Actions 检查微信公众号
   -> 有新文章时提交并推送 master
   -> Cloudflare Git 集成检测到 master 更新
@@ -139,8 +139,7 @@ Cloudflare 和 GitHub Actions 是两个独立阶段：
 
 ## 八、Cloudflare 中不应配置的内容
 
-- 不配置 `WEREAD_VID`。
-- 不配置 `WEREAD_TOKEN`。
+- 不配置 `WEREAD_ACCOUNTS`、`WEREAD_VID` 或 `WEREAD_TOKEN`。
 - 不配置 GitHub PAT。
 - 不配置扫码二维码或 `credentials.json`。
 - 不把 Build output directory 设置成 `docs` 或仓库根目录。

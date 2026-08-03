@@ -15,7 +15,7 @@ from typing import Any, Iterable
 from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
-from .client import WeReadClient, WeReadRelayError, load_credentials
+from .client import WeReadClient, WeReadRelayError, load_credentials_pool
 from .downloader import ArticleSummary, WeChatArticleDownloader
 
 
@@ -306,6 +306,7 @@ def _synchronize_account(
     downloader: WeChatArticleDownloader,
     max_pages: int,
     delay_seconds: float,
+    credential_pool_size: int,
 ) -> tuple[int, int]:
     index_path = INDEX_ROOT / f"{account.slug}.json"
     index = _load_json(index_path)
@@ -336,12 +337,22 @@ def _synchronize_account(
             pending_by_id[article.article_id] = article
 
     migrated_complete_default = bool(existing_entries) and "backfillComplete" not in index
+    backfill_complete = bool(
+        index.get("backfillComplete", migrated_complete_default)
+    )
+    previous_pool_size = max(1, int(index.get("credentialPoolSize", 1)))
+    if credential_pool_size > previous_pool_size and backfill_complete:
+        backfill_complete = False
+        print(
+            f"[{account.name}] 账号池由 {previous_pool_size} 个增至 "
+            f"{credential_pool_size} 个，重新探测历史分页断点"
+        )
     collection = _collect_articles(
         client=client,
         account=account,
         indexed_ids=indexed_ids,
         indexed_urls=indexed_urls,
-        backfill_complete=bool(index.get("backfillComplete", migrated_complete_default)),
+        backfill_complete=backfill_complete,
         backfill_next_page=max(1, int(index.get("backfillNextPage", 1))),
         max_pages=max_pages,
         delay_seconds=delay_seconds,
@@ -364,6 +375,7 @@ def _synchronize_account(
                 },
                 "earliestDate": account.earliest.isoformat(),
                 "updatedAt": datetime.now(tz=SHANGHAI).isoformat(),
+                "credentialPoolSize": credential_pool_size,
                 "backfillComplete": collection.backfill_complete,
                 "backfillNextPage": collection.backfill_next_page,
                 "pendingArticles": [
@@ -433,7 +445,9 @@ def synchronize(
     selected_slugs: set[str],
 ) -> tuple[int, int, list[str]]:
     accounts = _load_accounts(selected_slugs)
-    client = WeReadClient(load_credentials())
+    credentials = load_credentials_pool()
+    client = WeReadClient(credentials)
+    print(f"已加载 {client.credential_count} 个微信读书账号，按顺序故障转移")
     downloader = WeChatArticleDownloader()
     succeeded = 0
     failed = 0
@@ -448,6 +462,7 @@ def synchronize(
                 downloader=downloader,
                 max_pages=max_pages,
                 delay_seconds=delay_seconds,
+                credential_pool_size=client.credential_count,
             )
         except (OSError, ValueError, WeReadRelayError) as error:
             account_errors.append(f"{account.name}: {error}")

@@ -1,4 +1,4 @@
-"""Upload or copy local WeRead credentials without printing their values."""
+"""Upload or copy the local WeRead account pool without printing secrets."""
 
 from __future__ import annotations
 
@@ -7,42 +7,82 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CREDENTIAL_FILE = PROJECT_ROOT / "data" / "wechat" / "credentials.json"
-SECRET_FIELDS = {
-    "WEREAD_VID": "vid",
-    "WEREAD_TOKEN": "token",
+PRIMARY_SECRET = "WEREAD_ACCOUNTS"
+LEGACY_SECRETS = ("WEREAD_VID", "WEREAD_TOKEN")
+SECRET_NAMES = (PRIMARY_SECRET,) + LEGACY_SECRETS
+COPY_ALIASES = {
+    "accounts": PRIMARY_SECRET,
+    "vid": "WEREAD_VID",
+    "token": "WEREAD_TOKEN",
 }
-LEGACY_COPY_ALIASES = {field: secret_name for secret_name, field in SECRET_FIELDS.items()}
 
 
-def _load(path: Path) -> dict[str, str]:
+def _account_records(payload: Any) -> list[dict[str, str]]:
+    if not isinstance(payload, dict):
+        raise SystemExit("本地凭据必须是 JSON 对象")
+    raw_accounts = payload.get("accounts")
+    if not isinstance(raw_accounts, list):
+        raw_accounts = [payload]
+    default_platform_url = str(payload.get("platform_url", "")).strip()
+
+    accounts: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for position, item in enumerate(raw_accounts, start=1):
+        if not isinstance(item, dict):
+            raise SystemExit(f"本地账号池第 {position} 项格式无效")
+        vid = str(item.get("vid", "")).strip()
+        token = str(item.get("token", "")).strip()
+        platform_url = str(item.get("platform_url", "")).strip()
+        platform_url = platform_url or default_platform_url
+        if not vid or not token:
+            raise SystemExit(f"本地账号池第 {position} 项缺少 vid 或 token")
+        key = (vid, platform_url.rstrip("/"))
+        if key in seen:
+            continue
+        seen.add(key)
+        record = {"vid": vid, "token": token}
+        if platform_url:
+            record["platform_url"] = platform_url
+        accounts.append(record)
+
+    if not accounts:
+        raise SystemExit("本地账号池中没有可上传账号")
+    return accounts
+
+
+def _load(path: Path) -> tuple[dict[str, str], int]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
         raise SystemExit(f"无法读取本地凭据: {error}") from error
+    accounts = _account_records(payload)
+    pool_value = json.dumps(
+        {"version": 2, "accounts": accounts},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
     values = {
-        secret_name: str(payload.get(field, "")).strip()
-        for secret_name, field in SECRET_FIELDS.items()
+        PRIMARY_SECRET: pool_value,
+        "WEREAD_VID": accounts[0]["vid"],
+        "WEREAD_TOKEN": accounts[0]["token"],
     }
-    missing = [secret_name for secret_name, value in values.items() if not value]
-    if missing:
-        raise SystemExit(f"本地凭据缺少 GitHub Secret 对应值: {', '.join(missing)}")
-    return values
+    return values, len(accounts)
 
 
 def _normalize_secret_name(value: str) -> str:
     candidate = value.strip()
-    if candidate in SECRET_FIELDS:
+    if candidate in SECRET_NAMES:
         return candidate
-    legacy_name = LEGACY_COPY_ALIASES.get(candidate.lower())
-    if legacy_name:
-        return legacy_name
-    expected = " 或 ".join(SECRET_FIELDS)
-    raise argparse.ArgumentTypeError(f"Secret 名称必须是 {expected}，不能缩写")
+    alias = COPY_ALIASES.get(candidate.lower())
+    if alias:
+        return alias
+    expected = "、".join(SECRET_NAMES)
+    raise argparse.ArgumentTypeError(f"Secret 名称必须是 {expected}")
 
 
 def _copy(value: str, secret_name: str) -> None:
@@ -54,23 +94,22 @@ def _copy(value: str, secret_name: str) -> None:
     print(f"GitHub Repository Secret 的 Name 必须完整填写为：{secret_name}")
 
 
-def _upload(values: dict[str, str], repository: Optional[str]) -> None:
+def _upload(value: str, repository: Optional[str]) -> None:
     gh = shutil.which("gh")
     if not gh:
         raise SystemExit(
             "未安装 GitHub CLI。可先运行 brew install gh && gh auth login，"
-            "或使用 --copy WEREAD_VID / --copy WEREAD_TOKEN 逐项复制到 GitHub 网页。"
+            "或使用 --copy WEREAD_ACCOUNTS 复制到 GitHub 网页。"
         )
-    for secret_name, value in values.items():
-        command = [gh, "secret", "set", secret_name]
-        if repository:
-            command.extend(["--repo", repository])
-        subprocess.run(command, input=value, text=True, check=True)
-        print(f"已上传 {secret_name}")
+    command = [gh, "secret", "set", PRIMARY_SECRET]
+    if repository:
+        command.extend(["--repo", repository])
+    subprocess.run(command, input=value, text=True, check=True)
+    print(f"已上传 {PRIMARY_SECRET}，旧版两项 Secret 可保留作为兼容后备。")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="安全上传 GitHub Actions 微信读书凭据")
+    parser = argparse.ArgumentParser(description="安全上传 GitHub Actions 微信读书账号池")
     parser.add_argument(
         "--credential-file",
         type=Path,
@@ -80,19 +119,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--copy",
         type=_normalize_secret_name,
-        metavar="WEREAD_VID|WEREAD_TOKEN",
-        help="复制与 GitHub Repository Secret 同名的凭据",
+        metavar="WEREAD_ACCOUNTS",
+        help="复制账号池 Secret；旧版 WEREAD_VID/WEREAD_TOKEN 仍可单独复制",
     )
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    values = _load(args.credential_file.expanduser().resolve())
+    values, account_count = _load(args.credential_file.expanduser().resolve())
     if args.copy:
         _copy(values[args.copy], args.copy)
     else:
-        _upload(values, args.repo)
+        _upload(values[PRIMARY_SECRET], args.repo)
+    print(f"账号池包含 {account_count} 个账号。")
     return 0
 
 

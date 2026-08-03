@@ -9,7 +9,12 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from wechat_sync.client import WeChatAccount, WeReadClient, WeReadRelayError, load_credentials
+from wechat_sync.client import (
+    WeChatAccount,
+    WeReadClient,
+    WeReadRelayError,
+    load_credentials_pool,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -97,7 +102,7 @@ def main() -> int:
         raise SystemExit("earliest-date 必须使用 YYYY-MM-DD 格式") from error
 
     try:
-        client = WeReadClient(load_credentials())
+        client = WeReadClient(load_credentials_pool())
         account = _select_account(client.resolve_account(args.seed_url), args.name)
         _save_account(
             args.output.resolve(),

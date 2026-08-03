@@ -24,16 +24,60 @@ DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "wechat"
 DEFAULT_PLATFORM_URL = "https://weread.111965.xyz"
 
 
-def _write_credentials(path: Path, credential: dict[str, object]) -> None:
+def _read_existing_credentials(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise RuntimeError(f"无法读取现有凭据，已停止以免覆盖: {error}") from error
+
+    if not isinstance(payload, dict):
+        raise RuntimeError("现有凭据不是 JSON 对象，已停止以免覆盖")
+    raw_accounts = payload.get("accounts")
+    if raw_accounts is None:
+        raw_accounts = [payload]
+    if not isinstance(raw_accounts, list) or any(
+        not isinstance(item, dict) for item in raw_accounts
+    ):
+        raise RuntimeError("现有账号池格式无效，已停止以免覆盖")
+    return [dict(item) for item in raw_accounts]
+
+
+def _write_credentials(
+    path: Path,
+    credential: dict[str, object],
+    reset_pool: bool = False,
+) -> int:
+    accounts = [] if reset_pool else _read_existing_credentials(path)
+    credential_key = (
+        str(credential.get("vid", "")).strip(),
+        str(credential.get("platform_url", "")).strip().rstrip("/"),
+    )
+    replaced = False
+    for position, existing in enumerate(accounts):
+        existing_key = (
+            str(existing.get("vid", "")).strip(),
+            str(existing.get("platform_url", "")).strip().rstrip("/"),
+        )
+        if existing_key == credential_key:
+            accounts[position] = credential
+            replaced = True
+            break
+    if not replaced:
+        accounts.append(credential)
+
+    payload = {"version": 2, "accounts": accounts}
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = path.with_suffix(path.suffix + ".tmp")
     temporary_path.write_text(
-        json.dumps(credential, ensure_ascii=False, indent=2),
+        json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     temporary_path.chmod(stat.S_IRUSR | stat.S_IWUSR)
     temporary_path.replace(path)
     path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    return len(accounts)
 
 
 def _create_qr_image(scan_url: str, path: Path) -> None:
@@ -46,6 +90,7 @@ def login(
     *,
     platform_url: str,
     credential_path: Path,
+    reset_pool: bool = False,
     timeout_seconds: int = 300,
 ) -> bool:
     platform_url = platform_url.rstrip("/")
@@ -92,8 +137,13 @@ def login(
                     "save_time": int(time.time()),
                     "platform_url": platform_url,
                 }
-                _write_credentials(credential_path, credential)
+                account_count = _write_credentials(
+                    credential_path,
+                    credential,
+                    reset_pool=reset_pool,
+                )
                 print(f"登录成功，凭证已安全保存至：{credential_path}")
+                print(f"当前本地账号池共 {account_count} 个账号，按保存顺序调用。")
                 print("请勿提交 data/ 目录或在终端中打印 token。")
                 return True
 
@@ -120,6 +170,11 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_DATA_DIR / "credentials.json",
         help="本地凭证保存路径（必须位于 Git 忽略目录）",
     )
+    parser.add_argument(
+        "--reset-pool",
+        action="store_true",
+        help="清空现有账号池后仅保存本次扫码账号（默认追加或原位更新）",
+    )
     return parser.parse_args()
 
 
@@ -134,6 +189,7 @@ def main() -> int:
         return 0 if login(
             platform_url=args.platform_url,
             credential_path=credential_path,
+            reset_pool=args.reset_pool,
         ) else 1
     except (requests.RequestException, ValueError, RuntimeError) as error:
         print(f"登录失败：{error}")
