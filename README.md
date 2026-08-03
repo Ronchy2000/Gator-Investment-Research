@@ -18,6 +18,22 @@
 - 提供公众号/历史研报全文搜索、分类与年份筛选、明暗主题、阅读时间和前后文章导航。
 - 使用本地品牌 Logo，并在页脚通过不蒜子展示累计访客数和累计浏览量。
 
+## 首次上线
+
+按以下顺序配置，不需要把任何登录文件提交到仓库：
+
+1. 按 [DEPLOYMENT.md](DEPLOYMENT.md) 将仓库连接到 Cloudflare Pages。旧项目可以直接修改构建配置，无需重建站点或更换域名。
+2. 按 [AUTOMATION.md](AUTOMATION.md) 在本地扫码，创建 `WEREAD_VID` 和 `WEREAD_TOKEN` 两项 GitHub Actions Secrets。
+3. 在 GitHub Actions 页面手动运行一次 `WeChat Article Sync`，确认同步成功。
+4. 确认 Cloudflare Pages 收到新提交并完成部署。以后 Action 会每天自动检查新文章。
+
+最终配置应满足：
+
+- GitHub 默认分支为 `master`。
+- Cloudflare Production branch 为 `master`，构建命令为 `npm run build`，输出目录为 `dist`。
+- GitHub 仓库中存在 `WEREAD_VID` 和 `WEREAD_TOKEN`，但仓库文件和 Cloudflare 环境变量中都不存在明文凭据。
+- `WeChat Article Sync` 可以手动运行，且 GitHub Actions 的 Workflow permissions 允许写入仓库。
+
 ## 本地开发
 
 环境要求：
@@ -56,7 +72,7 @@ python -m wechat_sync.initialize
 python -m wechat_sync.sync --max-pages 20 --delay 2
 ```
 
-详细说明见 [AUTOMATION.md](AUTOMATION.md)。本地凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库。
+详细说明见 [AUTOMATION.md](AUTOMATION.md)。本地凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库、聊天记录或截图中。
 
 ## 目录结构
 
@@ -83,9 +99,9 @@ wechat_sync/
   index.json              已完成文章索引
 ```
 
-## Cloudflare Pages
+## 部署与自动化
 
-建议构建设置：
+Cloudflare Pages 的核心构建设置如下：
 
 | 配置 | 值 |
 | --- | --- |
@@ -94,7 +110,7 @@ wechat_sync/
 | Build output directory | `dist` |
 | Node.js | `22` |
 
-`wrangler.toml`、静态缓存头和基础安全响应头已经写入仓库。站点域名配置在 `astro.config.mjs`。
+`wrangler.toml`、静态缓存头和基础安全响应头已经写入仓库。站点域名配置在 `astro.config.mjs`。新建项目、旧项目改造、自定义域名和部署故障排查见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 访问统计使用不蒜子 `3.6.9` 官方 CDN，页脚元素分别读取全站 PV 与 UV。统计服务不可用时只显示占位符，不影响静态页面、搜索或文章阅读。
 
@@ -103,7 +119,7 @@ GitHub Actions 每天北京时间 `08:30` 自动同步。必须配置两个独�
 - `WEREAD_VID`
 - `WEREAD_TOKEN`
 
-不需要自行创建 GitHub PAT；提交使用每次工作流自动生成的 `GITHUB_TOKEN`。扫码登录态不包含可自动刷新的 refresh token，正常情况下长期有效；收到 401 告警时需要在本地重新扫码并轮换上述两个 Secrets。完整配置、上传命令和故障处理见 [AUTOMATION.md](AUTOMATION.md)。
+不需要自行创建 GitHub PAT、Cloudflare API Token 或微信 refresh token；提交使用每次工作流自动生成的 `GITHUB_TOKEN`。扫码登录态正常情况下可以持续使用，但上游没有提供可自动刷新的 refresh token；收到 401 告警时需要在本地重新扫码并轮换上述两个 Secrets。完整配置、首次验收和故障处理见 [AUTOMATION.md](AUTOMATION.md)。
 
 ## 免责声明
 

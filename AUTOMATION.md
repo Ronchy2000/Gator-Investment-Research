@@ -1,94 +1,222 @@
-# 自动同步与运维
+# 微信公众号自动同步配置
 
-本仓库每天从“获得信息差”微信公众号增量下载文章，本地化图片，提交到 `master`，再由 Cloudflare Pages 自动发布 Astro 静态站点。
+本手册用于配置“获得信息差”微信公众号的每日增量同步。完整链路是：
 
-## 首次配置
+```text
+GitHub Actions 定时启动
+  -> 使用 WEREAD_VID / WEREAD_TOKEN 查询文章列表
+  -> 下载新文章及图片并更新仓库
+  -> 使用 GITHUB_TOKEN 推送 master
+  -> Cloudflare Pages 检测提交并重新部署
+```
 
-在本地完成扫码：
+Cloudflare Pages 的接入方法见 [DEPLOYMENT.md](DEPLOYMENT.md)。Cloudflare 只负责构建和托管，不需要配置微信凭据。
+
+## 一、准备条件
+
+开始前确认：
+
+- GitHub 仓库为 `Ronchy2000/Gator-Investment-Research`，默认分支是 `master`。
+- 本地安装 Python `3.9` 或更高版本，并可使用微信扫码。
+- GitHub 仓库没有被归档，Actions 功能可用。
+- 首次扫码和 Secret 配置只需要做一次；凭据失效后再重新扫码轮换。
+
+## 二、检查 GitHub 仓库设置
+
+### 1. 默认分支
+
+打开仓库 `Settings -> General -> Default branch`，确认默认分支为 `master`。
+
+定时工作流只会在默认分支执行。如果这里不是 `master`，定时任务可能不会运行。
+
+### 2. Actions 权限
+
+打开仓库 `Settings -> Actions -> General`：
+
+1. 在 Actions permissions 中允许仓库运行 GitHub Actions。
+2. 在 Workflow permissions 中选择 `Read and write permissions`。
+3. 保存设置。
+
+工作流需要写权限提交新文章，以及在失败时创建或更新告警 Issue。不需要创建 Personal Access Token（PAT）；工作流会使用 GitHub 每次运行自动签发的 `GITHUB_TOKEN`。
+
+如果 `master` 配置了分支保护规则，还要确认规则允许 GitHub Actions 直接推送。否则同步和构建可以成功，但最后的 `git push` 会返回 403。
+
+### 3. Issues
+
+建议在仓库 `Settings -> General -> Features` 中启用 Issues。同步失败时，工作流会维护一个标题为“微信公众号自动同步失败”的 Issue；恢复成功后自动关闭。关闭 Issues 不影响下载，但会失去持久化告警。
+
+## 三、本地扫码获取凭据
+
+所有命令都在仓库根目录执行：
 
 ```bash
+cd /Users/ronchylu/Documents/Developer/Workshop/Gator-Investment-Research
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements-wechat.txt
 python -m wechat_sync.auth
 ```
 
-扫码成功后会生成被 Git 忽略的 `data/wechat/credentials.json`。真正需要保存的只有：
+运行后：
 
-- `vid` → GitHub Secret `WEREAD_VID`
-- `token` → GitHub Secret `WEREAD_TOKEN`
+1. 程序生成并打开登录二维码。
+2. 使用微信扫码，并在手机上确认登录。
+3. 终端提示成功后，凭据写入 `data/wechat/credentials.json`。
+4. 临时二维码会被清理，不需要上传二维码、扫码 UUID 或轮询记录。
 
-`login-qrcode.png`、扫码 UUID、等待轮询记录和 `save_time` 都不需要上传。不要提交 `data/` 目录。
+真正需要保存到 GitHub 的只有两个字段：
 
-### 方式一：GitHub CLI
+| 本地字段 | GitHub Secret 名称 | 用途 |
+| --- | --- | --- |
+| `vid` | `WEREAD_VID` | 标识扫码登录账号 |
+| `token` | `WEREAD_TOKEN` | 调用文章列表接口 |
+
+`save_time`、昵称及其他元数据不需要上传。不要执行 `cat data/wechat/credentials.json` 后截图，也不要把该文件添加到 Git、聊天记录或 Cloudflare 环境变量。
+
+该登录态没有可供 GitHub Actions 自动使用的 refresh token。正常情况下凭据可以长期使用；接口返回 401 时，必须在本地重新扫码并覆盖这两个 Secrets。
+
+## 四、配置 GitHub Secrets
+
+推荐使用 GitHub 网页，操作最直观。项目脚本会把单个值直接放入系统剪贴板，不在终端显示明文。
+
+### 方法 A：GitHub 网页
+
+打开仓库：
+
+`Settings -> Secrets and variables -> Actions -> Repository secrets`
+
+依次创建两项 Secret。
+
+第一项：
+
+1. 在本地执行 `python -m wechat_sync.github_secrets --copy vid`。
+2. GitHub 点击 `New repository secret`。
+3. Name 填写 `WEREAD_VID`。
+4. Secret 粘贴剪贴板内容，不要手动添加引号或空格。
+5. 点击 `Add secret`。
+
+第二项：
+
+1. 在本地执行 `python -m wechat_sync.github_secrets --copy token`。
+2. GitHub 再次点击 `New repository secret`。
+3. Name 填写 `WEREAD_TOKEN`。
+4. Secret 粘贴剪贴板内容，不要手动添加引号或空格。
+5. 点击 `Add secret`。
+
+保存后 GitHub 只显示 Secret 名称，不会再次显示值，这是正常现象。最终列表中必须同时出现 `WEREAD_VID` 和 `WEREAD_TOKEN`。
+
+除非以后主动更换中转服务，否则不要创建 `WEREAD_PLATFORM_URL`。工作流内置当前公开服务地址；错误填写该项反而会导致接口不可用。
+
+### 方法 B：GitHub CLI
+
+如果已经安装并登录 `gh`，可以一次上传两项：
 
 ```bash
 brew install gh
 gh auth login
 python -m wechat_sync.github_secrets --repo Ronchy2000/Gator-Investment-Research
+gh secret list --repo Ronchy2000/Gator-Investment-Research
 ```
 
-上传脚本通过标准输入向 `gh secret set` 传值，不会在终端回显凭据。
+上传脚本通过标准输入向 `gh secret set` 传值，不会把凭据写进命令参数或终端输出。`gh secret list` 只用于核对名称和更新时间，不会读取 Secret 明文。
 
-### 方式二：GitHub 网页
+两项值必须分开保存。不要把整个 `credentials.json` 放进一项 Secret，否则字段读取会失败，日志脱敏也不够精确。
 
-1. 打开仓库 `Settings → Secrets and variables → Actions`。
-2. 点击 `New repository secret`，分别创建 `WEREAD_VID` 和 `WEREAD_TOKEN`。
-3. 使用下面的命令逐项复制，然后粘贴到对应 Secret：
+## 五、首次手动运行
 
-```bash
-python -m wechat_sync.github_secrets --copy vid
-python -m wechat_sync.github_secrets --copy token
+Secret 保存后，不要等待第二天的定时任务，立即进行一次正式运行：
+
+1. 打开 GitHub 仓库的 `Actions` 页面。
+2. 左侧选择 `WeChat Article Sync`。
+3. 点击 `Run workflow`。
+4. Branch 选择 `master`。
+5. `max_pages` 首次保持 `20`。如果需要回补较多文章，可以以后分次提高，但单次不要超过工作流允许的 `40`。
+6. 再次点击绿色的 `Run workflow`。
+
+工作流会依次执行凭据检查、文章增量同步、内容完整性检查和 Astro 构建。只有发现内容变化且全部检查成功时，才会创建提交：
+
+```text
+content: sync WeChat articles
 ```
 
-两项 Secret 必须分开保存。不建议把整个 JSON 放进一项 Secret，否则 GitHub 日志对其内部字段的自动脱敏可能不完整。
+验收标准：
 
-## Action 配置
+- Action 运行结果为绿色。
+- 有新文章时，`master` 出现自动提交；没有新文章时会正常结束且不创建空提交。
+- 新文章 Markdown 位于 `src/content/articles/`。
+- 文章封面和正文图片位于 `public/article-assets/`，包括正文完全由图片组成的文章。
+- Cloudflare Pages 随后收到同一提交并完成生产部署。
+- 打开网站后能在首页或日期归档中看到新文章，详情页图片可正常加载。
 
-`.github/workflows/wechat-sync.yml` 的生产流程：
+手动运行入口只会在包含 `workflow_dispatch` 的工作流已经位于默认分支时显示。当前仓库已经满足这一条件。
 
-1. 每天北京时间 `08:30` 执行，也可在 Actions 页面手动触发。
-2. 最多检查 20 页文章列表；遇到已完成文章会提前停止，常规日增量只使用少量请求。
-3. 按文章 ID 和规范化原文链接去重，已入库文章不重复下载。
-4. 新文章正文、封面和图片全部本地化；纯图片文章同样受完整性检查。
-5. 单篇失败时写入 `wechat_sync/index.json` 的 `pendingArticles`，下次自动重试。
-6. 在提交前检查 Markdown/索引/图片一致性，并执行 `npm run build`。
+## 六、日常自动更新逻辑
+
+`.github/workflows/wechat-sync.yml` 每天北京时间 `08:30` 自动执行，也可以随时手动触发。
+
+每次运行会：
+
+1. 最多检查 20 页文章列表，遇到已完成文章时提前停止，减少公开服务请求。
+2. 使用文章 ID 和规范化原文链接双重去重，只下载新增文章。
+3. 优先重试 `wechat_sync/index.json` 中的 `pendingArticles`，避免一次失败造成永久漏文。
+4. 下载正文、封面和正文图片；纯图片文章只有在至少解析并本地化一张图片后才算成功。
+5. 检查 Markdown、索引和本地图片引用的一致性。
+6. 执行 `npm run build`，确保生成的 Astro 网站可构建。
 7. 只提交 `src/content/articles`、`public/article-assets` 和 `wechat_sync/index.json`。
-8. 推送 `master` 后，Cloudflare Pages 通过 GitHub 集成自动执行 `npm run build` 并发布 `dist`。
+8. 推送 `master`，由 Cloudflare Pages 的 Git 集成自动发布。
 
-Action 提交使用 GitHub 每次运行自动签发的 `GITHUB_TOKEN`，工作流已限定为 `contents: write` 和 `issues: write`，不需要创建或长期保存 PAT。
-如果推送时返回 403，在仓库 `Settings → Actions → General → Workflow permissions` 中选择 `Read and write permissions`，并检查 `master` 分支保护规则是否禁止 GitHub Actions 直接推送。
+公开服务的单账号每日 50 次、单 IP 每日 300 次额度足够当前单公众号的日常增量使用。常规情况下只会读取前几页；不要无故反复手动运行或把 `max_pages` 长期设置为 40。
 
-定时工作流只在默认分支运行，因此 GitHub 仓库的 Default branch 必须保持为 `master`。公开仓库连续 60 天没有任何仓库活动时，GitHub 可能自动禁用 scheduled workflow；若公众号长期停更，需在 Actions 页面重新启用。
+公开仓库连续 60 天没有任何仓库活动时，GitHub 可能自动禁用 scheduled workflow。若公众号长期停更，应定期查看 Actions；发现计划任务被禁用时，在工作流页面重新启用并手动运行一次。
 
-## 失败与自愈
+## 七、凭据失效时轮换
 
-同步失败时，Action 会维护一个标题为“微信公众号自动同步失败”的 Issue，避免每天创建重复告警。后续同步成功后会自动关闭该 Issue。
-
-- `429`：公开中转服务限流。当前任务会失败，已成功文章仍可提交，未完成文章下次重试。
-- 单篇下载失败：文章进入 `pendingArticles`，下次运行自动重试。
-- 完整性或 Astro 构建失败：不提交本次生成内容，Cloudflare 继续保留上一个正常版本。
-- `401`：凭据已失效，需要人工重新扫码。上游接口没有提供 refresh token，因此无法在 GitHub 无人扫码的环境中自动续期。
-
-401 轮换步骤：
+当 Action 日志或告警 Issue 显示 HTTP 401、unauthorized、token invalid 等凭据错误时：
 
 ```bash
+cd /Users/ronchylu/Documents/Developer/Workshop/Gator-Investment-Research
 source .venv/bin/activate
 python -m wechat_sync.auth
+```
+
+扫码成功后，使用“第四节”的网页方法覆盖 `WEREAD_VID` 和 `WEREAD_TOKEN`，或执行：
+
+```bash
 python -m wechat_sync.github_secrets --repo Ronchy2000/Gator-Investment-Research
 ```
 
-更新 Secrets 后，在 GitHub Actions 页面手动运行 `WeChat Article Sync`。
+然后在 Actions 页面手动运行一次 `WeChat Article Sync`。成功后，工作流会自动关闭之前的同步失败 Issue。
 
-## Cloudflare Pages
+更新同名 Secret 即可，不需要删除重建工作流，不需要修改 YAML，也不需要在 Cloudflare 中同步更新。
 
-Cloudflare 只负责构建和托管，不需要微信凭据。配置保持为：
+## 八、故障排查
 
-| 配置 | 值 |
-| --- | --- |
-| Production branch | `master` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Node.js | `22` |
+| 现象 | 常见原因 | 处理方法 |
+| --- | --- | --- |
+| `Missing WEREAD_VID` 或 `Missing WEREAD_TOKEN` | Secret 未创建、名称拼错或保存到 Environment secrets | 在 Repository secrets 中按精确名称重新创建 |
+| HTTP 401 / unauthorized | 扫码登录态失效 | 重新扫码并覆盖两个 Secrets |
+| HTTP 429 | 公开中转服务达到频率限制 | 停止重复运行，等待额度恢复后再手动执行；不必重新扫码 |
+| 单篇文章失败 | 微信正文暂时不可访问、媒体下载失败或正文异常 | 查看 `pendingArticles`，下一次任务会自动重试 |
+| 纯图片文章未入库 | 至少一张正文图片没有成功解析或本地化 | 等待下一次重试；持续失败时查看该文章下载日志 |
+| `git push` 返回 403 | Workflow permissions 为只读或分支保护阻止推送 | 开启 `Read and write permissions`，调整分支保护规则 |
+| Action 成功但没有新提交 | 没有新文章，或文章已经在索引中 | 属于正常结果，查看同步摘要中的新增数量 |
+| Action 有提交但网页没更新 | Cloudflare 未监听 `master`、自动生产部署关闭或构建失败 | 按 [DEPLOYMENT.md](DEPLOYMENT.md) 检查分支和最新部署日志 |
+| Astro 构建失败 | 新内容完整性异常或依赖/配置问题 | 工作流不会提交不完整内容，先根据失败步骤修复后重跑 |
 
-如果 Cloudflare 仍使用旧 Docsify 站点的 `docs` 输出目录，必须改为 `dist`。
+同步失败时，已成功写入并通过检查的文章可以保留；未完成文章会进入重试队列。完整性或构建失败时不会推送本次内容，因此线上仍保留上一个正常版本。
+
+## 九、安全注意事项
+
+- 不要提交 `data/wechat/credentials.json`、二维码、终端凭据输出或浏览器网络请求截图。
+- 不要把 Secret 写进 workflow YAML、README、Cloudflare 环境变量或普通 GitHub Variables。
+- 不要在命令行中直接 `echo` 或打印 token；使用仓库提供的剪贴板和上传脚本。
+- 如果凭据曾出现在提交、Issue、Action 日志或截图中，应立即重新扫码并覆盖 Secrets；仅删除文件不足以使旧凭据失效。
+- GitHub Actions 只需要仓库自动提供的 `GITHUB_TOKEN`，不要额外创建长期 PAT。
+
+## 官方参考
+
+- [GitHub：在 Actions 中使用 Secrets](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+- [GitHub：手动运行工作流](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
+- [GitHub：GITHUB_TOKEN](https://docs.github.com/en/actions/concepts/security/github_token)
+- [GitHub：scheduled 工作流行为](https://docs.github.com/en/enterprise-cloud%40latest/actions/reference/workflows-and-actions/events-that-trigger-workflows)

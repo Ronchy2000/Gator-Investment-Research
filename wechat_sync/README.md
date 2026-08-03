@@ -52,7 +52,7 @@ python -m wechat_sync.github_secrets --copy vid
 python -m wechat_sync.github_secrets --copy token
 ```
 
-凭据没有可供 Action 自动使用的 refresh token。收到 401 告警后，需要重新运行 `python -m wechat_sync.auth` 并更新 Secrets。详细运维说明见 [../AUTOMATION.md](../AUTOMATION.md)。
+凭据没有可供 Action 自动使用的 refresh token。收到 401 告警后，需要重新运行 `python -m wechat_sync.auth` 并更新 Secrets。完整的扫码、Secret 配置、首次手动运行和故障处理见 [../AUTOMATION.md](../AUTOMATION.md)，Cloudflare Pages 配置见 [../DEPLOYMENT.md](../DEPLOYMENT.md)。
 
 ## 同步参数
 
