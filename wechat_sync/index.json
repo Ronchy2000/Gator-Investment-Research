@@ -1,12 +1,22 @@
 {
-  "version": 1,
+  "version": 2,
   "account": {
     "mpId": "MP_WXS_3690344459",
     "name": "获得信息差"
   },
   "earliestDate": "2026-06-15",
-  "updatedAt": "2026-08-03T11:18:31.606281+08:00",
+  "updatedAt": "2026-08-03T16:06:38.327737+08:00",
+  "pendingArticles": [],
   "articles": [
+    {
+      "articleId": "qRFSHm1B6viK3dmMNlZGKw",
+      "title": "8.3日韩股市低开",
+      "publishedAt": "2026-08-03T08:40:26+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s/qRFSHm1B6viK3dmMNlZGKw",
+      "markdownPath": "src/content/articles/2026-08-03-qRFSHm1B6viK3dmMNlZGKw.md",
+      "cover": "/article-assets/qRFSHm1B6viK3dmMNlZGKw/cover.jpg",
+      "assetCount": 1
+    },
     {
       "articleId": "vQKAI_jyLIVmx55Lw72xng",
       "title": "7.31美科技全线暴涨",
