@@ -1,0 +1,142 @@
+---
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { formatDate, readingMinutes } from "../../lib/articles";
+
+interface Props {
+  note: CollectionEntry<"notes">;
+}
+
+export async function getStaticPaths() {
+  const notes = await getCollection("notes");
+  return notes.map((note) => ({ params: { id: note.id }, props: { note } }));
+}
+
+const { note } = Astro.props;
+const { Content } = await render(note);
+---
+
+<BaseLayout title={note.data.title} description={note.data.description} image={note.data.cover} article>
+  <article class="note-page">
+    <header>
+      <a href="/reports/">← 返回资料库</a>
+      <div><span>INVESTMENT NOTE</span><span>{note.data.noteType}</span></div>
+      <h1>{note.data.title}</h1>
+      <p>{note.data.description}</p>
+      <footer>
+        <time datetime={note.data.publishedAt.toISOString()}>{formatDate(note.data.publishedAt)}</time>
+        <span>约 {readingMinutes(note.body || "")} 分钟</span>
+      </footer>
+    </header>
+    <div class="rule"><span></span><span></span></div>
+    <div class="note-body"><Content /></div>
+  </article>
+</BaseLayout>
+
+<style>
+  .note-page {
+    width: min(900px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .note-page > header {
+    padding-block: 65px 50px;
+  }
+
+  .note-page > header > a {
+    display: inline-block;
+    margin-bottom: 70px;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+
+  .note-page > header > div,
+  .note-page > header footer {
+    display: flex;
+    justify-content: space-between;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .note-page h1 {
+    margin: 22px 0 28px;
+    font-family: var(--serif);
+    font-size: clamp(48px, 8vw, 88px);
+    font-weight: 550;
+    letter-spacing: -0.05em;
+    line-height: 1.1;
+  }
+
+  .note-page > header > p {
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 19px;
+  }
+
+  .note-page > header footer {
+    justify-content: flex-start;
+    gap: 25px;
+    margin-top: 30px;
+    color: var(--ink-faint);
+  }
+
+  .rule {
+    display: grid;
+    grid-template-columns: 1fr 80px;
+    gap: 8px;
+  }
+
+  .rule span {
+    height: 5px;
+    background: var(--ink);
+  }
+
+  .rule span:last-child {
+    background: var(--accent);
+  }
+
+  .note-body {
+    width: min(760px, 100%);
+    margin: 70px auto 0;
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.95;
+  }
+
+  .note-body :global(h2) {
+    margin-top: 2.2em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    font-size: 30px;
+  }
+
+  .note-body :global(blockquote) {
+    margin: 2em 0;
+    padding: 18px 24px;
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--ink-soft);
+  }
+
+  .note-body :global(img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 30px auto;
+  }
+
+  @media (max-width: 680px) {
+    .note-page > header {
+      padding-top: 40px;
+    }
+
+    .note-page > header > a {
+      margin-bottom: 48px;
+    }
+
+    .note-body {
+      font-size: 17px;
+    }
+  }
+</style>

@@ -1,0 +1,323 @@
+---
+import { getCollection, render, type CollectionEntry } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { formatDate, readingMinutes } from "../../lib/articles";
+import { reportHref, sortReports } from "../../lib/reports";
+
+interface Props {
+  report: CollectionEntry<"reports">;
+  newer?: CollectionEntry<"reports">;
+  older?: CollectionEntry<"reports">;
+}
+
+export async function getStaticPaths() {
+  const reports = sortReports(await getCollection("reports"));
+  return reports.map((report, index) => ({
+    params: { id: String(report.data.reportId) },
+    props: {
+      report,
+      newer: reports[index - 1],
+      older: reports[index + 1],
+    },
+  }));
+}
+
+const { report, newer, older } = Astro.props;
+const { Content } = await render(report);
+const minutes = readingMinutes(report.body || "");
+---
+
+<BaseLayout title={report.data.title} description={report.data.description} article>
+  <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
+  <article class="report-page">
+    <header class="report-header">
+      <a class="back-link" href="/reports/">← 返回历史研报</a>
+      <div class="report-kicker">
+        <span>LEGACY REPORT / #{report.data.reportId}</span>
+        <span>{report.data.category}</span>
+      </div>
+      <h1>{report.data.title}</h1>
+      <p>{report.data.description}</p>
+      <div class="report-meta">
+        <time datetime={report.data.publishedAt.toISOString()}>{formatDate(report.data.publishedAt)}</time>
+        <span>约 {minutes} 分钟</span>
+        <span>{report.data.source}</span>
+        <a href={report.data.sourceUrl} target="_blank" rel="noopener noreferrer">原始页面 ↗</a>
+      </div>
+    </header>
+
+    <div class="report-rule"><span></span><span></span></div>
+    <div class="report-body"><Content /></div>
+
+    <footer class="report-end">
+      <span>HISTORICAL ARCHIVE / {formatDate(report.data.publishedAt)}</span>
+      <strong>本文为冻结的历史归档，不再更新。</strong>
+    </footer>
+  </article>
+
+  <nav class="report-pagination" aria-label="历史研报翻页">
+    <div>
+      {newer ? <a href={reportHref(newer)}><span>较新一篇</span><strong>{newer.data.title}</strong></a> : <span>已是最新历史研报</span>}
+    </div>
+    <div>
+      {older ? <a href={reportHref(older)}><span>较早一篇</span><strong>{older.data.title}</strong></a> : <span>已是最早历史研报</span>}
+    </div>
+  </nav>
+
+  <script>
+    const progress = document.querySelector<HTMLElement>("[data-reading-progress]");
+    const updateProgress = () => {
+      if (!progress) return;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
+    };
+    document.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+  </script>
+</BaseLayout>
+
+<style>
+  .reading-progress {
+    position: fixed;
+    z-index: 30;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--signal);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  .report-page {
+    width: min(900px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .report-header {
+    padding-block: 65px 50px;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 70px;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  .report-kicker {
+    display: flex;
+    justify-content: space-between;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .report-header h1 {
+    margin: 22px 0 28px;
+    font-family: var(--serif);
+    font-size: clamp(45px, 7.5vw, 82px);
+    font-weight: 550;
+    letter-spacing: -0.05em;
+    line-height: 1.12;
+  }
+
+  .report-header > p {
+    max-width: 730px;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.8;
+  }
+
+  .report-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin-top: 35px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .report-meta a {
+    margin-left: auto;
+    color: var(--ink);
+  }
+
+  .report-rule {
+    display: grid;
+    grid-template-columns: 1fr 80px;
+    gap: 8px;
+  }
+
+  .report-rule span {
+    height: 5px;
+    background: var(--ink);
+  }
+
+  .report-rule span:last-child {
+    background: var(--signal);
+  }
+
+  .report-body {
+    width: min(780px, 100%);
+    margin: 70px auto 90px;
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.95;
+  }
+
+  .report-body :global(h2),
+  .report-body :global(h3),
+  .report-body :global(h4) {
+    margin: 2.1em 0 0.8em;
+    font-family: var(--serif);
+    line-height: 1.4;
+  }
+
+  .report-body :global(h2) {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    font-size: 29px;
+  }
+
+  .report-body :global(h3) {
+    font-size: 23px;
+  }
+
+  .report-body :global(p),
+  .report-body :global(li) {
+    margin-block: 0.9em;
+  }
+
+  .report-body :global(blockquote) {
+    margin: 2em 0;
+    padding: 18px 24px;
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--ink-soft);
+  }
+
+  .report-body :global(img) {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    margin: 30px auto;
+  }
+
+  .report-body :global(a) {
+    border-bottom: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .report-body :global(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+
+  .report-body :global(td),
+  .report-body :global(th) {
+    min-width: 100px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+  }
+
+  .report-end {
+    display: grid;
+    gap: 8px;
+    padding: 30px 0;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .report-end span {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+  }
+
+  .report-end strong {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+  }
+
+  .report-pagination {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: min(1120px, calc(100% - 40px));
+    margin: 85px auto 0;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .report-pagination > div {
+    min-height: 140px;
+    padding: 25px 30px;
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  .report-pagination > div:first-child {
+    border-right: 1px solid var(--line);
+  }
+
+  .report-pagination a {
+    display: grid;
+    gap: 12px;
+  }
+
+  .report-pagination a span {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .report-pagination a strong {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .report-pagination a:hover strong {
+    color: var(--accent);
+  }
+
+  @media (max-width: 680px) {
+    .report-header {
+      padding-top: 40px;
+    }
+
+    .back-link {
+      margin-bottom: 48px;
+    }
+
+    .report-meta a {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .report-body {
+      font-size: 16px;
+    }
+
+    .report-pagination {
+      grid-template-columns: 1fr;
+    }
+
+    .report-pagination > div:first-child {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+</style>

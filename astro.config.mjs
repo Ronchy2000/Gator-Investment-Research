@@ -5,5 +5,12 @@ export default defineConfig({
   site: "https://gator.ronchy2000.top",
   output: "static",
   trailingSlash: "always",
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      filter: (page) =>
+        !["/all-reports/", "/macro-analysis/", "/industry-analysis/", "/investment-notes/"].some(
+          (legacyPath) => page.includes(legacyPath),
+        ),
+    }),
+  ],
 });

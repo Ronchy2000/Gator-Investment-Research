@@ -34,6 +34,9 @@ Astro Content Collections
 Cloudflare Pages / dist
 ```
 
+旧 Docsify 的 913 篇唯一研报通过一次性迁移器进入 `src/content/reports`，不参与微信公众号增量任务。旧分类目录中的 876 个副本不重复迁移。
+旧站单独发布的投资随笔进入 `src/content/notes`，不计入机构研报统计。
+
 ## 同步层
 
 ### 凭据
@@ -68,11 +71,17 @@ Cloudflare Pages / dist
 Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构建阶段输出真实 HTML。
 
 - `src/pages/index.astro`：最新文章、统计、月份入口。
-- `src/pages/archive.astro`：按月和日期浏览全部文章。
+- `src/pages/archive.astro`：按月和日期浏览公众号文章。
 - `src/pages/articles/[id].astro`：文章正文、原文入口和前后导航。
-- `src/components/SearchDialog.astro`：标题、摘要、日期与正文客户端全文搜索。
+- `src/pages/reports/index.astro`：按分类、年份浏览 913 篇冻结历史研报。
+- `src/pages/reports/[id].astro`：历史研报静态详情页。
+- `src/pages/notes/[id].astro`：独立投资随笔详情页。
+- `src/pages/search-index.json.ts`：构建一次、首次搜索时按需加载的双资料库全文索引。
+- `src/components/SearchDialog.astro`：公众号/历史研报范围切换和客户端全文搜索。
 - `src/layouts/BaseLayout.astro`：全局导航、明暗主题、SEO 和页脚。
 - `src/pages/rss.xml.js`：RSS 订阅源。
+
+`scripts/migrate_legacy_reports_to_astro.py` 从 `docs/all-reports` 读取 913 篇唯一正文，转换 frontmatter 并保留原分类。唯一包含远程图片的旧文因源站失效而使用明确的本地占位图，原图片链接仍保留供追溯。
 
 站点仅使用少量原生 JavaScript 处理搜索、主题、阅读进度和图片放大，不引入 React/Vue 等运行时框架。
 

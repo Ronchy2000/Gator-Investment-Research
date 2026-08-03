@@ -154,7 +154,7 @@ img {
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 34px;
+  gap: clamp(18px, 2.2vw, 34px);
 }
 
 .desktop-nav a {
@@ -403,6 +403,27 @@ main {
   font-size: 12px;
 }
 
+.search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.search-filters button {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.search-filters button[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .search-results {
   display: grid;
   max-height: 430px;
@@ -418,7 +439,7 @@ main {
 
 .search-results a {
   display: grid;
-  grid-template-columns: 90px 1fr;
+  grid-template-columns: 130px 1fr;
   gap: 4px 18px;
   padding: 15px 4px;
 }

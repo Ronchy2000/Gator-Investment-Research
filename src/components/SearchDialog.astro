@@ -1,19 +1,20 @@
 ---
 import { getCollection } from "astro:content";
-import { articleHref, formatDate, plainText, sortArticles } from "../lib/articles";
 
-const articles = sortArticles(await getCollection("articles"));
-const searchIndex = articles.map((article) => ({
-  title: article.data.title,
-  description: article.data.description,
-  date: formatDate(article.data.publishedAt),
-  href: articleHref(article),
-  text: plainText(article.body || ""),
-}));
-const serializedIndex = JSON.stringify(searchIndex).replace(/</g, "\\u003c");
+const [articles, reports, notes] = await Promise.all([
+  getCollection("articles"),
+  getCollection("reports"),
+  getCollection("notes"),
+]);
+const totalEntries = articles.length + reports.length + notes.length;
 ---
 
-<dialog class="search-dialog" data-search-dialog aria-labelledby="search-title">
+<dialog
+  class="search-dialog"
+  data-search-dialog
+  data-search-total={totalEntries}
+  aria-labelledby="search-title"
+>
   <div class="search-shell">
     <div class="search-heading">
       <div>
@@ -37,33 +38,72 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, "\\u003c");
         data-search-input
         autocomplete="off"
         placeholder="输入标题、正文或日期"
-        aria-label="搜索全部文章"
+        aria-label="搜索全部内容"
       />
       <kbd>ESC</kbd>
     </label>
 
-    <p class="search-status" data-search-status>输入关键词，检索全部 {articles.length} 篇文章。</p>
+    <div class="search-filters" aria-label="搜索范围">
+      <button type="button" data-search-kind="all" aria-pressed="true">全部 {totalEntries}</button>
+      <button type="button" data-search-kind="wechat" aria-pressed="false">公众号 {articles.length}</button>
+      <button type="button" data-search-kind="report" aria-pressed="false">历史研报 {reports.length}</button>
+      <button type="button" data-search-kind="note" aria-pressed="false">投资随笔 {notes.length}</button>
+    </div>
+
+    <p class="search-status" data-search-status>搜索索引将在首次使用时加载。</p>
     <ol class="search-results" data-search-results></ol>
   </div>
 </dialog>
 
-<script id="search-index" type="application/json" set:html={serializedIndex}></script>
-
 <script>
+  interface SearchItem {
+    title: string;
+    description: string;
+    date: string;
+    href: string;
+    text: string;
+    kind: "wechat" | "report" | "note";
+    label: string;
+  }
+
   const dialog = document.querySelector<HTMLDialogElement>("[data-search-dialog]");
   const input = document.querySelector<HTMLInputElement>("[data-search-input]");
   const status = document.querySelector<HTMLElement>("[data-search-status]");
   const results = document.querySelector<HTMLOListElement>("[data-search-results]");
-  const indexElement = document.querySelector<HTMLScriptElement>("#search-index");
-  const searchItems = indexElement ? JSON.parse(indexElement.textContent || "[]") : [];
+  const totalEntries = Number(dialog?.dataset.searchTotal || 0);
+  let searchItems: SearchItem[] = [];
+  let activeKind = "all";
+  let loadPromise: Promise<void> | null = null;
 
   function normalize(value: string): string {
     return value.toLocaleLowerCase("zh-CN").replace(/\s+/g, " ").trim();
   }
 
+  async function loadSearchIndex(): Promise<void> {
+    if (searchItems.length > 0) return;
+    if (!loadPromise) {
+      if (status) status.textContent = "正在加载全文索引…";
+      loadPromise = fetch("/search-index.json")
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then((items: SearchItem[]) => {
+          searchItems = items;
+          renderResults(input?.value || "");
+        })
+        .catch(() => {
+          if (status) status.textContent = "搜索索引加载失败，请刷新页面后重试。";
+          loadPromise = null;
+        });
+    }
+    await loadPromise;
+  }
+
   function openSearch(): void {
     if (!dialog) return;
     if (!dialog.open) dialog.showModal();
+    void loadSearchIndex();
     window.setTimeout(() => input?.focus(), 30);
   }
 
@@ -72,16 +112,20 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, "\\u003c");
   }
 
   function renderResults(query: string): void {
-    if (!results || !status) return;
+    if (!results || !status || searchItems.length === 0) return;
     results.replaceChildren();
     const terms = normalize(query).split(" ").filter(Boolean);
     if (terms.length === 0) {
-      status.textContent = `输入关键词，检索全部 ${searchItems.length} 篇文章。`;
+      const scopeCount = activeKind === "all"
+        ? totalEntries
+        : searchItems.filter((item) => item.kind === activeKind).length;
+      status.textContent = `输入关键词，检索当前范围内的 ${scopeCount} 条内容。`;
       return;
     }
 
     const matches = searchItems
-      .map((item: { title: string; description: string; date: string; href: string; text: string }) => {
+      .filter((item) => activeKind === "all" || item.kind === activeKind)
+      .map((item) => {
         const title = normalize(item.title);
         const haystack = normalize(`${item.date} ${item.title} ${item.description} ${item.text}`);
         if (!terms.every((term) => haystack.includes(term))) return null;
@@ -94,10 +138,10 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, "\\u003c");
       })
       .filter(Boolean)
       .sort((left: any, right: any) => right.score - left.score)
-      .slice(0, 20);
+      .slice(0, 30);
 
     status.textContent = matches.length
-      ? `找到 ${matches.length} 条结果${matches.length === 20 ? "，仅显示前 20 条" : ""}。`
+      ? `找到 ${matches.length} 条结果${matches.length === 30 ? "，仅显示前 30 条" : ""}。`
       : "没有找到匹配内容，请尝试更短的关键词。";
 
     for (const match of matches) {
@@ -109,10 +153,10 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, "\\u003c");
       const description = document.createElement("span");
       link.href = item.href;
       meta.className = "search-result-meta";
-      meta.textContent = item.date;
+      meta.textContent = `${item.date} · ${item.label}`;
       title.textContent = item.title;
       description.className = "search-result-description";
-      description.textContent = item.description || "打开文章查看正文";
+      description.textContent = item.description || "打开查看完整内容";
       link.append(meta, title, description);
       row.append(link);
       results.append(row);
@@ -123,6 +167,15 @@ const serializedIndex = JSON.stringify(searchIndex).replace(/</g, "\\u003c");
     button.addEventListener("click", openSearch);
   });
   document.querySelector<HTMLElement>("[data-search-close]")?.addEventListener("click", closeSearch);
+  document.querySelectorAll<HTMLButtonElement>("[data-search-kind]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeKind = button.dataset.searchKind || "all";
+      document.querySelectorAll<HTMLButtonElement>("[data-search-kind]").forEach((candidate) => {
+        candidate.setAttribute("aria-pressed", String(candidate === button));
+      });
+      renderResults(input?.value || "");
+    });
+  });
   input?.addEventListener("input", () => renderResults(input.value));
   dialog?.addEventListener("click", (event) => {
     if (event.target === dialog) closeSearch();

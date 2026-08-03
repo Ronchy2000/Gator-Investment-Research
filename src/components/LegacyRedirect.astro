@@ -1,0 +1,24 @@
+---
+interface Props {
+  target: string;
+  title: string;
+}
+
+const { target, title } = Astro.props;
+const redirectScript = `location.replace(${JSON.stringify(target)});`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <link rel="canonical" href={target} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <p>页面已迁移。<a href={target}>继续阅读</a></p>
+    <script is:inline set:html={redirectScript}></script>
+  </body>
+</html>

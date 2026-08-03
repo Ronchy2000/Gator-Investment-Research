@@ -1,0 +1,17 @@
+---
+import { getCollection } from "astro:content";
+import LegacyRedirect from "../../components/LegacyRedirect.astro";
+import { reportHref } from "../../lib/reports";
+
+export async function getStaticPaths() {
+  const reports = await getCollection("reports", ({ data }) => data.category === "行业分析");
+  return reports.map((report) => ({
+    params: { legacy: report.data.legacyStem },
+    props: { target: reportHref(report), title: report.data.title },
+  }));
+}
+
+const { target, title } = Astro.props;
+---
+
+<LegacyRedirect target={target} title={title} />

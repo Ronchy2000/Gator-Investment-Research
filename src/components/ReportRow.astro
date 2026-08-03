@@ -1,0 +1,110 @@
+---
+import { formatDate } from "../lib/articles";
+import type { ReportEntry } from "../lib/reports";
+import { reportHref, reportYear } from "../lib/reports";
+
+interface Props {
+  report: ReportEntry;
+}
+
+const { report } = Astro.props;
+---
+
+<article
+  class="report-row"
+  data-report-row
+  data-category={report.data.category}
+  data-year={reportYear(report)}
+>
+  <time datetime={report.data.publishedAt.toISOString()}>{formatDate(report.data.publishedAt)}</time>
+  <span class:list={["category", `category-${report.data.category}`]}>{report.data.category}</span>
+  <a href={reportHref(report)}><h3>{report.data.title}</h3></a>
+  <span class="report-id">#{report.data.reportId}</span>
+  <a class="row-arrow" href={reportHref(report)} aria-label={`阅读${report.data.title}`}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+  </a>
+</article>
+
+<style>
+  .report-row {
+    display: grid;
+    grid-template-columns: 96px 78px minmax(0, 1fr) 48px 24px;
+    align-items: center;
+    gap: 16px;
+    min-height: 64px;
+    border-top: 1px solid var(--line);
+  }
+
+  .report-row[hidden] {
+    display: none;
+  }
+
+  time,
+  .report-id {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .category {
+    width: max-content;
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .category-宏观分析 {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+    color: var(--accent);
+  }
+
+  .category-其他 {
+    color: var(--signal);
+  }
+
+  h3 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  a:hover h3 {
+    color: var(--accent);
+  }
+
+  .row-arrow svg {
+    width: 19px;
+    fill: none;
+    stroke: var(--ink-faint);
+    stroke-linecap: round;
+    stroke-width: 1.5;
+  }
+
+  @media (max-width: 720px) {
+    .report-row {
+      grid-template-columns: 82px 1fr auto;
+      gap: 6px 12px;
+      padding: 15px 0;
+    }
+
+    .category {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .report-row > a:first-of-type {
+      grid-column: 2 / -1;
+      grid-row: 1 / 3;
+      padding-right: 16px;
+    }
+
+    .report-id,
+    .row-arrow {
+      display: none;
+    }
+  }
+</style>

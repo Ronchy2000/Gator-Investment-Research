@@ -1,13 +1,21 @@
 ---
 import { getCollection } from "astro:content";
 import ArticleRow from "../components/ArticleRow.astro";
+import ReportRow from "../components/ReportRow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { articleHref, formatDate, formatMonth, monthKey, readingMinutes, sortArticles } from "../lib/articles";
+import { REPORT_CATEGORIES, sortReports } from "../lib/reports";
 
 const articles = sortArticles(await getCollection("articles"));
+const reports = sortReports(await getCollection("reports"));
+const notes = await getCollection("notes");
 const featured = articles[0];
 const recent = articles.slice(1, 11);
-const firstArticle = articles.at(-1);
+const recentReports = reports.slice(0, 5);
+const reportCategoryCounts = new Map(REPORT_CATEGORIES.map((category) => [category, 0]));
+for (const report of reports) {
+  reportCategoryCounts.set(report.data.category, (reportCategoryCounts.get(report.data.category) || 0) + 1);
+}
 const monthCounts = new Map<string, { label: string; count: number }>();
 for (const article of articles) {
   const key = monthKey(article.data.publishedAt);
@@ -63,14 +71,14 @@ for (const article of articles) {
 
   <section class="metrics page-width" aria-label="网站统计">
     <div>
-      <span>ARCHIVE</span>
+      <span>WECHAT</span>
       <strong>{articles.length}</strong>
-      <small>篇文章</small>
+      <small>篇公众号文章</small>
     </div>
     <div>
-      <span>STARTED</span>
-      <strong>{firstArticle ? formatDate(firstArticle.data.publishedAt) : "—"}</strong>
-      <small>归档起点</small>
+      <span>HISTORY</span>
+      <strong>{reports.length}</strong>
+      <small>篇唯一历史研报</small>
     </div>
     <div>
       <span>UPDATED</span>
@@ -78,9 +86,9 @@ for (const article of articles) {
       <small>最近更新</small>
     </div>
     <div>
-      <span>SOURCE</span>
-      <strong>获得信息差</strong>
-      <small>微信公众号</small>
+      <span>TOTAL</span>
+      <strong>{articles.length + reports.length + notes.length}</strong>
+      <small>篇可检索内容</small>
     </div>
   </section>
 
@@ -99,6 +107,32 @@ for (const article of articles) {
       查看完整归档
       <span>{articles.length} ARTICLES</span>
     </a>
+  </section>
+
+  <section class="history-preview page-width">
+    <div class="history-intro">
+      <span class="eyebrow">LEGACY RESEARCH LIBRARY</span>
+      <h2><strong>{reports.length}</strong> 篇历史研报，继续留在这里。</h2>
+      <p>
+        旧站分类目录中的重复文件已经去除，只保留唯一正文。历史资料不再更新，但日期、分类、文章 ID 和原始来源全部保留。
+      </p>
+      <div class="history-categories">
+        {REPORT_CATEGORIES.map((category) => (
+          <a href={`/reports/?category=${encodeURIComponent(category)}`}>
+            <span>{category}</span>
+            <strong>{reportCategoryCounts.get(category)}</strong>
+          </a>
+        ))}
+      </div>
+      <a class="history-action" href="/reports/">进入历史研报库 →</a>
+    </div>
+    <div class="history-latest">
+      <header>
+        <span>最近的历史入库</span>
+        <small>FROZEN ARCHIVE</small>
+      </header>
+      {recentReports.map((report) => <ReportRow report={report} />)}
+    </div>
   </section>
 
   <section class="archive-overview page-width">
@@ -380,6 +414,77 @@ for (const article of articles) {
     border-top: 1px solid var(--line-strong);
   }
 
+  .history-preview {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(45px, 8vw, 110px);
+    padding-block: 90px;
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .history-intro h2 {
+    max-width: 550px;
+    margin: 15px 0 22px;
+    font-family: var(--serif);
+    font-size: clamp(38px, 5vw, 62px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .history-intro h2 strong {
+    color: var(--signal);
+    font-weight: 500;
+  }
+
+  .history-intro > p {
+    max-width: 500px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  .history-categories {
+    display: grid;
+    margin-top: 30px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .history-categories a {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+
+  .history-categories a:hover span {
+    color: var(--accent);
+  }
+
+  .history-categories strong {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+  }
+
+  .history-action {
+    display: inline-block;
+    margin-top: 28px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--ink);
+    font-size: 13px;
+  }
+
+  .history-latest > header {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
   .archive-statement h2 {
     max-width: 520px;
     font-size: clamp(38px, 5vw, 65px);
@@ -482,6 +587,7 @@ for (const article of articles) {
     }
 
     .archive-overview,
+    .history-preview,
     .source-note {
       grid-template-columns: 1fr;
     }

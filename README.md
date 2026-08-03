@@ -10,8 +10,10 @@
 - 首次补齐 `2026-06-15` 起的历史文章，后续根据索引增量更新。
 - 同时支持文本文章和内容完全由图片组成的文章。
 - 正文、封面和图片全部本地化，避免微信远程图片防盗链失效。
+- 去重迁移旧站 913 篇历史研报，保留宏观、行业、其他分类及旧链接跳转。
+- 独立保留“宽基指数：新三年计划”投资随笔及其本地配图。
 - Astro 静态生成首页、日期归档、文章详情、RSS 和 sitemap。
-- 提供标题与正文全文搜索、明暗主题、阅读时间、图片放大和前后文章导航。
+- 提供公众号/历史研报全文搜索、分类与年份筛选、明暗主题、阅读时间和前后文章导航。
 
 ## 本地开发
 
@@ -58,19 +60,24 @@ python -m wechat_sync.sync --max-pages 20 --delay 2
 ```text
 src/
   components/             Astro 页面组件
-  content/articles/       微信文章 Markdown
+  content/articles/       持续增量的微信文章 Markdown
+  content/reports/        冻结的 913 篇历史研报
+  content/notes/          独立投资随笔
   content.config.ts       内容集合 schema
   layouts/                全局页面布局
   pages/                  首页、归档、文章页和 RSS
   styles/                 全局设计系统
 public/
   article-assets/         本地化文章图片
+  report-assets/          历史研报图片或失效说明占位图
 wechat_sync/
   auth.py                 本地扫码登录
   client.py               微信读书中转接口客户端
   downloader.py           正文解析与图片本地化
   sync.py                 首次回补与增量同步入口
   index.json              已完成文章索引
+scripts/
+  migrate_legacy_reports_to_astro.py  一次性历史研报迁移器
 ```
 
 ## Cloudflare Pages

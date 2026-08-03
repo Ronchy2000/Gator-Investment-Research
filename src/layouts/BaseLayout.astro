@@ -11,7 +11,7 @@ interface Props {
 
 const {
   title = "获得信息差",
-  description = "按日整理值得关注的市场信息与投资观察。",
+  description = "按日整理公众号市场信息，并保留 913 篇历史公开研报。",
   image = "/favicon.svg",
   article = false,
 } = Astro.props;
@@ -40,6 +40,35 @@ const currentPath = Astro.url.pathname;
     <meta property="og:image" content={new URL(image, siteUrl)} />
     <script is:inline>
       (() => {
+        if (!location.hash.startsWith("#/")) return;
+        let legacyPath = "";
+        try {
+          legacyPath = decodeURIComponent(location.hash.slice(1).split("?", 1)[0]);
+        } catch {
+          return;
+        }
+        const isLegacyReport = /^\/(?:all-reports|macro-analysis|industry-analysis|全部研报|宏观分析|行业分析)\//.test(legacyPath);
+        if (/^\/investment-notes\/2026\.06\.30-index-plan(?:\.md)?$/.test(legacyPath)) {
+          location.replace("/notes/2026-06-30-index-plan/");
+          return;
+        }
+        if (!isLegacyReport) return;
+        const idMatch = legacyPath.match(/\/(?:all-reports|macro-analysis|industry-analysis)\/[^/]*-(\d+)(?:\.md)?$/);
+        if (idMatch) {
+          location.replace(`/reports/${Number(idMatch[1])}/`);
+          return;
+        }
+        fetch("/legacy-routes.json")
+          .then((response) => response.json())
+          .then((routes) => {
+            const target = routes[legacyPath];
+            if (target) location.replace(target);
+          })
+          .catch(() => {});
+      })();
+    </script>
+    <script is:inline>
+      (() => {
         let saved = null;
         try {
           saved = localStorage.getItem("site-theme");
@@ -62,7 +91,8 @@ const currentPath = Astro.url.pathname;
 
       <nav class="desktop-nav" aria-label="主导航">
         <a href="/" aria-current={currentPath === "/" ? "page" : undefined}>首页</a>
-        <a href="/archive/" aria-current={currentPath.startsWith("/archive") ? "page" : undefined}>归档</a>
+        <a href="/archive/" aria-current={currentPath.startsWith("/archive") ? "page" : undefined}>公众号</a>
+        <a href="/reports/" aria-current={currentPath.startsWith("/reports") ? "page" : undefined}>历史研报</a>
         <a href="/about/" aria-current={currentPath.startsWith("/about") ? "page" : undefined}>关于</a>
       </nav>
 
@@ -88,7 +118,8 @@ const currentPath = Astro.url.pathname;
           <summary aria-label="打开导航"><span></span><span></span></summary>
           <nav aria-label="移动端导航">
             <a href="/">首页</a>
-            <a href="/archive/">归档</a>
+            <a href="/archive/">公众号文章</a>
+            <a href="/reports/">历史研报</a>
             <a href="/about/">关于</a>
             <button type="button" data-search-open>搜索文章</button>
           </nav>
@@ -109,7 +140,8 @@ const currentPath = Astro.url.pathname;
         </div>
       </div>
       <div class="footer-links">
-        <a href="/archive/">文章归档</a>
+        <a href="/archive/">公众号文章</a>
+        <a href="/reports/">历史研报</a>
         <a href="/rss.xml">RSS</a>
         <a href="https://cn-marketdata.com/" target="_blank" rel="noopener noreferrer">CN Market Data</a>
         <a href="https://github.com/Ronchy2000/Gator-Investment-Research" target="_blank" rel="noopener noreferrer">GitHub</a>

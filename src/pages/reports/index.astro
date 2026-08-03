@@ -1,0 +1,430 @@
+---
+import { getCollection } from "astro:content";
+import ReportRow from "../../components/ReportRow.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { REPORT_CATEGORIES, reportYear, sortReports } from "../../lib/reports";
+
+const reports = sortReports(await getCollection("reports"));
+const notes = await getCollection("notes");
+const categoryCounts = new Map(REPORT_CATEGORIES.map((category) => [category, 0]));
+const yearGroups = new Map<string, typeof reports>();
+for (const report of reports) {
+  categoryCounts.set(report.data.category, (categoryCounts.get(report.data.category) || 0) + 1);
+  const year = reportYear(report);
+  if (!yearGroups.has(year)) yearGroups.set(year, []);
+  yearGroups.get(year)?.push(report);
+}
+const years = [...yearGroups.keys()];
+---
+
+<BaseLayout title="历史研报" description="913 篇历史公开研报，按宏观、行业、年份分类浏览和全文检索。">
+  <header class="reports-hero page-width">
+    <div>
+      <span class="eyebrow">LEGACY RESEARCH LIBRARY</span>
+      <h1>历史研报</h1>
+    </div>
+    <div class="reports-intro">
+      <strong>{reports.length}</strong>
+      <p>篇唯一历史内容，已去除旧站分类目录中的重复副本。该资料库停止新增，但继续保留浏览与检索。</p>
+    </div>
+  </header>
+
+  <section class="category-summary page-width" aria-label="历史研报分类统计">
+    {REPORT_CATEGORIES.map((category, index) => (
+      <button type="button" data-category-shortcut={category}>
+        <span>{String(index + 1).padStart(2, "0")}</span>
+        <strong>{category}</strong>
+        <small>{categoryCounts.get(category)} 篇</small>
+      </button>
+    ))}
+  </section>
+
+  {notes[0] && (
+    <a class="note-banner page-width" href={`/notes/${notes[0].id}/`}>
+      <span>投资随笔 · {notes[0].data.noteType}</span>
+      <strong>{notes[0].data.title}</strong>
+      <small>独立内容，不计入 913 篇机构研报 →</small>
+    </a>
+  )}
+
+  <section class="library page-width">
+    <div class="library-heading">
+      <div>
+        <span class="eyebrow">BROWSE THE LIBRARY</span>
+        <h2>按日期浏览</h2>
+      </div>
+      <p>所有旧研报只保留一份。分类来自原始入库记录，发布日期和文章 ID 保持不变。</p>
+    </div>
+
+    <div class="filter-bar">
+      <label>
+        <span>分类</span>
+        <select data-report-category>
+          <option value="all">全部分类</option>
+          {REPORT_CATEGORIES.map((category) => <option value={category}>{category}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>年份</span>
+        <select data-report-year>
+          <option value="all">全部年份</option>
+          {years.map((year) => <option value={year}>{year} 年</option>)}
+        </select>
+      </label>
+      <button class="full-search" type="button" data-search-open>搜索正文</button>
+      <p><strong data-visible-count>{reports.length}</strong> 篇结果</p>
+    </div>
+
+    <div class="report-groups">
+      {[...yearGroups.entries()].map(([year, yearReports]) => (
+        <section class="year-group" data-year-section={year}>
+          <header>
+            <span>{year}</span>
+            <strong>{yearReports.length} 篇</strong>
+          </header>
+          <div>
+            {yearReports.map((report) => <ReportRow report={report} />)}
+          </div>
+        </section>
+      ))}
+    </div>
+  </section>
+
+  <script>
+    const categorySelect = document.querySelector<HTMLSelectElement>("[data-report-category]");
+    const yearSelect = document.querySelector<HTMLSelectElement>("[data-report-year]");
+    const count = document.querySelector<HTMLElement>("[data-visible-count]");
+    const rows = [...document.querySelectorAll<HTMLElement>("[data-report-row]")];
+
+    function applyFilters(updateUrl = true): void {
+      const category = categorySelect?.value || "all";
+      const year = yearSelect?.value || "all";
+      let visible = 0;
+      for (const row of rows) {
+        const matchesCategory = category === "all" || row.dataset.category === category;
+        const matchesYear = year === "all" || row.dataset.year === year;
+        row.hidden = !(matchesCategory && matchesYear);
+        if (!row.hidden) visible += 1;
+      }
+      document.querySelectorAll<HTMLElement>("[data-year-section]").forEach((section) => {
+        section.hidden = !section.querySelector("[data-report-row]:not([hidden])");
+      });
+      if (count) count.textContent = String(visible);
+      if (updateUrl) {
+        const params = new URLSearchParams();
+        if (category !== "all") params.set("category", category);
+        if (year !== "all") params.set("year", year);
+        const query = params.toString();
+        history.replaceState({}, "", query ? `${location.pathname}?${query}` : location.pathname);
+      }
+    }
+
+    const initialParams = new URLSearchParams(location.search);
+    if (categorySelect && initialParams.has("category")) {
+      categorySelect.value = initialParams.get("category") || "all";
+    }
+    if (yearSelect && initialParams.has("year")) {
+      yearSelect.value = initialParams.get("year") || "all";
+    }
+    categorySelect?.addEventListener("change", () => applyFilters());
+    yearSelect?.addEventListener("change", () => applyFilters());
+    document.querySelectorAll<HTMLButtonElement>("[data-category-shortcut]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (categorySelect) categorySelect.value = button.dataset.categoryShortcut || "all";
+        applyFilters();
+        document.querySelector(".library")?.scrollIntoView({ behavior: "smooth" });
+      });
+    });
+    applyFilters(false);
+  </script>
+</BaseLayout>
+
+<style>
+  .page-width {
+    width: min(1240px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .reports-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 50px;
+    align-items: end;
+    padding-block: 100px 70px;
+  }
+
+  .reports-hero h1 {
+    margin: 15px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(65px, 10vw, 132px);
+    font-weight: 500;
+    letter-spacing: -0.07em;
+    line-height: 0.95;
+  }
+
+  .reports-intro {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    align-items: end;
+  }
+
+  .reports-intro strong {
+    font-family: var(--serif);
+    font-size: clamp(58px, 7vw, 90px);
+    font-weight: 500;
+    line-height: 0.8;
+  }
+
+  .reports-intro p {
+    max-width: 370px;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .category-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .note-banner {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    align-items: center;
+    gap: 20px;
+    min-height: 74px;
+    padding-block: 15px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .note-banner span,
+  .note-banner small {
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  .note-banner strong {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .note-banner:hover strong {
+    color: var(--accent);
+  }
+
+  .category-summary button {
+    display: grid;
+    grid-template-columns: 35px 1fr auto;
+    align-items: center;
+    gap: 14px;
+    min-height: 80px;
+    padding: 0 22px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: transparent;
+    text-align: left;
+  }
+
+  .category-summary button:last-child {
+    border-right: 0;
+  }
+
+  .category-summary button:hover {
+    background: var(--accent-soft);
+  }
+
+  .category-summary span,
+  .category-summary small {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .category-summary strong {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .library {
+    padding-top: 100px;
+  }
+
+  .library-heading {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: end;
+    margin-bottom: 45px;
+  }
+
+  .library-heading h2 {
+    margin: 8px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(42px, 6vw, 72px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+  }
+
+  .library-heading p {
+    max-width: 460px;
+    margin: 0 0 8px auto;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .filter-bar {
+    position: sticky;
+    z-index: 5;
+    top: 81px;
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    padding: 13px;
+    border: 1px solid var(--line-strong);
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    backdrop-filter: blur(14px);
+  }
+
+  .filter-bar label {
+    display: grid;
+    gap: 3px;
+  }
+
+  .filter-bar label span {
+    color: var(--ink-faint);
+    font-size: 9px;
+  }
+
+  .filter-bar select,
+  .full-search {
+    min-height: 35px;
+    padding: 0 30px 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 0;
+    background-color: var(--paper-raised);
+    color: var(--ink);
+    font-size: 12px;
+  }
+
+  .full-search {
+    padding: 0 13px;
+  }
+
+  .filter-bar p {
+    margin: 0 0 6px auto;
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  .filter-bar p strong {
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .report-groups {
+    padding-top: 70px;
+  }
+
+  .year-group {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 35px;
+    padding-bottom: 75px;
+  }
+
+  .year-group[hidden] {
+    display: none;
+  }
+
+  .year-group > header {
+    position: sticky;
+    top: 160px;
+    display: grid;
+    align-self: start;
+  }
+
+  .year-group > header span {
+    font-family: var(--serif);
+    font-size: 37px;
+  }
+
+  .year-group > header strong {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 400;
+  }
+
+  @media (max-width: 800px) {
+    .reports-hero,
+    .library-heading {
+      grid-template-columns: 1fr;
+    }
+
+    .reports-intro {
+      max-width: 520px;
+    }
+
+    .library-heading p {
+      margin-left: 0;
+    }
+
+    .category-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .note-banner {
+      grid-template-columns: 1fr;
+      gap: 3px;
+    }
+
+    .category-summary button {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .category-summary button:last-child {
+      border-bottom: 0;
+    }
+
+    .filter-bar {
+      top: 69px;
+      flex-wrap: wrap;
+    }
+
+    .filter-bar p {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .year-group {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .year-group > header {
+      position: static;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .reports-hero {
+      padding-block: 70px 50px;
+    }
+
+    .reports-intro {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-bar label,
+    .filter-bar select {
+      width: 100%;
+    }
+  }
+</style>

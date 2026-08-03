@@ -1,0 +1,16 @@
+---
+import LegacyRedirect from "../../components/LegacyRedirect.astro";
+
+export function getStaticPaths() {
+  return [
+    {
+      params: { legacy: "2026.06.30-index-plan" },
+      props: { target: "/notes/2026-06-30-index-plan/", title: "宽基指数：新三年计划" },
+    },
+  ];
+}
+
+const { target, title } = Astro.props;
+---
+
+<LegacyRedirect target={target} title={title} />
