@@ -124,6 +124,8 @@ GitHub Actions 每天北京时间 `08:30` 自动同步。必须配置两个独�
 - `WEREAD_VID`
 - `WEREAD_TOKEN`
 
+名称必须包含完整的 `WEREAD_` 前缀，不能写成 `VID` 或 `TOKEN`。`vid`、`token` 仅是本地凭据文件的字段名，不是 Repository Secret 名称。
+
 不需要自行创建 GitHub PAT、Cloudflare API Token 或微信 refresh token；提交使用每次工作流自动生成的 `GITHUB_TOKEN`。扫码登录态正常情况下可以持续使用，但上游没有提供可自动刷新的 refresh token；收到 401 告警时需要在本地重新扫码并轮换上述两个 Secrets。完整配置、首次验收和故障处理见 [AUTOMATION.md](AUTOMATION.md)。
 
 ## 免责声明

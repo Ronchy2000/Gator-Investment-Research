@@ -39,6 +39,8 @@ GitHub Actions 使用以下两个独立 Secrets：
 - `WEREAD_VID`
 - `WEREAD_TOKEN`
 
+GitHub Secret 名称不能缩写为 `VID` 或 `TOKEN`；小写的 `vid`、`token` 只表示本地 JSON 字段。
+
 不要把整个 JSON 凭据作为一个 Secret，也不要上传二维码图片、扫码 UUID 或轮询记录。可使用项目提供的安全上传命令：
 
 ```bash
@@ -48,8 +50,8 @@ python -m wechat_sync.github_secrets --repo Ronchy2000/Gator-Investment-Research
 如果没有 GitHub CLI，可以不回显凭据地逐项复制到剪贴板：
 
 ```bash
-python -m wechat_sync.github_secrets --copy vid
-python -m wechat_sync.github_secrets --copy token
+python -m wechat_sync.github_secrets --copy WEREAD_VID
+python -m wechat_sync.github_secrets --copy WEREAD_TOKEN
 ```
 
 凭据没有可供 Action 自动使用的 refresh token。收到 401 告警后，需要重新运行 `python -m wechat_sync.auth` 并更新 Secrets。完整的扫码、Secret 配置、首次手动运行和故障处理见 [../AUTOMATION.md](../AUTOMATION.md)，Cloudflare Pages 配置见 [../DEPLOYMENT.md](../DEPLOYMENT.md)。

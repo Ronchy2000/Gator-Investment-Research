@@ -83,6 +83,8 @@ python -m wechat_sync.auth
 | `vid` | `WEREAD_VID` | 标识扫码登录账号 |
 | `token` | `WEREAD_TOKEN` | 调用文章列表接口 |
 
+这里的 `vid` 和 `token` 只是本地 JSON 字段名，不是 GitHub Secret 的 Name。GitHub 中必须完整填写 `WEREAD_VID` 和 `WEREAD_TOKEN`，不能缩写为 `VID`、`TOKEN`、`vid` 或 `token`。
+
 `save_time`、昵称及其他元数据不需要上传。不要执行 `cat data/wechat/credentials.json` 后截图，也不要把该文件添加到 Git、聊天记录或 Cloudflare 环境变量。
 
 该登录态没有可供 GitHub Actions 自动使用的 refresh token。正常情况下凭据可以长期使用；接口返回 401 时，必须在本地重新扫码并覆盖这两个 Secrets。
@@ -90,6 +92,8 @@ python -m wechat_sync.auth
 ## 四、配置 GitHub Secrets
 
 推荐使用 GitHub 网页，操作最直观。项目脚本会把单个值直接放入系统剪贴板，不在终端显示明文。
+
+> **名称必须完整一致：** Repository secrets 列表最终必须显示 `WEREAD_VID` 和 `WEREAD_TOKEN`。如果页面显示的是 `VID` 和 `TOKEN`，工作流无法读取，必须删除后按正确名称重建。
 
 ### 方法 A：GitHub 网页
 
@@ -101,7 +105,7 @@ python -m wechat_sync.auth
 
 第一项：
 
-1. 在本地执行 `python -m wechat_sync.github_secrets --copy vid`。
+1. 在本地执行 `python -m wechat_sync.github_secrets --copy WEREAD_VID`。
 2. GitHub 点击 `New repository secret`。
 3. Name 填写 `WEREAD_VID`。
 4. Secret 粘贴剪贴板内容，不要手动添加引号或空格。
@@ -109,13 +113,25 @@ python -m wechat_sync.auth
 
 第二项：
 
-1. 在本地执行 `python -m wechat_sync.github_secrets --copy token`。
+1. 在本地执行 `python -m wechat_sync.github_secrets --copy WEREAD_TOKEN`。
 2. GitHub 再次点击 `New repository secret`。
 3. Name 填写 `WEREAD_TOKEN`。
 4. Secret 粘贴剪贴板内容，不要手动添加引号或空格。
 5. 点击 `Add secret`。
 
-保存后 GitHub 只显示 Secret 名称，不会再次显示值，这是正常现象。最终列表中必须同时出现 `WEREAD_VID` 和 `WEREAD_TOKEN`。
+保存后 GitHub 只显示 Secret 名称，不会再次显示值，这是正常现象。最终列表应当是：
+
+```text
+WEREAD_TOKEN
+WEREAD_VID
+```
+
+以下列表是错误的，工作流不会自动猜测缩写：
+
+```text
+TOKEN
+VID
+```
 
 除非以后主动更换中转服务，否则不要创建 `WEREAD_PLATFORM_URL`。工作流内置当前公开服务地址；错误填写该项反而会导致接口不可用。
 
@@ -205,7 +221,7 @@ python -m wechat_sync.github_secrets --repo Ronchy2000/Gator-Investment-Research
 
 | 现象 | 常见原因 | 处理方法 |
 | --- | --- | --- |
-| `Missing WEREAD_VID` 或 `Missing WEREAD_TOKEN` | Secret 未创建、名称拼错或保存到 Environment secrets | 在 Repository secrets 中按精确名称重新创建 |
+| `Missing WEREAD_VID` 或 `Missing WEREAD_TOKEN` | Secret 未创建、缩写成 `VID`/`TOKEN`、名称拼错或保存到 Environment secrets | 删除错误项，在 Repository secrets 中按完整名称 `WEREAD_VID`/`WEREAD_TOKEN` 重建；无需重新扫码 |
 | HTTP 401 / unauthorized | 扫码登录态失效 | 重新扫码并覆盖两个 Secrets |
 | HTTP 429 | 公开中转服务达到频率限制 | 停止重复运行，等待额度恢复后再手动执行；不必重新扫码 |
 | 单篇文章失败 | 微信正文暂时不可访问、媒体下载失败或正文异常 | 查看 `pendingArticles`，下一次任务会自动重试 |

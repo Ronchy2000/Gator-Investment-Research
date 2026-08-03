@@ -42,7 +42,17 @@ jobs:
         shell: bash
         run: |
           if [[ -z "$WEREAD_VID" || -z "$WEREAD_TOKEN" ]]; then
-            echo "Missing WEREAD_VID or WEREAD_TOKEN repository secret." >&2
+            echo "::error title=Repository Secret 名称或配置错误::未读取到 WEREAD_VID 或 WEREAD_TOKEN。Secret 名称必须完整包含 WEREAD_ 前缀，VID 和 TOKEN 无效。"
+            {
+              echo "## Repository Secrets 配置错误"
+              echo
+              echo '请在 `Settings -> Secrets and variables -> Actions` 中确认以下两个完整名称：'
+              echo
+              echo '- `WEREAD_VID`'
+              echo '- `WEREAD_TOKEN`'
+              echo
+              echo '`VID` 和 `TOKEN` 是错误名称，工作流无法读取；修改名称不需要重新扫码。'
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
 
@@ -133,13 +143,22 @@ jobs:
           {
             echo "## 微信公众号自动同步失败"
             echo
-            echo "请检查微信读书凭据、公开中转服务限流、文章资源下载或 Astro 构建日志。"
+            if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
+              echo '未读取到 `WEREAD_VID` 或 `WEREAD_TOKEN`。请确认 Repository Secret 名称完整，不能写成 `VID` 或 `TOKEN`。'
+            else
+              echo "请检查微信读书凭据、公开中转服务限流、文章资源下载或 Astro 构建日志。"
+            fi
             echo
             echo "运行记录：${run_url}"
           } >> "$GITHUB_STEP_SUMMARY"
 
           issue_number="$(gh issue list --state open --search '微信公众号自动同步失败 in:title' --json number --jq '.[0].number // empty' || true)"
-          body="$(printf '自动同步未完成。请查看运行记录：%s\n\n若日志提示 401，请在本地重新扫码并更新 WEREAD_VID、WEREAD_TOKEN；若提示 429，请等待下次定时任务。' "$run_url")"
+          if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
+            guidance='未读取到 `WEREAD_VID` 或 `WEREAD_TOKEN`。请在 Repository secrets 中使用完整名称；`VID` 和 `TOKEN` 无效。名称错误时不需要重新扫码。'
+          else
+            guidance='若日志提示 401，请在本地重新扫码并更新 `WEREAD_VID`、`WEREAD_TOKEN`；若提示 429，请等待下次定时任务。'
+          fi
+          body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then
             gh issue comment "$issue_number" --body "$body" || true
           else
