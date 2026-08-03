@@ -1,143 +1,100 @@
-# 获得信息差
+<p align="center">
+  <img src="./public/brand/readme-hero.svg" width="100%" alt="获得信息差：把散落的信息，整理成可以长期阅读的资料库" />
+</p>
 
-“获得信息差”微信公众号的静态文章归档站。文章按发布日期同步为 Markdown，正文图片保存在本地，由 Astro 构建为独立 HTML 后部署到 Cloudflare Pages。
+<h1 align="center">获得信息差</h1>
 
-`master` 是当前 Astro 生产站；原 Docsify 站完整保存在 `legacy/docsify-archive`，仅作为历史快照保留，不再修改。
+<p align="center">
+  <strong>来自一线机构与公开渠道的市场信息，按日整理，原文直达。</strong>
+  <br />
+  让值得保存的内容离开信息流，重新成为可以检索、回看和沉淀的资料。
+</p>
 
-## 站点入口
+<p align="center">
+  <a href="https://gator.ronchy2000.top/"><img alt="Website" src="https://img.shields.io/website?url=https%3A%2F%2Fgator.ronchy2000.top%2F&up_message=online&down_message=offline&style=flat-square&label=website&color=16845b" /></a>
+  <a href="https://github.com/Ronchy2000/Gator-Investment-Research/actions/workflows/wechat-sync.yml"><img alt="WeChat Article Sync" src="https://github.com/Ronchy2000/Gator-Investment-Research/actions/workflows/wechat-sync.yml/badge.svg?branch=master" /></a>
+  <img alt="Astro" src="https://img.shields.io/badge/Astro-7.1-BC52EE?style=flat-square&logo=astro&logoColor=white" />
+  <img alt="Cloudflare Pages" src="https://img.shields.io/badge/Cloudflare-Pages-F38020?style=flat-square&logo=cloudflarepages&logoColor=white" />
+  <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" /></a>
+</p>
 
-- [当前站点：获得信息差](https://gator.ronchy2000.top/)：由 `master` 构建，持续同步微信公众号新文章，并保留已迁移的历史研报。
-- [旧版站点：鳄鱼派投资研报](https://gator0.ronchy2000.top/)：由 `legacy/docsify-archive` 构建，只读保留旧 Docsify 界面和迁移前内容。
+<p align="center">
+  <a href="https://gator.ronchy2000.top/"><strong>进入资料库</strong></a>
+  ·
+  <a href="https://gator.ronchy2000.top/archive/">公众号归档</a>
+  ·
+  <a href="https://gator.ronchy2000.top/reports/">历史研报</a>
+  ·
+  <a href="https://gator.ronchy2000.top/rss.xml">RSS</a>
+  ·
+  <a href="https://gator0.ronchy2000.top/">旧版站点</a>
+</p>
 
-## 当前能力
+---
 
-- 同步单一微信公众号，不包含小红书、B 站等无关平台。
-- 首次补齐 `2026-06-15` 起的历史文章，后续根据索引增量更新。
-- 同时支持文本文章和内容完全由图片组成的文章。
-- 下载失败的文章进入持久化重试队列，不会因跨页或部分成功而永久遗漏。
-- 正文、封面和图片全部本地化，避免微信远程图片防盗链失效。
-- 去重迁移旧站 913 篇历史研报，保留宏观、行业、其他分类及旧链接跳转。
-- 为历史研报生成 2-6 条完整句摘要，并清理模板引用、OCR 编号、失效列表和折叠表格。
-- 独立保留“宽基指数：新三年计划”投资随笔及其本地配图。
-- Astro 静态生成首页、日期归档、文章详情、RSS 和 sitemap。
-- 提供公众号/历史研报全文搜索、分类与年份筛选、明暗主题、阅读时间和前后文章导航。
-- 使用本地品牌 Logo，并在页脚通过不蒜子展示累计访客数和累计浏览量。
+## 关于这个项目
 
-## 首次上线
+市场从不缺信息，缺的是整理、检索与再次阅读。
 
-按以下顺序配置，不需要把任何登录文件提交到仓库：
+**获得信息差**是一个面向长期阅读的静态资料库。它持续归档“获得信息差”微信公众号自 `2026-06-15` 起发布的内容，同时保留旧站积累的 **913 篇公开研报**。文章按日期进入档案，正文和图片随站点一同保存，不必在聊天记录、收藏夹和失效链接之间反复寻找。
 
-1. 按 [DEPLOYMENT.md](DEPLOYMENT.md) 将仓库连接到 Cloudflare Pages。旧项目可以直接修改构建配置，无需重建站点或更换域名。
-2. 按 [AUTOMATION.md](AUTOMATION.md) 在本地扫码，创建 `WEREAD_VID` 和 `WEREAD_TOKEN` 两项 GitHub Actions Secrets。
-3. 在 GitHub Actions 页面手动运行一次 `WeChat Article Sync`，确认同步成功。
-4. 确认 Cloudflare Pages 收到新提交并完成部署。以后 Action 会每天自动检查新文章。
+这不是一个追求无限信息流的平台。它更像一张安静的书桌：把每天值得留下的内容放好，让搜索、回看和独立判断变得简单。
 
-最终配置应满足：
+## 内容版图
 
-- GitHub 默认分支为 `master`。
-- Cloudflare Production branch 为 `master`，构建命令为 `npm run build`，输出目录为 `dist`。
-- GitHub 仓库中存在 `WEREAD_VID` 和 `WEREAD_TOKEN`，但仓库文件和 Cloudflare 环境变量中都不存在明文凭据。
-- `WeChat Article Sync` 可以手动运行，且 GitHub Actions 的 Workflow permissions 允许写入仓库。
+| 每日信息归档 | 历史研报资料库 | 独立投资随笔 |
+| --- | --- | --- |
+| 聚焦“获得信息差”微信公众号，按发布日期持续同步，保留原文入口。 | 收录 913 篇公开研报，覆盖宏观、行业与其他研究主题。 | 保存不属于日常资讯流、但值得长期回看的个人思考与规划。 |
+| 支持文字、图文混排与纯图片文章。 | 支持分类、年份筛选和全文检索。 | 独立成篇，不与机构研报混淆。 |
 
-## 本地开发
+## 为阅读而做
 
-环境要求：
+- **按日归档**：从时间线进入内容，而不是被推荐算法决定下一篇读什么。
+- **两套资料库统一搜索**：公众号文章与历史研报可以独立筛选，也可以快速定位关键词。
+- **原文可追溯**：保留微信公众号原文地址和来源信息，不切断内容上下文。
+- **图片本地保存**：封面与正文媒体随文章归档，降低远程图片失效对阅读的影响。
+- **轻量而完整**：明暗主题、阅读时间、前后文章、图片放大、RSS 与 sitemap 一应俱全。
+- **静态优先**：每篇文章构建为真实 HTML，页面打开快，内容不依赖客户端接口临时加载。
 
-- Node.js `>=22.12.0`
-- Python `>=3.9`
-
-启动前端：
-
-```bash
-npm install
-npm run dev
-```
-
-生产构建输出目录为 `dist/`：
-
-```bash
-npm run build
-```
-
-## 文章同步
-
-首次扫码和初始化。已有 `.venv` 时不要重复创建，直接执行 `source .venv/bin/activate`：
-
-```bash
-test -d .venv || python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-wechat.txt
-python -m wechat_sync.auth
-python -m wechat_sync.initialize
-```
-
-执行同步：
-
-```bash
-python -m wechat_sync.sync --max-pages 20 --delay 2
-```
-
-详细说明见 [AUTOMATION.md](AUTOMATION.md)。本地凭据保存在被 Git 忽略的 `data/wechat/credentials.json`，不得提交到仓库、聊天记录或截图中。
-
-## 目录结构
+## 它如何运转
 
 ```text
-src/
-  components/             Astro 页面组件
-  content/articles/       持续增量的微信文章 Markdown
-  content/reports/        冻结的 913 篇历史研报
-  content/notes/          独立投资随笔
-  content.config.ts       内容集合 schema
-  layouts/                全局页面布局
-  pages/                  首页、归档、文章页和 RSS
-  styles/                 全局设计系统
-public/
-  article-assets/         本地化文章图片
-  brand/                  网站 Logo 等品牌资源
-  report-assets/          历史研报图片或失效说明占位图
-wechat_sync/
-  auth.py                 本地扫码登录
-  client.py               微信读书中转接口客户端
-  downloader.py           正文解析与图片本地化
-  github_secrets.py       安全上传或复制 Actions Secrets
-  sync.py                 首次回补与增量同步入口
-  index.json              已完成文章索引
+微信公众号公开内容
+        ↓
+每日增量归档与媒体本地化
+        ↓
+GitHub 保存 Markdown、索引与图片
+        ↓
+Astro 生成静态页面
+        ↓
+Cloudflare Pages 自动发布
 ```
 
-## 部署与自动化
+自动化只关注一个公众号。新文章成功入库后才会进入生产站；下载失败的内容会保留到下一次重试，纯图片文章也必须确认图片完整后才算归档完成。
 
-Cloudflare Pages 的核心构建设置如下：
+## 项目文档
 
-| 配置 | 值 |
+README 只负责介绍项目。实现、部署与运维细节分别放在以下文档中：
+
+| 文档 | 内容 |
 | --- | --- |
-| Production branch | `master` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Node.js | `22` |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | 本地开发、构建命令、目录结构与分支约定 |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 数据流、同步器、内容模型与前端架构 |
+| [AUTOMATION.md](AUTOMATION.md) | 扫码登录、GitHub Secrets、每日 Action 与故障处理 |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Cloudflare Pages、生产分支、自定义域名与部署排查 |
+| [wechat_sync/README.md](wechat_sync/README.md) | 微信公众号同步器的参数与行为 |
+| [CHANGELOG.md](CHANGELOG.md) | 主要版本与迁移记录 |
 
-`wrangler.toml`、静态缓存头和基础安全响应头已经写入仓库。站点域名配置在 `astro.config.mjs`。新建项目、旧项目改造、自定义域名和部署故障排查见 [DEPLOYMENT.md](DEPLOYMENT.md)。
+## 致谢
 
-访问统计使用不蒜子 `3.6.9` 官方 CDN，页脚元素分别读取全站 PV 与 UV。统计服务不可用时只显示占位符，不影响静态页面、搜索或文章阅读。
+公众号同步能力参考并受益于 [x554960766/wechat-mp-tools](https://github.com/x554960766/wechat-mp-tools)。本项目的微信读书扫码登录协议、公众号文章列表接口与下载流程以该项目的开源实现为重要基础，在此向作者 **xuyi** 表示感谢。
 
-GitHub Actions 每天北京时间 `08:30` 自动同步。必须配置两个独立的 Repository Secrets：
+本仓库在此基础上实现了面向单一公众号的持久化增量索引、失败重试、正文与媒体完整性保护、Astro 内容归档及 GitHub Actions 自动发布。具体参考版本、提交与 MIT 许可证全文见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-- `WEREAD_VID`
-- `WEREAD_TOKEN`
+同时感谢 [Astro](https://astro.build/)、[Cloudflare Pages](https://pages.cloudflare.com/) 与 GitHub Actions 提供的开放工具和基础设施。
 
-名称必须包含完整的 `WEREAD_` 前缀，不能写成 `VID` 或 `TOKEN`。`vid`、`token` 仅是本地凭据文件的字段名，不是 Repository Secret 名称。
+## 说明
 
-不需要自行创建 GitHub PAT、Cloudflare API Token 或微信 refresh token；提交使用每次工作流自动生成的 `GITHUB_TOKEN`。扫码登录态正常情况下可以持续使用，但上游没有提供可自动刷新的 refresh token；收到 401 告警时需要在本地重新扫码并轮换上述两个 Secrets。完整配置、首次验收和故障处理见 [AUTOMATION.md](AUTOMATION.md)。
+本站仅用于公开信息整理、学习和阅读，不构成任何投资建议。文章版权归原作者所有；投资有风险，请独立判断并承担相应责任。
 
-## 免责声明
-
-本站仅用于公开信息整理和阅读，不构成任何投资建议。文章版权归原作者所有；投资有风险，请独立判断并承担相应责任。
-
-## 分支说明
-
-- `master`：Astro 生产站、微信公众号增量同步和 Cloudflare Pages 部署来源。
-- `legacy/docsify-archive`：切换前的旧 Docsify 站，只读部署在 [gator0.ronchy2000.top](https://gator0.ronchy2000.top/)。
-- `feature/wechat-mp-sync`：新站迁移过程的功能分支，与首次上线提交保持一致，便于追溯。
-
-## 许可证
-
-项目代码采用 [MIT License](LICENSE)。第三方代码归属见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+项目代码采用 [MIT License](LICENSE)。旧版 Docsify 站点继续以只读形式保存在 [`legacy/docsify-archive`](https://github.com/Ronchy2000/Gator-Investment-Research/tree/legacy/docsify-archive) 分支，并部署于 [gator0.ronchy2000.top](https://gator0.ronchy2000.top/)。

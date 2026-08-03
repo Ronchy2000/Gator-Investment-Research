@@ -2,7 +2,9 @@
 
 ## wechat-mp-tools
 
-The WeRead QR login protocol used by `wechat_sync/auth.py` is adapted from:
+The WeRead QR login protocol, relay API integration, and WeChat article discovery
+workflow used by `wechat_sync/auth.py`, `wechat_sync/client.py`, and
+`wechat_sync/sync.py` are adapted with reference to:
 
 - Project: [x554960766/wechat-mp-tools](https://github.com/x554960766/wechat-mp-tools)
 - Version: `1.7.0`
