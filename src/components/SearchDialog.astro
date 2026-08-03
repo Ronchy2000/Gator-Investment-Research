@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { ARTICLE_SOURCES, articlesFromSource } from "../lib/articles";
 
 const [articles, reports, notes] = await Promise.all([
   getCollection("articles"),
@@ -7,6 +8,9 @@ const [articles, reports, notes] = await Promise.all([
   getCollection("notes"),
 ]);
 const totalEntries = articles.length + reports.length + notes.length;
+const sourceCounts = new Map(
+  ARTICLE_SOURCES.map((source) => [source.slug, articlesFromSource(articles, source.name).length]),
+);
 ---
 
 <dialog
@@ -44,10 +48,14 @@ const totalEntries = articles.length + reports.length + notes.length;
     </label>
 
     <div class="search-filters" aria-label="搜索范围">
-      <button type="button" data-search-kind="all" aria-pressed="true">全部 {totalEntries}</button>
-      <button type="button" data-search-kind="wechat" aria-pressed="false">公众号 {articles.length}</button>
-      <button type="button" data-search-kind="report" aria-pressed="false">历史研报 {reports.length}</button>
-      <button type="button" data-search-kind="note" aria-pressed="false">投资随笔 {notes.length}</button>
+      <button type="button" data-search-scope="all" aria-pressed="true">全部 {totalEntries}</button>
+      {ARTICLE_SOURCES.map((source) => (
+        <button type="button" data-search-scope={`source:${source.slug}`} aria-pressed="false">
+          {source.label} {sourceCounts.get(source.slug)}
+        </button>
+      ))}
+      <button type="button" data-search-scope="report" aria-pressed="false">历史研报 {reports.length}</button>
+      <button type="button" data-search-scope="note" aria-pressed="false">投资随笔 {notes.length}</button>
     </div>
 
     <p class="search-status" data-search-status>搜索索引将在首次使用时加载。</p>
@@ -63,6 +71,7 @@ const totalEntries = articles.length + reports.length + notes.length;
     href: string;
     text: string;
     kind: "wechat" | "report" | "note";
+    source?: string;
     label: string;
   }
 
@@ -72,11 +81,17 @@ const totalEntries = articles.length + reports.length + notes.length;
   const results = document.querySelector<HTMLOListElement>("[data-search-results]");
   const totalEntries = Number(dialog?.dataset.searchTotal || 0);
   let searchItems: SearchItem[] = [];
-  let activeKind = "all";
+  let activeScope = "all";
   let loadPromise: Promise<void> | null = null;
 
   function normalize(value: string): string {
     return value.toLocaleLowerCase("zh-CN").replace(/\s+/g, " ").trim();
+  }
+
+  function matchesScope(item: SearchItem): boolean {
+    if (activeScope === "all") return true;
+    if (activeScope.startsWith("source:")) return item.source === activeScope.slice(7);
+    return item.kind === activeScope;
   }
 
   async function loadSearchIndex(): Promise<void> {
@@ -116,18 +131,18 @@ const totalEntries = articles.length + reports.length + notes.length;
     results.replaceChildren();
     const terms = normalize(query).split(" ").filter(Boolean);
     if (terms.length === 0) {
-      const scopeCount = activeKind === "all"
+      const scopeCount = activeScope === "all"
         ? totalEntries
-        : searchItems.filter((item) => item.kind === activeKind).length;
+        : searchItems.filter(matchesScope).length;
       status.textContent = `输入关键词，检索当前范围内的 ${scopeCount} 条内容。`;
       return;
     }
 
     const matches = searchItems
-      .filter((item) => activeKind === "all" || item.kind === activeKind)
+      .filter(matchesScope)
       .map((item) => {
         const title = normalize(item.title);
-        const haystack = normalize(`${item.date} ${item.title} ${item.description} ${item.text}`);
+        const haystack = normalize(`${item.date} ${item.label} ${item.title} ${item.description} ${item.text}`);
         if (!terms.every((term) => haystack.includes(term))) return null;
         const score = terms.reduce((total, term) => {
           if (title.startsWith(term)) return total + 5;
@@ -167,10 +182,10 @@ const totalEntries = articles.length + reports.length + notes.length;
     button.addEventListener("click", openSearch);
   });
   document.querySelector<HTMLElement>("[data-search-close]")?.addEventListener("click", closeSearch);
-  document.querySelectorAll<HTMLButtonElement>("[data-search-kind]").forEach((button) => {
+  document.querySelectorAll<HTMLButtonElement>("[data-search-scope]").forEach((button) => {
     button.addEventListener("click", () => {
-      activeKind = button.dataset.searchKind || "all";
-      document.querySelectorAll<HTMLButtonElement>("[data-search-kind]").forEach((candidate) => {
+      activeScope = button.dataset.searchScope || "all";
+      document.querySelectorAll<HTMLButtonElement>("[data-search-scope]").forEach((candidate) => {
         candidate.setAttribute("aria-pressed", String(candidate === button));
       });
       renderResults(input?.value || "");

@@ -2,6 +2,40 @@ import type { CollectionEntry } from "astro:content";
 
 export type ArticleEntry = CollectionEntry<"articles">;
 
+export const ARTICLE_SOURCES = [
+  {
+    slug: "huode-xinxicha",
+    name: "获得信息差",
+    label: "每日信息",
+    eyebrow: "DAILY INTELLIGENCE",
+    description: "筛选值得关注的市场信息、行业变化与研究线索。",
+  },
+  {
+    slug: "like-a-gator",
+    name: "像鳄鱼一样思考",
+    label: "每日复盘",
+    eyebrow: "DAILY MARKET REVIEW",
+    description: "记录交易日市场结构、情绪变化与操作思考。",
+  },
+] as const;
+
+export type ArticleSource = (typeof ARTICLE_SOURCES)[number];
+
+export function articleSource(sourceName: string): ArticleSource | undefined {
+  return ARTICLE_SOURCES.find((source) => source.name === sourceName);
+}
+
+export function articleSourceSlug(article: ArticleEntry): string {
+  return articleSource(article.data.source)?.slug || "wechat";
+}
+
+export function articlesFromSource(
+  articles: ArticleEntry[],
+  sourceName: string,
+): ArticleEntry[] {
+  return articles.filter((article) => article.data.source === sourceName);
+}
+
 export function sortArticles(articles: ArticleEntry[]): ArticleEntry[] {
   return [...articles].sort(
     (left, right) => right.data.publishedAt.getTime() - left.data.publishedAt.getTime(),

@@ -2,12 +2,12 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # 08:30 Asia/Shanghai (GitHub cron uses UTC).
-    - cron: "30 0 * * *"
+    # 18:30 Asia/Shanghai, after both daily publications (GitHub cron uses UTC).
+    - cron: "30 10 * * *"
   workflow_dispatch:
     inputs:
       max_pages:
-        description: Maximum article-list pages to inspect
+        description: Maximum article-list pages to inspect per account
         required: false
         default: "20"
 
@@ -77,7 +77,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          status="$(git status --porcelain -- src/content/articles public/article-assets wechat_sync/index.json)"
+          status="$(git status --porcelain -- src/content/articles public/article-assets wechat_sync/indexes)"
           if [[ -n "$status" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
@@ -112,7 +112,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/content/articles public/article-assets wechat_sync/index.json
+          git add src/content/articles public/article-assets wechat_sync/indexes
           if [[ ! "$ARTICLES_SYNCED" =~ ^[0-9]+$ ]]; then
             ARTICLES_SYNCED="$(git diff --cached --name-only --diff-filter=A -- src/content/articles | wc -l | tr -d ' ')"
           fi

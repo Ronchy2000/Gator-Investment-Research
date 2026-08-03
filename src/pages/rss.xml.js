@@ -5,8 +5,8 @@ import { articleHref, sortArticles } from "../lib/articles";
 export async function GET(context) {
   const articles = sortArticles(await getCollection("articles"));
   return rss({
-    title: "获得信息差",
-    description: "按日整理值得关注的市场信息与投资观察。",
+    title: "鳄鱼派投资档案",
+    description: "按日归档获得信息差与像鳄鱼一样思考：每日信息、市场复盘与投资观察。",
     site: context.site,
     items: articles.map((article) => ({
       title: article.data.title,

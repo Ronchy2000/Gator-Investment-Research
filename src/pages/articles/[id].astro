@@ -1,7 +1,7 @@
 ---
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { articleHref, formatDate, isImageOnly, readingMinutes, sortArticles } from "../../lib/articles";
+import { articleHref, articleSource, formatDate, isImageOnly, readingMinutes, sortArticles } from "../../lib/articles";
 
 interface Props {
   entry: CollectionEntry<"articles">;
@@ -11,20 +11,28 @@ interface Props {
 
 export async function getStaticPaths() {
   const articles = sortArticles(await getCollection("articles"));
-  return articles.map((entry, index) => ({
-    params: { id: entry.id },
-    props: {
-      entry,
-      newer: articles[index - 1],
-      older: articles[index + 1],
-    },
-  }));
+  return articles.map((entry) => {
+    const sourceArticles = articles.filter(
+      (candidate) => candidate.data.source === entry.data.source,
+    );
+    const index = sourceArticles.findIndex((candidate) => candidate.id === entry.id);
+    return {
+      params: { id: entry.id },
+      props: {
+        entry,
+        newer: sourceArticles[index - 1],
+        older: sourceArticles[index + 1],
+      },
+    };
+  });
 }
 
 const { entry, newer, older } = Astro.props;
 const { Content } = await render(entry);
 const minutes = readingMinutes(entry.body || "");
 const imageOnly = isImageOnly(entry.body || "");
+const source = articleSource(entry.data.source);
+const archiveHref = source ? `/archive/${source.slug}/` : "/archive/";
 ---
 
 <BaseLayout
@@ -36,12 +44,12 @@ const imageOnly = isImageOnly(entry.body || "");
   <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
   <article class="article-page">
     <header class="article-header">
-      <a class="back-link" href="/archive/">
+      <a class="back-link" href={archiveHref}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11 6l-6 6 6 6"></path></svg>
-        返回归档
+        返回{source?.label || "归档"}
       </a>
       <div class="article-kicker">
-        <span>WECHAT ARCHIVE</span>
+        <span>{source?.eyebrow || "WECHAT ARCHIVE"}</span>
         <span>{entry.data.source}</span>
       </div>
       <h1>{entry.data.title}</h1>

@@ -1,12 +1,14 @@
-"""Synchronize one configured WeChat account into local Markdown files."""
+"""Synchronize configured WeChat accounts into the shared article archive."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import re
 import sys
 import time
+from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -18,10 +20,26 @@ from .downloader import ArticleSummary, WeChatArticleDownloader
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-ACCOUNT_PATH = Path(__file__).resolve().parent / "account.json"
-INDEX_PATH = Path(__file__).resolve().parent / "index.json"
+CONFIG_PATH = Path(__file__).resolve().parent / "accounts.json"
+INDEX_ROOT = Path(__file__).resolve().parent / "indexes"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
-MAX_LIST_PAGES = 40
+MAX_LIST_PAGES_PER_ACCOUNT = 40
+SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+@dataclass(frozen=True)
+class AccountConfig:
+    slug: str
+    name: str
+    mp_id: str
+    earliest: date
+
+
+@dataclass(frozen=True)
+class CollectionState:
+    articles: list[ArticleSummary]
+    backfill_complete: bool
+    backfill_next_page: int
 
 
 def _write_actions_outputs(succeeded: int, failed: int) -> None:
@@ -40,6 +58,42 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError(f"配置文件不是 JSON 对象: {path}")
     return payload
+
+
+def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
+    payload = _load_json(CONFIG_PATH)
+    raw_accounts = payload.get("accounts")
+    if not isinstance(raw_accounts, list) or not raw_accounts:
+        raise ValueError("accounts.json 的 accounts 必须是非空数组")
+
+    accounts: list[AccountConfig] = []
+    seen_slugs: set[str] = set()
+    for item in raw_accounts:
+        if not isinstance(item, dict):
+            raise ValueError("accounts.json 包含无效账号配置")
+        slug = str(item.get("slug", "")).strip()
+        name = str(item.get("name", "")).strip()
+        mp_id = str(item.get("mp_id", "")).strip()
+        earliest_value = str(item.get("earliest_date", "")).strip()
+        if not SLUG_RE.fullmatch(slug) or not name or not mp_id or not earliest_value:
+            raise ValueError(f"公众号配置缺少有效 slug、name、mp_id 或 earliest_date: {item}")
+        if slug in seen_slugs:
+            raise ValueError(f"公众号 slug 重复: {slug}")
+        seen_slugs.add(slug)
+        if not selected_slugs or slug in selected_slugs:
+            accounts.append(
+                AccountConfig(
+                    slug=slug,
+                    name=name,
+                    mp_id=mp_id,
+                    earliest=date.fromisoformat(earliest_value),
+                )
+            )
+
+    unknown = selected_slugs - seen_slugs
+    if unknown:
+        raise ValueError(f"未找到公众号配置: {', '.join(sorted(unknown))}")
+    return accounts
 
 
 def _timestamp(value: Any) -> datetime:
@@ -116,14 +170,14 @@ def _pending_record(article: ArticleSummary) -> dict[str, str]:
     }
 
 
-def _save_index(index: dict[str, Any]) -> None:
-    INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = INDEX_PATH.with_suffix(".json.tmp")
+def _save_index(path: Path, index: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(".json.tmp")
     temporary_path.write_text(
         json.dumps(index, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    temporary_path.replace(INDEX_PATH)
+    temporary_path.replace(path)
 
 
 def _fetch_page(
@@ -143,72 +197,122 @@ def _fetch_page(
 
 def _collect_articles(
     client: WeReadClient,
-    mp_id: str,
-    earliest: date,
+    account: AccountConfig,
     indexed_ids: set[str],
     indexed_urls: set[str],
+    backfill_complete: bool,
+    backfill_next_page: int,
     max_pages: int,
     delay_seconds: float,
-) -> list[ArticleSummary]:
+) -> CollectionState:
     collected: dict[str, ArticleSummary] = {}
-    prior_page_urls: set[str] = set()
-    reached_known_boundary = False
+    pages_used = 0
 
-    for page in range(1, max_pages + 1):
-        rows = _fetch_page(client, mp_id, page)
-        if not rows:
-            if page == 1:
-                raise WeReadRelayError("文章列表第一页为空，中转服务可能尚未刷新数据")
-            reached_known_boundary = True
-            break
+    # Once historical backfill has started, always inspect the newest pages first.
+    if indexed_ids:
+        reached_incremental_boundary = False
+        prior_urls: set[str] = set()
+        for page in range(1, max_pages + 1):
+            rows = _fetch_page(client, account.mp_id, page)
+            pages_used += 1
+            if not rows:
+                if page == 1:
+                    raise WeReadRelayError(
+                        f"{account.name} 文章列表第一页为空，中转服务可能尚未刷新数据"
+                    )
+                reached_incremental_boundary = True
+                break
 
-        page_articles = [_normalize_article(row) for row in rows]
-        page_urls = {article.url for article in page_articles}
-        if page_urls and page_urls.issubset(prior_page_urls):
-            reached_known_boundary = True
-            break
-        prior_page_urls.update(page_urls)
+            page_articles = [_normalize_article(row) for row in rows]
+            page_urls = {_url_key(article.url) for article in page_articles}
+            if page_urls and page_urls.issubset(prior_urls):
+                reached_incremental_boundary = True
+                break
+            prior_urls.update(page_urls)
 
-        for article in page_articles:
-            if article.published_at.date() >= earliest:
-                collected[article.url] = article
+            for article in page_articles:
+                if (
+                    article.published_at.date() >= account.earliest
+                    and not _is_indexed(article, indexed_ids, indexed_urls)
+                ):
+                    collected[_url_key(article.url)] = article
 
-        has_older_article = any(
-            article.published_at.date() < earliest for article in page_articles
-        )
-        has_indexed_article = any(
-            _is_indexed(article, indexed_ids, indexed_urls)
-            for article in page_articles
-        )
-        if has_older_article or has_indexed_article:
-            reached_known_boundary = True
-            break
+            if any(article.published_at.date() < account.earliest for article in page_articles):
+                reached_incremental_boundary = True
+                break
+            if any(
+                _is_indexed(article, indexed_ids, indexed_urls)
+                for article in page_articles
+            ):
+                reached_incremental_boundary = True
+                break
+            if pages_used < max_pages:
+                time.sleep(delay_seconds)
 
-        if page < max_pages:
-            time.sleep(delay_seconds)
+        if not reached_incremental_boundary and pages_used >= max_pages:
+            raise WeReadRelayError(
+                f"{account.name} 连续 {max_pages} 页仍未遇到已入库文章，"
+                "为避免增量漏文已停止，请提高 --max-pages 后重试"
+            )
 
-    if not reached_known_boundary:
-        raise WeReadRelayError(
-            f"连续 {max_pages} 页仍未遇到已入库文章或起始日期，"
-            "为避免漏文已停止入库，请手动提高 --max-pages 后重试"
-        )
+    if not backfill_complete and pages_used < max_pages:
+        start_page = 1 if not indexed_ids else max(1, backfill_next_page - 1)
+        prior_urls: set[str] = set()
+        last_page = start_page - 1
+        for page in range(start_page, start_page + max_pages - pages_used):
+            rows = _fetch_page(client, account.mp_id, page)
+            pages_used += 1
+            last_page = page
+            if not rows:
+                if page == 1:
+                    raise WeReadRelayError(
+                        f"{account.name} 文章列表第一页为空，中转服务可能尚未刷新数据"
+                    )
+                backfill_complete = True
+                break
 
-    return sorted(collected.values(), key=lambda article: article.published_at)
+            page_articles = [_normalize_article(row) for row in rows]
+            page_urls = {_url_key(article.url) for article in page_articles}
+            if page_urls and page_urls.issubset(prior_urls):
+                backfill_complete = True
+                break
+            prior_urls.update(page_urls)
+
+            for article in page_articles:
+                if (
+                    article.published_at.date() >= account.earliest
+                    and not _is_indexed(article, indexed_ids, indexed_urls)
+                ):
+                    collected[_url_key(article.url)] = article
+
+            if any(article.published_at.date() < account.earliest for article in page_articles):
+                backfill_complete = True
+                break
+            if pages_used < max_pages:
+                time.sleep(delay_seconds)
+
+        backfill_next_page = max(backfill_next_page, last_page + 1)
+
+    return CollectionState(
+        articles=sorted(collected.values(), key=lambda article: article.published_at),
+        backfill_complete=backfill_complete,
+        backfill_next_page=backfill_next_page,
+    )
 
 
-def synchronize(max_pages: int, delay_seconds: float) -> tuple[int, int]:
-    account = _load_json(ACCOUNT_PATH)
-    mp_id = str(account.get("mp_id", "")).strip()
-    source_name = str(account.get("name", "")).strip()
-    earliest_value = str(account.get("earliest_date", "")).strip()
-    if not mp_id or not source_name or not earliest_value:
-        raise ValueError("account.json 缺少 mp_id、name 或 earliest_date")
-    earliest = date.fromisoformat(earliest_value)
-
-    index = _load_json(INDEX_PATH)
+def _synchronize_account(
+    account: AccountConfig,
+    client: WeReadClient,
+    downloader: WeChatArticleDownloader,
+    max_pages: int,
+    delay_seconds: float,
+) -> tuple[int, int]:
+    index_path = INDEX_ROOT / f"{account.slug}.json"
+    index = _load_json(index_path)
     existing_entries = index.get("articles", [])
     if not isinstance(existing_entries, list):
-        raise ValueError("index.json 的 articles 字段不是数组")
+        raise ValueError(f"{index_path.name} 的 articles 字段不是数组")
+
     indexed_ids = {
         str(entry.get("articleId", "")).strip()
         for entry in existing_entries
@@ -222,7 +326,7 @@ def synchronize(max_pages: int, delay_seconds: float) -> tuple[int, int]:
 
     raw_pending = index.get("pendingArticles", [])
     if not isinstance(raw_pending, list):
-        raise ValueError("index.json 的 pendingArticles 字段不是数组")
+        raise ValueError(f"{index_path.name} 的 pendingArticles 字段不是数组")
     pending_by_id: dict[str, ArticleSummary] = {}
     for item in raw_pending:
         if not isinstance(item, dict):
@@ -230,62 +334,68 @@ def synchronize(max_pages: int, delay_seconds: float) -> tuple[int, int]:
         article = _normalize_article(item)
         if not _is_indexed(article, indexed_ids, indexed_urls):
             pending_by_id[article.article_id] = article
-    persisted_pending_ids = set(pending_by_id)
 
-    client = WeReadClient(load_credentials())
-    articles = _collect_articles(
+    migrated_complete_default = bool(existing_entries) and "backfillComplete" not in index
+    collection = _collect_articles(
         client=client,
-        mp_id=mp_id,
-        earliest=earliest,
+        account=account,
         indexed_ids=indexed_ids,
         indexed_urls=indexed_urls,
+        backfill_complete=bool(index.get("backfillComplete", migrated_complete_default)),
+        backfill_next_page=max(1, int(index.get("backfillNextPage", 1))),
         max_pages=max_pages,
         delay_seconds=delay_seconds,
     )
-    for article in articles:
+    for article in collection.articles:
         if not _is_indexed(article, indexed_ids, indexed_urls):
             pending_by_id[article.article_id] = article
-    pending = sorted(pending_by_id.values(), key=lambda article: article.published_at)
-    print(
-        f"发现 {len(articles)} 篇范围内文章，"
-        f"本次需处理 {len(pending)} 篇（含历史失败重试）"
-    )
 
-    downloader = WeChatArticleDownloader()
-    succeeded = 0
-    failures: list[tuple[ArticleSummary, str]] = []
     entries = list(existing_entries)
 
     def save_state() -> None:
-        pending_records = [
-            _pending_record(article)
-            for article in sorted(
-                pending_by_id.values(),
-                key=lambda item: item.published_at,
-                reverse=True,
-            )
-        ]
         _save_index(
+            index_path,
             {
-                "version": 2,
-                "account": {"mpId": mp_id, "name": source_name},
-                "earliestDate": earliest.isoformat(),
+                "version": 3,
+                "account": {
+                    "slug": account.slug,
+                    "mpId": account.mp_id,
+                    "name": account.name,
+                },
+                "earliestDate": account.earliest.isoformat(),
                 "updatedAt": datetime.now(tz=SHANGHAI).isoformat(),
-                "pendingArticles": pending_records,
+                "backfillComplete": collection.backfill_complete,
+                "backfillNextPage": collection.backfill_next_page,
+                "pendingArticles": [
+                    _pending_record(article)
+                    for article in sorted(
+                        pending_by_id.values(),
+                        key=lambda item: item.published_at,
+                        reverse=True,
+                    )
+                ],
                 "articles": entries,
-            }
+            },
         )
 
+    save_state()
+    pending = sorted(pending_by_id.values(), key=lambda article: article.published_at)
+    backfill_label = "历史回补完成" if collection.backfill_complete else (
+        f"历史回补待续（下次从第 {collection.backfill_next_page} 页附近继续）"
+    )
+    print(
+        f"[{account.name}] 发现 {len(collection.articles)} 篇未入库文章，"
+        f"本次需处理 {len(pending)} 篇（含失败重试）；{backfill_label}"
+    )
+
+    succeeded = 0
+    failures: list[tuple[ArticleSummary, str]] = []
     for position, article in enumerate(pending, start=1):
-        print(f"[{position}/{len(pending)}] 下载 {article.title}")
+        print(f"[{account.name} {position}/{len(pending)}] 下载 {article.title}")
         try:
-            downloaded = downloader.download(article, source_name)
+            downloaded = downloader.download(article, account.name)
         except Exception as error:
             failures.append((article, str(error)))
-            pending_by_id[article.article_id] = article
-            if article.article_id not in persisted_pending_ids:
-                persisted_pending_ids.add(article.article_id)
-                save_state()
             print(f"  失败: {error}", file=sys.stderr)
         else:
             relative_path = downloaded.markdown_path.relative_to(PROJECT_ROOT).as_posix()
@@ -304,24 +414,67 @@ def synchronize(max_pages: int, delay_seconds: float) -> tuple[int, int]:
             indexed_ids.add(downloaded.article_id)
             indexed_urls.add(_url_key(downloaded.source_url))
             pending_by_id.pop(article.article_id, None)
-            persisted_pending_ids.discard(article.article_id)
-            save_state()
             succeeded += 1
             print(f"  已保存 {relative_path}，本地资源 {downloaded.asset_count} 个")
-
+        save_state()
         if position < len(pending):
             time.sleep(delay_seconds)
 
     if failures:
-        print("以下文章保留到下次同步重试：", file=sys.stderr)
+        print(f"[{account.name}] 以下文章保留到下次同步重试：", file=sys.stderr)
         for article, message in failures:
             print(f"- {article.title}: {message}", file=sys.stderr)
     return succeeded, len(failures)
 
 
+def synchronize(
+    max_pages: int,
+    delay_seconds: float,
+    selected_slugs: set[str],
+) -> tuple[int, int, list[str]]:
+    accounts = _load_accounts(selected_slugs)
+    client = WeReadClient(load_credentials())
+    downloader = WeChatArticleDownloader()
+    succeeded = 0
+    failed = 0
+    account_errors: list[str] = []
+
+    for position, account in enumerate(accounts, start=1):
+        print(f"=== 同步公众号：{account.name} ({account.slug}) ===")
+        try:
+            account_succeeded, account_failed = _synchronize_account(
+                account=account,
+                client=client,
+                downloader=downloader,
+                max_pages=max_pages,
+                delay_seconds=delay_seconds,
+            )
+        except (OSError, ValueError, WeReadRelayError) as error:
+            account_errors.append(f"{account.name}: {error}")
+            print(f"[{account.name}] 同步失败: {error}", file=sys.stderr)
+        else:
+            succeeded += account_succeeded
+            failed += account_failed
+        if position < len(accounts):
+            time.sleep(delay_seconds)
+
+    return succeeded, failed, account_errors
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="同步获得信息差公众号文章")
-    parser.add_argument("--max-pages", type=int, default=20, help="最多读取的列表页数")
+    parser = argparse.ArgumentParser(description="同步已配置的微信公众号文章")
+    parser.add_argument(
+        "--account",
+        action="append",
+        default=[],
+        help="只同步指定账号 slug；可重复使用，默认同步全部账号",
+    )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=20,
+        help="每个公众号最多读取的列表页数",
+    )
     parser.add_argument("--delay", type=float, default=2.0, help="请求间隔秒数")
     return parser
 
@@ -331,9 +484,10 @@ def main() -> int:
     if args.max_pages < 1:
         print("--max-pages 必须大于 0", file=sys.stderr)
         return 2
-    if args.max_pages > MAX_LIST_PAGES:
+    if args.max_pages > MAX_LIST_PAGES_PER_ACCOUNT:
         print(
-            f"--max-pages 不能超过 {MAX_LIST_PAGES}，避免超出公开服务的日请求限制",
+            f"--max-pages 不能超过 {MAX_LIST_PAGES_PER_ACCOUNT}，"
+            "避免超出公开服务的单账号日请求限制",
             file=sys.stderr,
         )
         return 2
@@ -341,13 +495,24 @@ def main() -> int:
         print("--delay 不能小于 0", file=sys.stderr)
         return 2
     try:
-        succeeded, failed = synchronize(args.max_pages, args.delay)
+        succeeded, failed, account_errors = synchronize(
+            max_pages=args.max_pages,
+            delay_seconds=args.delay,
+            selected_slugs=set(args.account),
+        )
     except (OSError, ValueError, WeReadRelayError) as error:
         print(f"同步失败: {error}", file=sys.stderr)
+        _write_actions_outputs(0, 1)
         return 1
-    _write_actions_outputs(succeeded, failed)
-    print(f"同步完成：新增 {succeeded} 篇，失败 {failed} 篇")
-    return 1 if failed else 0
+
+    _write_actions_outputs(succeeded, failed + len(account_errors))
+    for message in account_errors:
+        print(f"- {message}", file=sys.stderr)
+    print(
+        f"同步完成：新增 {succeeded} 篇，文章失败 {failed} 篇，"
+        f"账号失败 {len(account_errors)} 个"
+    )
+    return 1 if failed or account_errors else 0
 
 
 if __name__ == "__main__":

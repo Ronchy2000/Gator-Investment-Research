@@ -1,0 +1,281 @@
+---
+import ArticleRow from "./ArticleRow.astro";
+import {
+  ARTICLE_SOURCES,
+  articlesFromSource,
+  formatMonth,
+  monthKey,
+  sortArticles,
+  type ArticleEntry,
+  type ArticleSource,
+} from "../lib/articles";
+
+interface Props {
+  articles: ArticleEntry[];
+  activeSource?: ArticleSource;
+}
+
+const { articles: allArticles, activeSource } = Astro.props;
+const articles = sortArticles(
+  activeSource ? articlesFromSource(allArticles, activeSource.name) : allArticles,
+);
+const groups = new Map<string, { label: string; articles: typeof articles }>();
+for (const article of articles) {
+  const key = monthKey(article.data.publishedAt);
+  if (!groups.has(key)) {
+    groups.set(key, { label: formatMonth(article.data.publishedAt), articles: [] });
+  }
+  groups.get(key)?.articles.push(article);
+}
+const sourceCounts = new Map(
+  ARTICLE_SOURCES.map((source) => [source.slug, articlesFromSource(allArticles, source.name).length]),
+);
+---
+
+<header class="archive-hero page-width">
+  <div>
+    <span class="eyebrow">{activeSource?.eyebrow || "TWO PUBLICATIONS · ONE ARCHIVE"}</span>
+    <h1>{activeSource?.label || "公众号归档"}</h1>
+  </div>
+  <p>
+    {activeSource
+      ? `${activeSource.name}共收录 ${articles.length} 篇。${activeSource.description}`
+      : `共 ${articles.length} 篇内容，汇集每日信息与每日复盘，按发布日期倒序排列。`}
+  </p>
+</header>
+
+<nav class="source-nav page-width" aria-label="公众号筛选">
+  <a href="/archive/" aria-current={!activeSource ? "page" : undefined}>
+    <span>全部文章</span>
+    <strong>{allArticles.length}</strong>
+    <small>ALL</small>
+  </a>
+  {ARTICLE_SOURCES.map((source) => (
+    <a
+      href={`/archive/${source.slug}/`}
+      aria-current={activeSource?.slug === source.slug ? "page" : undefined}
+    >
+      <span>{source.label}</span>
+      <strong>{sourceCounts.get(source.slug)}</strong>
+      <small>{source.name}</small>
+    </a>
+  ))}
+</nav>
+
+<nav class="month-nav page-width" aria-label="月份导航">
+  {[...groups.entries()].map(([key, group]) => (
+    <a href={`#month-${key}`}>
+      <span>{group.label}</span>
+      <small>{group.articles.length}</small>
+    </a>
+  ))}
+  <button type="button" data-search-open>搜索全部</button>
+</nav>
+
+<div class="archive-groups page-width">
+  {[...groups.entries()].map(([key, group]) => (
+    <section class="archive-group" id={`month-${key}`}>
+      <header>
+        <span>{key}</span>
+        <h2>{group.label}</h2>
+        <strong>{group.articles.length} 篇</strong>
+      </header>
+      <div>
+        {group.articles.map((article, index) => (
+          <ArticleRow article={article} number={index + 1} />
+        ))}
+      </div>
+    </section>
+  ))}
+</div>
+
+<style>
+  .page-width {
+    width: min(1220px, calc(100% - 40px));
+    margin-inline: auto;
+  }
+
+  .archive-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 50px;
+    align-items: end;
+    padding-block: 100px 55px;
+  }
+
+  .archive-hero h1 {
+    margin: 14px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(65px, 10vw, 132px);
+    font-weight: 500;
+    letter-spacing: -0.07em;
+    line-height: 0.95;
+  }
+
+  .archive-hero p {
+    max-width: 470px;
+    margin: 0 0 12px auto;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.75;
+  }
+
+  .source-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: 34px;
+    border: 1px solid var(--line-strong);
+  }
+
+  .source-nav a {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 20px;
+    min-height: 112px;
+    padding: 22px;
+    border-right: 1px solid var(--line);
+    transition: background 160ms ease, color 160ms ease;
+  }
+
+  .source-nav a:last-child {
+    border-right: 0;
+  }
+
+  .source-nav a:hover,
+  .source-nav a[aria-current="page"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .source-nav span {
+    font-family: var(--serif);
+    font-size: 22px;
+  }
+
+  .source-nav strong {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  .source-nav small {
+    grid-column: 1 / -1;
+    align-self: end;
+    color: var(--ink-faint);
+    font-size: 11px;
+  }
+
+  .month-nav {
+    display: flex;
+    flex-wrap: wrap;
+    border-block: 1px solid var(--line-strong);
+  }
+
+  .month-nav a,
+  .month-nav button {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 49px;
+    padding: 0 18px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: transparent;
+    font-size: 12px;
+  }
+
+  .month-nav button {
+    margin-left: auto;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .month-nav a:hover {
+    background: var(--accent-soft);
+  }
+
+  .month-nav small {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+  }
+
+  .archive-groups {
+    padding-top: 90px;
+  }
+
+  .archive-group {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: clamp(35px, 6vw, 85px);
+    padding: 30px 0 90px;
+    scroll-margin-top: 100px;
+  }
+
+  .archive-group > header {
+    position: sticky;
+    top: 110px;
+    align-self: start;
+    padding-top: 4px;
+  }
+
+  .archive-group > header span,
+  .archive-group > header strong {
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 400;
+  }
+
+  .archive-group > header h2 {
+    margin: 10px 0 12px;
+    font-family: var(--serif);
+    font-size: 36px;
+    font-weight: 500;
+  }
+
+  @media (max-width: 780px) {
+    .archive-hero,
+    .archive-group {
+      grid-template-columns: 1fr;
+    }
+
+    .archive-hero {
+      align-items: start;
+      padding-block: 70px 45px;
+    }
+
+    .archive-hero p {
+      margin-left: 0;
+    }
+
+    .source-nav {
+      grid-template-columns: 1fr;
+    }
+
+    .source-nav a {
+      min-height: 88px;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .source-nav a:last-child {
+      border-bottom: 0;
+    }
+
+    .archive-group {
+      gap: 10px;
+      padding-bottom: 65px;
+    }
+
+    .archive-group > header {
+      position: static;
+    }
+
+    .month-nav button {
+      margin-left: 0;
+    }
+  }
+</style>

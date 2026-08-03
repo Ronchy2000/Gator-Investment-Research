@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "accounts": [
+    {
+      "slug": "huode-xinxicha",
+      "name": "获得信息差",
+      "mp_id": "MP_WXS_3690344459",
+      "intro": "消息汇集地儿，帮你检索收集最前沿的内容",
+      "seed_article_url": "https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g",
+      "earliest_date": "2026-06-15"
+    },
+    {
+      "slug": "like-a-gator",
+      "name": "像鳄鱼一样思考",
+      "mp_id": "MP_WXS_3922514597",
+      "intro": "前私募操盘手的每日市场复盘与交易思考",
+      "seed_article_url": "https://mp.weixin.qq.com/s/8MrwDixwxXjTawO7yFIQvg",
+      "earliest_date": "2000-01-01",
+      "reported_article_count": 562,
+      "history_note": "微信读书中转接口首次接入时仅返回最近 99 篇"
+    }
+  ]
+}

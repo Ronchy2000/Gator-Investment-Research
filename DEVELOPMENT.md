@@ -82,18 +82,18 @@ wechat_sync/
   initialize.py           首次账户与索引初始化
   sync.py                 首次回补与增量同步入口
   validate.py             归档完整性检查
-  account.json            固定目标公众号配置
-  index.json              已完成文章和失败重试索引
+  accounts.json           双公众号非敏感配置
+  indexes/                每个公众号独立的完成、回补和失败重试索引
 ```
 
 ## 内容边界
 
-- `src/content/articles/`：只存放自动同步的“获得信息差”微信公众号文章。
+- `src/content/articles/`：只存放自动同步的“获得信息差”和“像鳄鱼一样思考”公众号文章。
 - `src/content/reports/`：一次性迁移的旧站研报，不参与每日同步。
 - `src/content/notes/`：独立投资随笔，不计入公众号或机构研报统计。
 - `public/article-assets/`：与公众号文章 ID 对应的封面和正文图片。
 
-新增内容必须保持 Markdown frontmatter、`wechat_sync/index.json` 和本地图片引用一致。同步器只会在文章与所需媒体完整时写入完成索引。
+新增内容必须保持 Markdown frontmatter、`wechat_sync/indexes/<slug>.json` 和本地图片引用一致。同步器只会在文章与所需媒体完整时写入对应账号的完成索引。
 
 ## 分支约定
 
@@ -106,7 +106,7 @@ wechat_sync/
 ```text
 src/content/articles/
 public/article-assets/
-wechat_sync/index.json
+wechat_sync/indexes/
 ```
 
 提交标题会包含成功同步的文章数量，例如：

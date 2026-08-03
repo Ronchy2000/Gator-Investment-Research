@@ -1,6 +1,6 @@
 ---
 import type { ArticleEntry } from "../lib/articles";
-import { articleHref, formatDate, isImageOnly, readingMinutes } from "../lib/articles";
+import { articleHref, articleSource, formatDate, isImageOnly, readingMinutes } from "../lib/articles";
 
 interface Props {
   article: ArticleEntry;
@@ -9,6 +9,7 @@ interface Props {
 
 const { article, number } = Astro.props;
 const imageOnly = isImageOnly(article.body || "");
+const source = articleSource(article.data.source);
 ---
 
 <article class="article-row">
@@ -19,6 +20,7 @@ const imageOnly = isImageOnly(article.body || "");
     <p>{article.data.description || "打开文章查看完整内容。"}</p>
   </a>
   <div class="article-tags">
+    <span class="source-tag">{source?.label || article.data.source}</span>
     {imageOnly && <span>图集</span>}
     <span>{readingMinutes(article.body || "")} 分钟</span>
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -82,7 +84,7 @@ const imageOnly = isImageOnly(article.body || "");
     white-space: nowrap;
   }
 
-  .article-tags span:first-child:not(:last-of-type) {
+  .article-tags .source-tag {
     padding: 2px 6px;
     border: 1px solid var(--line);
     color: var(--accent);

@@ -1,5 +1,5 @@
 import { getCollection } from "astro:content";
-import { articleHref, formatDate, plainText, sortArticles } from "../lib/articles";
+import { articleHref, articleSource, formatDate, plainText, sortArticles } from "../lib/articles";
 import { reportHref, sortReports } from "../lib/reports";
 
 export const prerender = true;
@@ -11,15 +11,19 @@ export async function GET() {
     getCollection("notes"),
   ]);
   const items = [
-    ...sortArticles(articles).map((article) => ({
-      title: article.data.title,
-      description: article.data.description,
-      date: formatDate(article.data.publishedAt),
-      href: articleHref(article),
-      text: plainText(article.body || ""),
-      kind: "wechat",
-      label: "公众号",
-    })),
+    ...sortArticles(articles).map((article) => {
+      const source = articleSource(article.data.source);
+      return {
+        title: article.data.title,
+        description: article.data.description,
+        date: formatDate(article.data.publishedAt),
+        href: articleHref(article),
+        text: plainText(article.body || ""),
+        kind: "wechat",
+        source: source?.slug || "wechat",
+        label: source ? `${source.label} · ${source.name}` : article.data.source,
+      };
+    }),
     ...sortReports(reports).map((report) => ({
       title: report.data.title,
       description: report.data.description,

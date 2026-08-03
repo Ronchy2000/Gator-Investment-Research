@@ -3,7 +3,17 @@ import { getCollection } from "astro:content";
 import ArticleRow from "../components/ArticleRow.astro";
 import ReportRow from "../components/ReportRow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { articleHref, formatDate, formatMonth, monthKey, readingMinutes, sortArticles } from "../lib/articles";
+import {
+  ARTICLE_SOURCES,
+  articleHref,
+  articleSource,
+  articlesFromSource,
+  formatDate,
+  formatMonth,
+  monthKey,
+  readingMinutes,
+  sortArticles,
+} from "../lib/articles";
 import { REPORT_CATEGORIES, sortReports } from "../lib/reports";
 
 const articles = sortArticles(await getCollection("articles"));
@@ -12,6 +22,9 @@ const notes = await getCollection("notes");
 const featured = articles[0];
 const recent = articles.slice(1, 11);
 const recentReports = reports.slice(0, 5);
+const sourceCounts = new Map(
+  ARTICLE_SOURCES.map((source) => [source.slug, articlesFromSource(articles, source.name).length]),
+);
 const reportCategoryCounts = new Map(REPORT_CATEGORIES.map((category) => [category, 0]));
 for (const report of reports) {
   reportCategoryCounts.set(report.data.category, (reportCategoryCounts.get(report.data.category) || 0) + 1);
@@ -27,13 +40,13 @@ for (const article of articles) {
 }
 ---
 
-<BaseLayout description="获得信息差公众号文章归档，按日同步市场信息、行业观察与投资研究。">
+<BaseLayout description="归档获得信息差与像鳄鱼一样思考，按日同步市场信息、行业观察与交易复盘。">
   <section class="hero page-width">
     <div class="hero-copy">
-      <span class="eyebrow">DAILY MARKET INTELLIGENCE</span>
-      <h1>获得<br /><em>信息差</em></h1>
+      <span class="eyebrow">INTELLIGENCE · REVIEW · ARCHIVE</span>
+      <h1>鳄鱼派<br /><em>投资档案</em></h1>
       <p>
-        把每天值得关注的市场信息，整理成一条可检索、可回看的时间线。少一点噪声，多一点判断依据。
+        一处阅读两份日更：用“获得信息差”筛选信息，用“像鳄鱼一样思考”复盘市场。少一点噪声，多一点判断依据。
       </p>
       <div class="hero-actions">
         <a class="primary-action" href={featured ? articleHref(featured) : "/archive/"}>
@@ -50,7 +63,7 @@ for (const article of articles) {
       <a class="featured-card" href={articleHref(featured)}>
         <div class="featured-topline">
           <span>NO. {String(articles.length).padStart(3, "0")}</span>
-          <span>LATEST BRIEFING</span>
+          <span>{articleSource(featured.data.source)?.label || "LATEST BRIEFING"}</span>
         </div>
         <div class="featured-image">
           {featured.data.cover ? (
@@ -69,21 +82,35 @@ for (const article of articles) {
     )}
   </section>
 
+  <section class="publication-grid page-width" aria-label="公众号栏目">
+    {ARTICLE_SOURCES.map((source, index) => (
+      <a href={`/archive/${source.slug}/`}>
+        <span class="publication-number">0{index + 1}</span>
+        <div>
+          <small>{source.eyebrow}</small>
+          <h2>{source.name}</h2>
+          <p>{source.description}</p>
+        </div>
+        <strong>{sourceCounts.get(source.slug)} <small>篇</small></strong>
+      </a>
+    ))}
+  </section>
+
   <section class="metrics page-width" aria-label="网站统计">
     <div>
-      <span>WECHAT</span>
-      <strong>{articles.length}</strong>
-      <small>篇公众号文章</small>
+      <span>INTELLIGENCE</span>
+      <strong>{sourceCounts.get("huode-xinxicha")}</strong>
+      <small>篇每日信息</small>
+    </div>
+    <div>
+      <span>MARKET REVIEW</span>
+      <strong>{sourceCounts.get("like-a-gator")}</strong>
+      <small>篇每日复盘</small>
     </div>
     <div>
       <span>HISTORY</span>
       <strong>{reports.length}</strong>
       <small>篇唯一历史研报</small>
-    </div>
-    <div>
-      <span>UPDATED</span>
-      <strong>{featured ? formatDate(featured.data.publishedAt) : "—"}</strong>
-      <small>最近更新</small>
     </div>
     <div>
       <span>TOTAL</span>
@@ -98,7 +125,7 @@ for (const article of articles) {
         <span class="eyebrow">LATEST ENTRIES</span>
         <h2>最近更新</h2>
       </div>
-      <p>按发布日期倒序排列，标题、摘要和正文均可全文搜索。</p>
+      <p>两份公众号内容合并按发布日期倒序排列，栏目、标题、摘要和正文均可检索。</p>
     </div>
     <div class="article-list">
       {recent.map((article, index) => <ArticleRow article={article} number={index + 2} />)}
@@ -158,7 +185,7 @@ for (const article of articles) {
       <h2>线上阅读，原文直达。</h2>
     </div>
     <p>
-      本站同步整理“获得信息差”微信公众号内容，便于按日期浏览和全文检索。文章保留原文链接，版权归原作者所有。
+      本站同步整理“获得信息差”与“像鳄鱼一样思考”两个微信公众号，分别保存每日信息与每日复盘。文章保留原文链接，版权归原作者所有。
     </p>
     <a href="/about/">了解本站 →</a>
   </section>
@@ -325,6 +352,66 @@ for (const article of articles) {
     font-size: 13px;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+
+  .publication-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 34px;
+    border: 1px solid var(--line-strong);
+  }
+
+  .publication-grid > a {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 22px;
+    min-height: 190px;
+    padding: 30px;
+    border-right: 1px solid var(--line);
+    transition: background 180ms ease, color 180ms ease;
+  }
+
+  .publication-grid > a:last-child {
+    border-right: 0;
+  }
+
+  .publication-grid > a:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .publication-number,
+  .publication-grid div > small {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .publication-grid h2 {
+    margin: 17px 0 10px;
+    font-family: var(--serif);
+    font-size: clamp(26px, 3vw, 40px);
+    font-weight: 500;
+  }
+
+  .publication-grid p {
+    max-width: 430px;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .publication-grid > a > strong {
+    align-self: end;
+    color: var(--signal);
+    font-family: var(--serif);
+    font-size: 34px;
+    font-weight: 500;
+  }
+
+  .publication-grid > a > strong small {
+    font-size: 12px;
   }
 
   .metrics {
@@ -579,6 +666,19 @@ for (const article of articles) {
 
     .metrics {
       grid-template-columns: repeat(2, 1fr);
+    }
+
+    .publication-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .publication-grid > a {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .publication-grid > a:last-child {
+      border-bottom: 0;
     }
 
     .metrics > div:nth-child(2) {

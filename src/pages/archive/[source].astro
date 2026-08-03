@@ -1,0 +1,23 @@
+---
+import { getCollection } from "astro:content";
+import ArticleArchive from "../../components/ArticleArchive.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { ARTICLE_SOURCES } from "../../lib/articles";
+
+export async function getStaticPaths() {
+  return ARTICLE_SOURCES.map((source) => ({
+    params: { source: source.slug },
+    props: { source },
+  }));
+}
+
+const { source } = Astro.props;
+const articles = await getCollection("articles");
+---
+
+<BaseLayout
+  title={`${source.label} · ${source.name}`}
+  description={`${source.name}文章归档：${source.description}`}
+>
+  <ArticleArchive articles={articles} activeSource={source} />
+</BaseLayout>

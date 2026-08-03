@@ -10,12 +10,12 @@ interface Props {
 }
 
 const {
-  title = "获得信息差",
-  description = "按日整理公众号市场信息，并保留 913 篇历史公开研报。",
+  title = "鳄鱼派投资档案",
+  description = "按日整理获得信息差与像鳄鱼一样思考，并保留 913 篇历史公开研报。",
   image = "/brand/huode-xinxicha-logo.jpg",
   article = false,
 } = Astro.props;
-const pageTitle = title === "获得信息差" ? title : `${title} | 获得信息差`;
+const pageTitle = title === "鳄鱼派投资档案" ? title : `${title} | 鳄鱼派投资档案`;
 const siteUrl = Astro.site ?? Astro.url.origin;
 const canonical = new URL(Astro.url.pathname, siteUrl);
 const currentPath = Astro.url.pathname;
@@ -32,7 +32,7 @@ const currentPath = Astro.url.pathname;
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/jpeg" href="/brand/huode-xinxicha-logo.jpg" />
     <link rel="apple-touch-icon" href="/brand/huode-xinxicha-logo.jpg" />
-    <link rel="alternate" type="application/rss+xml" title="获得信息差" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="鳄鱼派投资档案" href="/rss.xml" />
     <meta name="theme-color" content="#f2f0e9" />
     <meta property="og:type" content={article ? "article" : "website"} />
     <meta property="og:title" content={pageTitle} />
@@ -82,11 +82,11 @@ const currentPath = Astro.url.pathname;
   <body>
     <div class="page-grid" aria-hidden="true"></div>
     <header class="site-header">
-      <a class="brand" href="/" aria-label="获得信息差首页">
+      <a class="brand" href="/" aria-label="鳄鱼派投资档案首页">
         <img class="brand-logo" src="/brand/huode-xinxicha-logo.jpg" alt="" width="42" height="42" />
         <span class="brand-copy">
-          <strong>获得信息差</strong>
-          <small>MARKET INTELLIGENCE</small>
+          <strong>鳄鱼派投资档案</strong>
+          <small>INTELLIGENCE &amp; REVIEW</small>
         </span>
       </a>
 
@@ -136,8 +136,8 @@ const currentPath = Astro.url.pathname;
       <div class="footer-brand">
         <img class="brand-logo" src="/brand/huode-xinxicha-logo.jpg" alt="" width="46" height="46" loading="lazy" />
         <div>
-          <strong>获得信息差</strong>
-          <p>把信息按日期放好，让判断回到你手里。</p>
+          <strong>鳄鱼派投资档案</strong>
+          <p>信息与复盘按日期放好，让判断回到你手里。</p>
         </div>
       </div>
       <div class="footer-side">
