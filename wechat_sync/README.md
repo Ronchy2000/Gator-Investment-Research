@@ -38,6 +38,7 @@ python -m wechat_sync.sync --account like-a-gator --max-pages 20 --delay 2
 - 为每个来源维护 `wechat_sync/indexes/<slug>.json`，账号之间不会共用分页游标或失败队列。
 - 日常先检查最新页；大规模历史回补未完成时，再从已保存的页码附近续传并重叠一页去重。
 - 已知公众号总数大于本地归档数时，即使上次遇到空页也会在后续运行继续重探，应对中转历史窗口延迟开放或波动。
+- 单个账号请求超时、连接失败或返回 `401`、`429`、`5xx` 时自动切换到账号池中的下一个账号。
 - 使用文章 ID 和规范化原文链接双重去重。
 - 将失败项写入对应索引的 `pendingArticles`，下次执行时优先重试。
 - 将正文保存到 `src/content/articles/`，封面和正文图片保存到 `public/article-assets/`。

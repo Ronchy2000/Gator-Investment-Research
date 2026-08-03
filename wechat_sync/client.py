@@ -32,6 +32,10 @@ class RelayServerError(WeReadRelayError):
     """The relay failed for the current credential with a server error."""
 
 
+class RelayNetworkError(WeReadRelayError):
+    """The relay request failed before receiving a usable response."""
+
+
 @dataclass(frozen=True)
 class Credentials:
     vid: str
@@ -194,12 +198,19 @@ class WeReadClient:
         credential = self._credentials[credential_index]
         session = self._sessions[credential_index]
         url = f"{credential.platform_url.rstrip('/')}{path}"
-        response = session.request(
-            method,
-            url,
-            timeout=self._timeout_seconds,
-            **kwargs,
-        )
+        try:
+            response = session.request(
+                method,
+                url,
+                timeout=self._timeout_seconds,
+                **kwargs,
+            )
+        except requests.Timeout as error:
+            raise RelayNetworkError("微信读书中转服务请求超时") from error
+        except requests.RequestException as error:
+            raise RelayNetworkError(
+                f"微信读书中转服务网络请求失败: {type(error).__name__}"
+            ) from error
         response_text = (response.text or "").strip()
         if response.status_code == 401 or "WeReadError401" in response_text:
             raise CredentialsExpiredError("微信读书登录凭据已失效，请重新扫码")
@@ -244,6 +255,7 @@ class WeReadClient:
             except (
                 CredentialsExpiredError,
                 RateLimitedError,
+                RelayNetworkError,
                 RelayServerError,
             ) as error:
                 last_switchable_error = error
