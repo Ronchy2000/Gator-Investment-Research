@@ -31,7 +31,7 @@ Astro Content Collections
       +-- RSS + sitemap
       |
       v
-Cloudflare Pages / dist
+EdgeOne Pages / dist
 ```
 
 旧 Docsify 的 913 篇唯一研报通过一次性迁移器进入 `src/content/reports`，不参与微信公众号增量任务。旧分类目录中的 876 个副本不重复迁移。
@@ -107,8 +107,8 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 5. 使用工作流自带的 `GITHUB_TOKEN` 提交到 `master`，不需要额外 PAT。
 6. 任何阶段失败时创建或更新唯一的 GitHub Issue；后续恢复时自动关闭。
 
-Cloudflare Pages 监听内容提交并执行 `npm run build`，静态输出目录为 `dist`。
-扫码、GitHub Secrets 与 Action 运维见 `AUTOMATION.md`；新建或迁移 Cloudflare Pages 项目见 `DEPLOYMENT.md`。
+EdgeOne Pages 监听内容提交并执行 `npm run build`，静态输出目录为 `dist`。
+扫码、GitHub Secrets 与 Action 运维见 `AUTOMATION.md`；新建或迁移 EdgeOne Pages 项目见 `DEPLOYMENT.md`。
 
 ## 分支布局
 

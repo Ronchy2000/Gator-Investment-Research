@@ -14,7 +14,7 @@
   <a href="https://gator.ronchy2000.top/"><img alt="Website" src="https://img.shields.io/website?url=https%3A%2F%2Fgator.ronchy2000.top%2F&up_message=online&down_message=offline&style=flat-square&label=website&color=16845b" /></a>
   <a href="https://github.com/Ronchy2000/Gator-Investment-Research/actions/workflows/wechat-sync.yml"><img alt="WeChat Article Sync" src="https://github.com/Ronchy2000/Gator-Investment-Research/actions/workflows/wechat-sync.yml/badge.svg?branch=master" /></a>
   <img alt="Astro" src="https://img.shields.io/badge/Astro-7.1-BC52EE?style=flat-square&logo=astro&logoColor=white" />
-  <img alt="Cloudflare Pages" src="https://img.shields.io/badge/Cloudflare-Pages-F38020?style=flat-square&logo=cloudflarepages&logoColor=white" />
+  <a href="https://pages.edgeone.ai/"><img alt="EdgeOne Pages" src="https://img.shields.io/badge/EdgeOne-Pages-006EFF?style=flat-square" /></a>
   <a href="./LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" /></a>
 </p>
 
@@ -69,7 +69,7 @@ GitHub 保存 Markdown、索引与图片
         ↓
 Astro 生成静态页面
         ↓
-Cloudflare Pages 自动发布
+EdgeOne Pages 自动发布
 ```
 
 自动化每天上午、下午分别检查两个公众号，并为每个来源维护独立索引。新文章成功入库后才会进入生产站；下载失败的内容会保留到下一次重试，纯图片文章也必须确认图片完整后才算归档完成。
@@ -85,7 +85,7 @@ README 只负责介绍项目。实现、部署与运维细节分别放在以下�
 | [DEVELOPMENT.md](DEVELOPMENT.md) | 本地开发、构建命令、目录结构与分支约定 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 数据流、同步器、内容模型与前端架构 |
 | [AUTOMATION.md](AUTOMATION.md) | 扫码登录、GitHub Secrets、每日 Action 与故障处理 |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | Cloudflare Pages、生产分支、自定义域名与部署排查 |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | EdgeOne Pages、生产分支、自定义域名与部署排查 |
 | [wechat_sync/README.md](wechat_sync/README.md) | 微信公众号同步器的参数与行为 |
 | [CHANGELOG.md](CHANGELOG.md) | 主要版本与迁移记录 |
 
@@ -95,7 +95,7 @@ README 只负责介绍项目。实现、部署与运维细节分别放在以下�
 
 本仓库在此基础上实现了面向双公众号的独立增量索引、失败重试、正文与媒体完整性保护、Astro 内容归档及 GitHub Actions 自动发布。具体参考版本、提交与 MIT 许可证全文见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-同时感谢 [Astro](https://astro.build/)、[Cloudflare Pages](https://pages.cloudflare.com/) 与 GitHub Actions 提供的开放工具和基础设施。
+同时感谢 [Astro](https://astro.build/)、[EdgeOne Pages](https://pages.edgeone.ai/) 与 GitHub Actions 提供的开放工具和基础设施。
 
 ## 说明
 

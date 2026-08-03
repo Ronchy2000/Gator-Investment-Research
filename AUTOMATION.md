@@ -13,10 +13,10 @@ GitHub Actions 每天定时运行两次
   -> 按顺序查询两个公众号，401 / 429 / 5xx / 历史空页时切换账号
   -> 下载新文章、正文图片并更新独立索引
   -> 完整性检查和 Astro 构建通过后提交 master
-  -> Cloudflare Pages 检测提交并重新部署
+  -> EdgeOne Pages 检测提交并重新部署
 ```
 
-Cloudflare Pages 只负责构建和托管，不需要微信凭据。部署配置见 [DEPLOYMENT.md](DEPLOYMENT.md)。
+EdgeOne Pages 只负责构建和托管，不需要微信凭据。部署配置见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 ## 一、准备条件
 
@@ -94,7 +94,7 @@ python -m wechat_sync.auth --reset-pool
 WEREAD_ACCOUNTS
 ```
 
-不要把它放到 Cloudflare、GitHub Variables 或 Environment secrets。旧版 `WEREAD_VID` 和 `WEREAD_TOKEN` 仍可作为单账号兼容后备，但工作流只在 `WEREAD_ACCOUNTS` 不存在时使用它们。
+不要把它放到 EdgeOne、GitHub Variables 或 Environment secrets。旧版 `WEREAD_VID` 和 `WEREAD_TOKEN` 仍可作为单账号兼容后备，但工作流只在 `WEREAD_ACCOUNTS` 不存在时使用它们。
 
 ### 方法 A：GitHub 网页
 
@@ -186,7 +186,7 @@ content: sync 3 WeChat articles
 - 正文、封面和正文图片写入仓库；纯图片文章至少成功本地化一张正文图片才算完成。
 - 单篇成功后立即原子更新索引，中断时不丢失已完成进度。
 - 完整性检查和 `npm run build` 都通过后才推送 `master`。
-- Cloudflare Pages 检测 `master` 提交并部署 `dist/`。
+- EdgeOne Pages 检测 `master` 提交并部署 `dist/`。
 
 ## 九、凭据续期与追加账号
 
@@ -230,14 +230,14 @@ python -m wechat_sync.github_secrets \
 | 单篇正文暂时为空 | 微信页面临时异常 | 文章保留在 `pendingArticles`，下次重试 |
 | Action 成功但无提交 | 没有新文章或内容已去重 | 正常结果 |
 | `git push` 403 | Actions 只读或分支保护 | 开启写权限并调整分支规则 |
-| 有提交但网页未更新 | Cloudflare 未监听 `master` 或构建失败 | 查看 [DEPLOYMENT.md](DEPLOYMENT.md) |
+| 有提交但网页未更新 | EdgeOne 未监听 `master` 或构建失败 | 查看 [DEPLOYMENT.md](DEPLOYMENT.md) |
 
 同步失败时，已成功写入的文章和断点会保留；未完成文章不会被误标为成功。
 
 ## 十一、安全原则
 
 - 不提交 `data/wechat/credentials.json`、二维码或任何 token 输出。
-- 不把账号池放进 workflow YAML、README、Issue、普通 Variables 或 Cloudflare。
+- 不把账号池放进 workflow YAML、README、Issue、普通 Variables 或 EdgeOne。
 - 不在命令行中 `echo` token；使用仓库提供的复制/上传脚本。
 - 如果凭据曾出现在提交、日志或截图中，立即用对应微信账号重新扫码并更新 Secret。
 - GitHub Actions 只使用自动生成的 `GITHUB_TOKEN`，不要另建长期 PAT。

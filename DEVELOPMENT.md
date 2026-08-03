@@ -30,7 +30,7 @@ npm run dev
 npm run build
 ```
 
-构建结果位于 `dist/`，该目录不提交到 Git，由 Cloudflare Pages 在部署时重新生成。
+构建结果位于 `dist/`，该目录不提交到 Git，由 EdgeOne Pages 在部署时重新生成。
 
 ## 同步器环境
 
@@ -97,7 +97,7 @@ wechat_sync/
 
 ## 分支约定
 
-- `master`：Astro 生产站，也是 Cloudflare Pages 与每日同步任务的来源。
+- `master`：Astro 生产站，也是 EdgeOne Pages 与每日同步任务的来源。
 - `legacy/docsify-archive`：切换前的旧 Docsify `master` 快照，只读保留。
 - `feature/wechat-mp-sync`：迁移开发记录，用于追溯新站建设过程。
 
@@ -120,6 +120,6 @@ content: sync 3 WeChat articles
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)：完整系统架构和数据流。
 - [AUTOMATION.md](AUTOMATION.md)：凭据、GitHub Actions 和运维。
-- [DEPLOYMENT.md](DEPLOYMENT.md)：Cloudflare Pages 部署。
+- [DEPLOYMENT.md](DEPLOYMENT.md)：EdgeOne Pages 部署。
 - [wechat_sync/README.md](wechat_sync/README.md)：同步参数和失败行为。
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)：第三方代码来源与许可证。
