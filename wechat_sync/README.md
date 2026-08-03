@@ -37,6 +37,7 @@ python -m wechat_sync.sync --account like-a-gator --max-pages 20 --delay 2
 - 从 `wechat_sync/accounts.json` 读取全部目标公众号。
 - 为每个来源维护 `wechat_sync/indexes/<slug>.json`，账号之间不会共用分页游标或失败队列。
 - 日常先检查最新页；大规模历史回补未完成时，再从已保存的页码附近续传并重叠一页去重。
+- 已知公众号总数大于本地归档数时，即使上次遇到空页也会在后续运行继续重探，应对中转历史窗口延迟开放或波动。
 - 使用文章 ID 和规范化原文链接双重去重。
 - 将失败项写入对应索引的 `pendingArticles`，下次执行时优先重试。
 - 将正文保存到 `src/content/articles/`，封面和正文图片保存到 `public/article-assets/`。
@@ -79,7 +80,7 @@ python -m wechat_sync.github_secrets --repo Ronchy2000/Gator-Investment-Research
 python -m wechat_sync.github_secrets --copy WEREAD_ACCOUNTS
 ```
 
-客户端默认从池首调用；遇到 401、429 或历史空页时自动尝试下一账号。新增账号会触发历史断点重探。凭据没有可供 Action 自动使用的 refresh token，失效账号需要用原微信号重新扫码并更新账号池 Secret。完整流程见 [../AUTOMATION.md](../AUTOMATION.md)。
+客户端默认从池首调用；遇到 401、429、5xx 或历史空页时自动尝试下一账号。新增账号会触发历史断点重探。凭据没有可供 Action 自动使用的 refresh token，失效账号需要用原微信号重新扫码并更新账号池 Secret。完整流程见 [../AUTOMATION.md](../AUTOMATION.md)。
 
 ## 参数与退出状态
 

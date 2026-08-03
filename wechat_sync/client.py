@@ -28,6 +28,10 @@ class RateLimitedError(WeReadRelayError):
     """The relay rejected the request because of rate limiting."""
 
 
+class RelayServerError(WeReadRelayError):
+    """The relay failed for the current credential with a server error."""
+
+
 @dataclass(frozen=True)
 class Credentials:
     vid: str
@@ -201,6 +205,10 @@ class WeReadClient:
             raise CredentialsExpiredError("微信读书登录凭据已失效，请重新扫码")
         if response.status_code == 429 or "WeReadError429" in response_text:
             raise RateLimitedError("微信读书中转服务触发频率限制，请稍后再试")
+        if 500 <= response.status_code < 600:
+            raise RelayServerError(
+                f"微信读书中转服务返回 HTTP {response.status_code}"
+            )
         if response.status_code != 200:
             detail = response_text[:300]
             raise WeReadRelayError(
@@ -233,7 +241,11 @@ class WeReadClient:
                     path,
                     **kwargs,
                 )
-            except (CredentialsExpiredError, RateLimitedError) as error:
+            except (
+                CredentialsExpiredError,
+                RateLimitedError,
+                RelayServerError,
+            ) as error:
                 last_switchable_error = error
                 print(
                     f"账号池第 {credential_index + 1}/{self.credential_count} 个账号"
@@ -296,7 +308,11 @@ class WeReadClient:
                     f"/api/v2/platform/mps/{mp_id}/articles",
                     params={"page": page},
                 )
-            except (CredentialsExpiredError, RateLimitedError) as error:
+            except (
+                CredentialsExpiredError,
+                RateLimitedError,
+                RelayServerError,
+            ) as error:
                 last_switchable_error = error
                 print(
                     f"账号池第 {credential_index + 1}/{self.credential_count} 个账号"

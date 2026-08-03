@@ -11,7 +11,7 @@ import time
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
 from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
@@ -33,6 +33,7 @@ class AccountConfig:
     name: str
     mp_id: str
     earliest: date
+    reported_count: Optional[int]
 
 
 @dataclass(frozen=True)
@@ -75,11 +76,17 @@ def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
         name = str(item.get("name", "")).strip()
         mp_id = str(item.get("mp_id", "")).strip()
         earliest_value = str(item.get("earliest_date", "")).strip()
+        raw_reported_count = item.get("reported_article_count")
         if not SLUG_RE.fullmatch(slug) or not name or not mp_id or not earliest_value:
             raise ValueError(f"公众号配置缺少有效 slug、name、mp_id 或 earliest_date: {item}")
         if slug in seen_slugs:
             raise ValueError(f"公众号 slug 重复: {slug}")
         seen_slugs.add(slug)
+        reported_count = None
+        if raw_reported_count is not None:
+            reported_count = int(raw_reported_count)
+            if reported_count < 1:
+                raise ValueError(f"公众号 reported_article_count 必须大于 0: {slug}")
         if not selected_slugs or slug in selected_slugs:
             accounts.append(
                 AccountConfig(
@@ -87,6 +94,7 @@ def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
                     name=name,
                     mp_id=mp_id,
                     earliest=date.fromisoformat(earliest_value),
+                    reported_count=reported_count,
                 )
             )
 
@@ -341,11 +349,21 @@ def _synchronize_account(
         index.get("backfillComplete", migrated_complete_default)
     )
     previous_pool_size = max(1, int(index.get("credentialPoolSize", 1)))
+    known_history_remaining = (
+        account.reported_count is not None
+        and len(existing_entries) < account.reported_count
+    )
     if credential_pool_size > previous_pool_size and backfill_complete:
         backfill_complete = False
         print(
             f"[{account.name}] 账号池由 {previous_pool_size} 个增至 "
             f"{credential_pool_size} 个，重新探测历史分页断点"
+        )
+    elif known_history_remaining and backfill_complete:
+        backfill_complete = False
+        print(
+            f"[{account.name}] 已归档 {len(existing_entries)}/"
+            f"{account.reported_count} 篇，继续探测可能延迟开放的历史分页"
         )
     collection = _collect_articles(
         client=client,
