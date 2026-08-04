@@ -6,12 +6,21 @@
     "name": "像鳄鱼一样思考"
   },
   "earliestDate": "2000-01-01",
-  "updatedAt": "2026-08-04T10:25:40.080170+08:00",
+  "updatedAt": "2026-08-04T21:11:58.042404+08:00",
   "credentialPoolSize": 5,
   "backfillComplete": false,
   "backfillNextPage": 2,
   "pendingArticles": [],
   "articles": [
+    {
+      "articleId": "bG4sLGnSuuYDEGlXiyD6GQ",
+      "title": "股市：按照预案发展，继续磨底（2026.8.4）",
+      "publishedAt": "2026-08-04T15:59:21+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s/bG4sLGnSuuYDEGlXiyD6GQ",
+      "markdownPath": "src/content/articles/2026-08-04-bG4sLGnSuuYDEGlXiyD6GQ.md",
+      "cover": "/article-assets/bG4sLGnSuuYDEGlXiyD6GQ/cover.jpg",
+      "assetCount": 7
+    },
     {
       "articleId": "8MrwDixwxXjTawO7yFIQvg",
       "title": "股市：自发磨底，两个预案（2026.8.3）",
