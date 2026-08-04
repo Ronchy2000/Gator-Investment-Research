@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       max_pages:
-        description: Maximum article-list pages to inspect per WeChat source
+        description: Maximum newest article-list pages to inspect per WeChat source
         required: false
-        default: "10"
+        default: "1"
 
 permissions:
   contents: write
@@ -32,7 +32,7 @@ jobs:
       WEREAD_VID: ${{ secrets.WEREAD_VID }}
       WEREAD_TOKEN: ${{ secrets.WEREAD_TOKEN }}
       WEREAD_PLATFORM_URL: ${{ secrets.WEREAD_PLATFORM_URL }}
-      SYNC_MAX_PAGES: ${{ inputs.max_pages || '10' }}
+      SYNC_MAX_PAGES: ${{ inputs.max_pages || '1' }}
 
     steps:
       - name: Checkout
