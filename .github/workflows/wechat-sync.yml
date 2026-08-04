@@ -2,9 +2,11 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # 10:00 and 18:30 Asia/Shanghai (GitHub cron uses UTC).
-    - cron: "0 2 * * *"
-    - cron: "30 10 * * *"
+    # Avoid high-load minutes when GitHub may delay or drop scheduled events.
+    - cron: "17 10 * * *"
+      timezone: "Asia/Shanghai"
+    - cron: "47 18 * * *"
+      timezone: "Asia/Shanghai"
   workflow_dispatch:
     inputs:
       max_pages:
