@@ -96,8 +96,14 @@ def login(
     platform_url = platform_url.rstrip("/")
     print("正在获取微信读书扫码登录二维码...")
 
+    no_cache_headers = {
+        "Cache-Control": "no-cache, no-store, max-age=0",
+        "Pragma": "no-cache",
+    }
     response = requests.get(
         f"{platform_url}/api/v2/login/platform",
+        params={"_": time.time_ns()},
+        headers=no_cache_headers,
         timeout=15,
     )
     response.raise_for_status()
@@ -123,6 +129,8 @@ def login(
             time.sleep(3)
             poll_response = requests.get(
                 f"{platform_url}/api/v2/login/platform/{login_id}",
+                params={"_": time.time_ns()},
+                headers=no_cache_headers,
                 timeout=30,
             )
             poll_response.raise_for_status()
