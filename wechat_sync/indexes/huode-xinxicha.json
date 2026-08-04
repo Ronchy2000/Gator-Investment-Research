@@ -6,12 +6,21 @@
     "name": "获得信息差"
   },
   "earliestDate": "2026-06-15",
-  "updatedAt": "2026-08-03T21:23:46.568210+08:00",
-  "credentialPoolSize": 3,
+  "updatedAt": "2026-08-04T08:59:14.778077+08:00",
+  "credentialPoolSize": 4,
   "backfillComplete": true,
   "backfillNextPage": 3,
   "pendingArticles": [],
   "articles": [
+    {
+      "articleId": "Atjs9kURUymLa6Pvh-mVrA",
+      "title": "8.4全是利好，美股大爆发！",
+      "publishedAt": "2026-08-04T08:21:49+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s/Atjs9kURUymLa6Pvh-mVrA",
+      "markdownPath": "src/content/articles/2026-08-04-Atjs9kURUymLa6Pvh-mVrA.md",
+      "cover": "/article-assets/Atjs9kURUymLa6Pvh-mVrA/cover.jpg",
+      "assetCount": 1
+    },
     {
       "articleId": "qRFSHm1B6viK3dmMNlZGKw",
       "title": "8.3日韩股市低开",
