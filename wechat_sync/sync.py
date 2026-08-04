@@ -231,8 +231,9 @@ def _collect_articles(
             inspected_pages.add(page)
             if not rows:
                 if page == 1:
-                    raise WeReadRelayError(
-                        f"{account.name} 文章列表第一页为空，中转服务可能尚未刷新数据"
+                    print(
+                        f"[{account.name}] 文章列表第一页暂时为空，"
+                        "跳过本轮增量边界检查并继续历史回补"
                     )
                 reached_incremental_boundary = True
                 break
