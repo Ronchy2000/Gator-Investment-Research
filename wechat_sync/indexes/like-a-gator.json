@@ -5,7 +5,7 @@
     "name": "像鳄鱼一样思考",
     "seedArticleUrl": "https://mp.weixin.qq.com/s/8MrwDixwxXjTawO7yFIQvg"
   },
-  "earliestDate": "2000-01-01",
+  "earliestDate": "2023-07-22",
   "backfillComplete": true,
   "backfillNextPage": 60,
   "backfillOffset": "",
@@ -5241,5 +5241,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-05T22:25:17.016989+08:00"
+  "updatedAt": "2026-08-05T22:55:06.854292+08:00"
 }

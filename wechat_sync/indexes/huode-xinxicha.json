@@ -1,14 +1,14 @@
 {
-  "version": 4,
+  "version": 5,
   "account": {
     "slug": "huode-xinxicha",
     "name": "获得信息差",
     "seedArticleUrl": "https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g"
   },
   "earliestDate": "2026-06-15",
-  "updatedAt": "2026-08-05T17:21:28.290745+08:00",
   "backfillComplete": true,
   "backfillNextPage": 3,
+  "backfillOffset": "",
   "pendingArticles": [],
   "articles": [
     {
@@ -470,5 +470,6 @@
       "cover": "/article-assets/LqnB_oPy-E_ZAEqlf9tk5Q/cover.jpg",
       "assetCount": 5
     }
-  ]
+  ],
+  "updatedAt": "2026-08-05T22:55:00.702130+08:00"
 }
