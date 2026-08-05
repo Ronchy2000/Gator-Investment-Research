@@ -6,12 +6,21 @@
     "name": "像鳄鱼一样思考"
   },
   "earliestDate": "2000-01-01",
-  "updatedAt": "2026-08-04T21:11:58.042404+08:00",
+  "updatedAt": "2026-08-05T17:21:33.603094+08:00",
   "credentialPoolSize": 5,
   "backfillComplete": false,
   "backfillNextPage": 2,
   "pendingArticles": [],
   "articles": [
+    {
+      "articleId": "jkdFryULryRUNYlOQnDGuQ",
+      "title": "股市：反弹的结构决定高度（2026.8.5）",
+      "publishedAt": "2026-08-05T15:55:06+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s/jkdFryULryRUNYlOQnDGuQ",
+      "markdownPath": "src/content/articles/2026-08-05-jkdFryULryRUNYlOQnDGuQ.md",
+      "cover": "/article-assets/jkdFryULryRUNYlOQnDGuQ/cover.jpg",
+      "assetCount": 9
+    },
     {
       "articleId": "bG4sLGnSuuYDEGlXiyD6GQ",
       "title": "股市：按照预案发展，继续磨底（2026.8.4）",

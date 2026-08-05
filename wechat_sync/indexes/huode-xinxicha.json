@@ -6,12 +6,21 @@
     "name": "获得信息差"
   },
   "earliestDate": "2026-06-15",
-  "updatedAt": "2026-08-04T21:11:42.462007+08:00",
+  "updatedAt": "2026-08-05T17:21:28.290745+08:00",
   "credentialPoolSize": 5,
   "backfillComplete": true,
   "backfillNextPage": 3,
   "pendingArticles": [],
   "articles": [
+    {
+      "articleId": "KMXfEF9gnscnHUC32x_plg",
+      "title": "8.5数据中心设备出大消息！",
+      "publishedAt": "2026-08-05T08:46:49+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s/KMXfEF9gnscnHUC32x_plg",
+      "markdownPath": "src/content/articles/2026-08-05-KMXfEF9gnscnHUC32x_plg.md",
+      "cover": "/article-assets/KMXfEF9gnscnHUC32x_plg/cover.jpg",
+      "assetCount": 1
+    },
     {
       "articleId": "Atjs9kURUymLa6Pvh-mVrA",
       "title": "8.4全是利好，美股大爆发！",
