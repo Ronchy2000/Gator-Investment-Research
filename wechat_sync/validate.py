@@ -20,6 +20,7 @@ IMAGE_SOURCE_RE = re.compile(
     re.IGNORECASE,
 )
 CSS_URL_RE = re.compile(r"url\(\s*['\"]?([^'\")]+)['\"]?\s*\)", re.IGNORECASE)
+MOJIBAKE_RE = re.compile(r"(?:’╝|ŃĆ|[ÕĶń][^\s<])")
 
 
 def _inside(path: Path, root: Path) -> bool:
@@ -134,6 +135,8 @@ def validate() -> list[str]:
                 errors.append(f"{markdown_value} 的 source 与账号索引不一致")
             if '<div class="wechat-article">' not in markdown:
                 errors.append(f"{markdown_value} 缺少微信正文容器")
+            if len(MOJIBAKE_RE.findall(markdown)) >= 8:
+                errors.append(f"{markdown_value} 疑似包含字符编码乱码")
 
             cover = str(entry.get("cover", "")).strip()
             if cover:
