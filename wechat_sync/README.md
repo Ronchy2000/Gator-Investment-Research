@@ -29,6 +29,8 @@ python -m wechat_sync.rapidapi_secrets \
 
 生成的 Repository Secret 名称固定为 `RAPIDAPI_KEYS`，值为 JSON 字符串数组。也可通过 `--copy` 复制后在 GitHub 网页手动配置。
 
+多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。当前生产容量按五 Key 池规划，但同步器支持任意非空数量并自动去重。
+
 ## 增量同步
 
 常规本地运行：
@@ -72,13 +74,15 @@ python -m wechat_sync.sync \
 
 ## Key 故障转移
 
-同步器每天从不同 Key 开始，均衡消耗多个 RapidAPI 账号的月度额度。以下情况会切换到下一个 Key：
+同步器每天从不同 Key 开始，均衡消耗多个 RapidAPI 账号的月度额度。某个 Key 失败后按池中顺序切换，成功后该次任务继续使用新 Key。以下情况会切换到下一个 Key：
 
 - HTTP `401`、`403`、`429`、`5xx`。
 - 业务码 `100`、`301`、`302`、`303`、`500`、`600`、`601`、`602`。
 - 网络连接失败或请求超时。
 
 所有 Key 都失败时，该公众号同步失败并由 Action 更新告警 Issue。Key 内容不会打印。
+
+HTTP `429` 是套餐额度或速率限制信号。额度由 RapidAPI 侧统计，无需在本地保存；下次运行仍会按日期选择起点，并在遇到已耗尽 Key 时继续故障转移。
 
 ## 纯图片文章
 

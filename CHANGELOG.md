@@ -11,6 +11,7 @@
 - 新文章正文改由 RapidAPI 文章详情 V4 获取，避免列表长链接触发微信验证码，并继续完整本地化封面与正文图片。
 - 新增隐藏输入、剪贴板复制及 GitHub CLI Secret 上传工具。
 - 删除生产分支的扫码、微信读书 Secret 上传和 Just One API 独立补录程序；旧代码仍可在历史分支追溯。
+- 更新项目、自动化、架构和 EdgeOne 文档，明确五 Key 池、额度故障转移与生产配置，并移除不再使用的社区友链。
 - 删除已合并的 `feature/wechat-mp-sync` 和已被 Docsify 历史分支覆盖的 `backup/legacy-crawler-2026-06-16`。
 
 ## 2026-08-03 - 微信公众号同步与 Astro 新站

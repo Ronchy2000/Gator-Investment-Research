@@ -1,6 +1,6 @@
 # EdgeOne Pages 托管配置
 
-本项目是 Astro 静态站点，由 EdgeOne Pages 从 GitHub 拉取仓库、执行 `npm run build`，然后发布 `dist/`。微信公众号扫码凭据只配置在 GitHub Actions，不应出现在 EdgeOne 项目设置中。
+本项目是 Astro 静态站点，由 EdgeOne Pages 从 GitHub 拉取仓库、执行 `npm run build`，然后发布 `dist/`。公众号同步使用的 RapidAPI Key 池只配置在 GitHub Actions，不应出现在 EdgeOne 项目设置中。
 
 ## 一、固定配置
 
@@ -126,7 +126,7 @@ EdgeOne Pages 对项目总存储、部署文件数量和单文件大小存在平
 ## 八、不应配置或提交的内容
 
 - 不在 EdgeOne 中配置 `RAPIDAPI_KEYS` 或 `RAPIDAPI_KEY`。
-- 不在 EdgeOne 中配置 GitHub PAT 或扫码凭据。
+- 不在 EdgeOne 中配置 GitHub PAT、RapidAPI Key 或任何历史扫码凭据。
 - 不提交本地 `data/wechat/rapidapi-keys.json` 或任何 API Key。
 - 不把 Output directory 设置成 `docs` 或仓库根目录。
 - 不提交本地生成的 `dist/`；由 EdgeOne Pages 每次构建生成。

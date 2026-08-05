@@ -40,8 +40,8 @@ read-only `legacy/weread-sync` branch.
 
 ## RapidAPI data service
 
-The production `master` branch obtains public WeChat article-list metadata
-through [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform).
+The production `master` branch obtains public WeChat article-list metadata and
+article-detail HTML through [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform).
 This is an external hosted API service. Its availability, quotas, pricing, and
 terms are controlled by the provider and RapidAPI; no API keys are distributed
 with this repository.
