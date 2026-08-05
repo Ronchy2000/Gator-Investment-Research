@@ -17,7 +17,7 @@
 
 仓库中的部署相关文件：
 
-- `edgeone.json`：覆盖安装、构建、输出目录，并配置安全响应头和静态资源缓存。
+- `edgeone.json`：覆盖安装、构建、输出目录，并配置 UTF-8、安全响应头和静态资源缓存。
 - `package.json`：定义 `npm run build`，并声明最低 Node.js 版本。
 - `.nvmrc`：要求 Node.js 22；EdgeOne Pages 会在构建时识别并切换版本。
 - `astro.config.mjs`：使用 Astro 静态输出并配置生产域名。
@@ -105,6 +105,19 @@ GitHub Actions 和 EdgeOne Pages 是两个独立阶段：
 7. `gator.ronchy2000.top` 的 CNAME 与 HTTPS 状态正常。
 8. GitHub 手动运行 `WeChat Article Sync` 后，有新提交时 EdgeOne 自动产生下一次部署。
 
+EdgeOne 必须为 HTML 返回以下响应头：
+
+```text
+Content-Type: text/html; charset=utf-8
+```
+
+仓库已在 `edgeone.json` 中为所有 HTML 路由单独声明该响应头。不要把它合并到全局 `/*` 规则，否则 CSS、JSON 和图片也可能被错误标记为 HTML。部署后可以执行以下命令核对首页和文章页：
+
+```bash
+curl -I https://gator.ronchy2000.top/
+curl -I https://gator.ronchy2000.top/articles/<文章 ID>/
+```
+
 首页访问量和访问人数使用不蒜子脚本加载，属于非关键增强。统计服务异常不应影响正文、搜索、主题切换或页面构建。
 
 ## 七、常见故障
@@ -120,6 +133,9 @@ GitHub Actions 和 EdgeOne Pages 是两个独立阶段：
 | 页面路径刷新后 404 | 输出目录或部署版本 | 确认发布的是 Astro 生成的 `dist`，不是源码目录或旧 `docs` |
 | 正式域名打开旧项目 | 域名管理 / DNS | 确认 CNAME 指向当前 EdgeOne Pages 项目，并移除冲突记录 |
 | Action 成功但网页仍未更新 | GitHub commit 与 EdgeOne deployment | 对比提交 SHA；不一致时重新部署最新生产版本 |
+| EdgeOne 页面中文乱码，但 Vercel 正常 | 正式域名的 `Content-Type` 响应头 | 确认响应包含 `charset=utf-8`；重新部署最新 `master`，再清理 EdgeOne 缓存并强制刷新浏览器 |
+
+如果只有部分地区或网络仍显示乱码，先保留响应中的 `EO-LOG-UUID`，再用不同网络执行 `curl -I` 对比。最新部署已生效且响应头正确时，问题通常是区域节点或浏览器缓存；在 EdgeOne 控制台刷新缓存后仍未恢复，应把发生时间、访问地区、URL 和 `EO-LOG-UUID` 提交给 EdgeOne 支持。
 
 EdgeOne Pages 对项目总存储、部署文件数量和单文件大小存在平台限制。历史图片继续增加时，应在构建日志中关注 `storage limit`、`file count` 和 `file size` 错误。
 
