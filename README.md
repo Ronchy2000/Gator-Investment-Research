@@ -89,6 +89,10 @@ README 只负责介绍项目。实现、部署与运维细节分别放在以下�
 | [wechat_sync/README.md](wechat_sync/README.md) | 微信公众号同步器的参数与行为 |
 | [CHANGELOG.md](CHANGELOG.md) | 主要版本与迁移记录 |
 
+## 友情链接
+
+- [LINUX DO](https://linux.do/)：一个真诚、友善、团结、专业的技术社区。
+
 ## 致谢
 
 公众号同步能力参考并受益于 [x554960766/wechat-mp-tools](https://github.com/x554960766/wechat-mp-tools)。本项目的微信读书扫码登录协议、公众号文章列表接口与下载流程以该项目的开源实现为重要基础，在此向作者 **xuyi** 表示感谢。
