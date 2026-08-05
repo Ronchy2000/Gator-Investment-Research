@@ -8,7 +8,7 @@
 - 工作流：`.github/workflows/wechat-sync.yml`。
 - 数据源：RapidAPI 的文章列表 V1、历史文章 V2 与文章详情 V4。
 - 公众号：“获得信息差”和“像鳄鱼一样思考”。
-- 凭据：一个名为 `RAPIDAPI_KEYS` 的 Repository Secret，当前包含 9 个 Key。
+- 凭据：一个名为 `RAPIDAPI_KEYS` 的 Repository Secret，截至 `2026-08-05` 当前包含 10 个 Key。
 - 调度：北京时间每天 `10:17`、`18:47`，也可手动运行。
 - 部署：Action 只提交完整文章；EdgeOne Pages 监听 `master` 并发布 `dist/`。
 
@@ -30,6 +30,19 @@ RAPIDAPI_KEYS
 ```
 
 工作流文件为 `.github/workflows/wechat-sync.yml`，每天北京时间 `10:17` 和 `18:47` 各运行一次，也支持手动执行。
+
+## API 职责
+
+所有请求都使用主机 `weixin-wechat-official-accounts-platform.p.rapidapi.com`，并携带 `x-rapidapi-host` 与 `x-rapidapi-key` 请求头。几个名称相近的端点用途不同：
+
+| 端点 | 请求 | 用途 | 本项目使用方式 |
+| --- | --- | --- | --- |
+| `/api/weixin/convert-article-link/v1` | `GET`，查询参数 `link` | 把微信短链接或中间链接转换为完整文章链接 | 可选工具，不负责列出或下载文章 |
+| `/api/weixin/get-account-history-articles/v1` | `POST`，查询参数 `url`、`page` | 获取公众号较新的文章列表，已被提供方标记为弃用 | Action 每次只读取第 1 页，满足日常增量 |
+| `/api/weixin/get-account-history-articles/v2` | `POST`，表单字段 `url`、`offset` | 使用 `PagingInfo.Offset` 连续读取完整历史 | 只用于本地一次性历史补录，不进入定时 Action |
+| `/api/weixin/get-article-detail/v4` | `GET`，查询参数 `articleUrl` | 返回标题、公众号、摘要和完整正文 HTML | 每篇新文章都通过它取得可归档正文 |
+
+V1 和 V2 在这里指的是两代“公众号历史文章列表”接口，不是正文详情版本。Convert V1 只做链接转换；它不能代替文章列表 V1/V2，也不能代替详情 V4。完整请求示例、返回字段和历史补录操作见 [wechat_sync/README.md](wechat_sync/README.md)。
 
 ## 1. 准备 RapidAPI Key
 
@@ -169,6 +182,20 @@ V2 以 `PagingInfo.Offset` 游标翻页。同步器将下一页游标保存到 `
 
 截至 `2026-08-05`，免费套餐响应头显示每个 Key 有 50 次普通月额度，但 V2 另受每月 10 次的 Pro 子额度限制。GitHub Action 不启用 V2；历史补录应按每个 Key 最多约 8 页分批运行，保留少量额度用于重试，并查看 RapidAPI 控制台用量。
 
+每批执行后可检查断点：
+
+```bash
+jq '{
+  articleCount: (.articles | length),
+  pendingCount: ((.pendingArticles // []) | length),
+  backfillComplete,
+  backfillNextPage,
+  backfillOffset
+}' wechat_sync/indexes/like-a-gator.json
+```
+
+只有 `backfillComplete` 为 `true`、`backfillOffset` 为空字符串、`pendingCount` 为 `0` 时，才表示列表已到达接口末页且所有文章下载完整。不要用公众号页面显示的固定文章总数判断完成：本次 V2 实际返回 588 篇，多于此前显示的 562 篇。截至 `2026-08-05`，“像鳄鱼一样思考”已满足以上三项条件，最早文章为 `2023-07-22`，不需要继续运行 V2；今后的新文章完全交给每天两次的 Action。
+
 ## 7. 常见故障
 
 | 日志 | 原因 | 处理 |
@@ -178,7 +205,7 @@ V2 以 `PagingInfo.Offset` 游标翻页。同步器将下一页游标保存到 `
 | HTTP 401/403 | Key 无效或该账号未订阅接口 | 检查 RapidAPI 订阅并轮换 Key |
 | HTTP 429 | 当前 Key 额度耗尽 | 补充 Key 或等待额度重置 |
 | 业务码 301 | 上游临时采集失败 | 等待下一次定时任务，通常无需改 Secret |
-| 连续多页未遇到已入库文章 | 两次同步之间新增量超过检查页数 | 手动提高 `max_pages` |
+| 连续多页未遇到已入库文章 | 两次同步之间新增量超过检查范围 | 先适度提高 `max_pages`；若 V1 翻页仍重复，改用本地 V2 |
 | 文章详情缺少必要字段 | 详情 V4 暂未采集到完整 HTML | 等待下一次任务重试 |
 | 图片下载失败 | 微信 CDN 资源暂时不可访问 | 文章保留在 pending，下一次重试 |
 | 纯图片正文没有图片 | 图片资源暂时不可用 | 文章保留在 pending，下一次重试 |

@@ -7,7 +7,7 @@
 | slug | 公众号 | 栏目 | 收录范围 |
 | --- | --- | --- | --- |
 | `huode-xinxicha` | 获得信息差 | 每日信息 | 自 `2026-06-15` 起 |
-| `like-a-gator` | 像鳄鱼一样思考 | 每日复盘 | 持续增量并补录历史 |
+| `like-a-gator` | 像鳄鱼一样思考 | 每日复盘 | `2023-07-22` 至今，V2 历史补录已完成 |
 
 非敏感配置位于 `accounts.json`。每个公众号通过 `seed_article_url` 中的一篇公开文章识别，不再需要微信读书 `mp_id`、`vid` 或 token。
 
@@ -29,7 +29,93 @@ python -m wechat_sync.rapidapi_secrets \
 
 生成的 Repository Secret 名称固定为 `RAPIDAPI_KEYS`，值为 JSON 字符串数组。也可通过 `--copy` 复制后在 GitHub 网页手动配置。
 
-多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。当前生产池包含 9 个 Key；同步器支持任意非空数量并自动去重。
+多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。截至 `2026-08-05` 当前生产池包含 10 个 Key；同步器支持任意非空数量并自动去重。
+
+## API 使用说明
+
+RapidAPI 产品名为 [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform)。所有端点共用：
+
+```text
+Host: weixin-wechat-official-accounts-platform.p.rapidapi.com
+Headers:
+  x-rapidapi-host: weixin-wechat-official-accounts-platform.p.rapidapi.com
+  x-rapidapi-key: <你的 RapidAPI Key>
+```
+
+不要把真实 Key 写入脚本或命令历史；以下示例从环境变量读取单个 Key，仅用于理解接口。项目正式运行时使用 `RAPIDAPI_KEYS` JSON Key 池和内置故障转移。
+
+### 四个端点分别做什么
+
+| 名称 | 方法与参数 | 主要返回 | 适用场景 |
+| --- | --- | --- | --- |
+| Convert article link V1 | `GET /api/weixin/convert-article-link/v1`，查询参数 `link` | 规范化后的完整微信文章链接 | 手里只有短链接或中间链接时转换；不是文章下载接口 |
+| Account history V1 | `POST /api/weixin/get-account-history-articles/v1`，查询参数 `url`、`page` | 较新的文章列表 | 日常检查最新文章；已弃用且深分页不可靠 |
+| Account history V2 | `POST /api/weixin/get-account-history-articles/v2`，表单字段 `url`、`offset` | `MsgList` 和下一页 `PagingInfo.Offset` | 首次补齐公众号全部旧文章 |
+| Article detail V4 | `GET /api/weixin/get-article-detail/v4`，查询参数 `articleUrl` | 标题、公众号、摘要、封面和完整正文 HTML | 将列表中的每篇文章下载为可归档正文 |
+
+V1/V2 是两个历史文章**列表**版本：V1 适合低成本读取最新页，V2 适合按游标遍历旧文章。V4 是单篇文章**详情**接口。RapidAPI 页面给出的 Convert V1 `curl` 模板如果没有 `link` 查询参数，只是请求骨架，不能列文章或下载正文。
+
+对应的接口提供方说明：
+
+- [文章链接转换 V1](https://docs.justoneapi.com/zh/api/wechat-official-accounts/article-link-conversion-v1)
+- [公众号历史文章 V1（已弃用）](https://docs.justoneapi.com/zh/api/wechat-official-accounts/account-historical-articles-v1-deprecated)
+- [公众号历史文章 V2](https://docs.justoneapi.com/zh/api/wechat-official-accounts/account-historical-articles-v2)
+- [文章详情 V4](https://docs.justoneapi.com/zh/api/wechat-official-accounts/article-details-v4)
+
+### 独立调用示例
+
+```python
+import os
+
+import requests
+
+host = "weixin-wechat-official-accounts-platform.p.rapidapi.com"
+base_url = f"https://{host}"
+article_url = "https://mp.weixin.qq.com/s/example"
+headers = {
+    "Accept": "application/json",
+    "x-rapidapi-host": host,
+    "x-rapidapi-key": os.environ["RAPIDAPI_KEY"],
+}
+
+# 可选：把短链接转换为完整链接。
+converted = requests.get(
+    f"{base_url}/api/weixin/convert-article-link/v1",
+    headers=headers,
+    params={"link": article_url},
+    timeout=120,
+)
+converted.raise_for_status()
+
+# 日常增量：V1 只读最新第 1 页。
+latest = requests.post(
+    f"{base_url}/api/weixin/get-account-history-articles/v1",
+    headers=headers,
+    params={"url": article_url, "page": 1},
+    timeout=120,
+)
+latest.raise_for_status()
+
+# 历史补录：首次 offset 为空，后续使用上一页 PagingInfo.Offset。
+history = requests.post(
+    f"{base_url}/api/weixin/get-account-history-articles/v2",
+    headers={**headers, "Content-Type": "application/x-www-form-urlencoded"},
+    data={"url": article_url, "offset": ""},
+    timeout=120,
+)
+history.raise_for_status()
+
+# 正文下载：把列表返回的文章 URL 传给 V4。
+detail = requests.get(
+    f"{base_url}/api/weixin/get-article-detail/v4",
+    headers=headers,
+    params={"articleUrl": article_url},
+    timeout=120,
+)
+detail.raise_for_status()
+```
+
+实际使用应同时检查 HTTP 状态、JSON 的 `code` 和 `message`。V2 首次请求的 `offset` 留空；每次读取响应中 `PagingInfo.Offset`（不同响应包装中位于 `data` 或 `data.MsgList` 下）作为下一次表单值，直到对应的 `PagingInfo.IsEnd` 为 `1`。本项目已经封装这些解析、Key 切换、断点保存、去重、正文下载和图片本地化逻辑，通常不需要自行编写以上请求。
 
 ## 增量同步
 
@@ -74,6 +160,26 @@ python -m wechat_sync.sync \
 每页通常有 10 组群发消息。V2 在 RapidAPI 免费套餐中同时消耗普通月额度和独立的 Pro 月额度；实测每个 Key 的 Pro 月额度为 10 次，因此应分批执行。同步器把不透明游标保存在对应索引的 `backfillOffset` 中，下次从断点继续；`backfillNextPage` 仅用于显示进度。
 
 GitHub Action 不启用 `--history-v2`。自动任务每天只读取 V1 最新一页，以免两次定时任务迅速耗尽 Pro 额度。历史补录应在本地显式执行，完成后提交生成的文章、资源和索引。
+
+每批结束后检查状态：
+
+```bash
+jq '{
+  articleCount: (.articles | length),
+  pendingCount: ((.pendingArticles // []) | length),
+  backfillComplete,
+  backfillNextPage,
+  backfillOffset
+}' wechat_sync/indexes/like-a-gator.json
+```
+
+继续重复同一条 `--history-v2` 命令，直到同时满足：
+
+1. `backfillComplete` 为 `true`。
+2. `backfillOffset` 为空字符串。
+3. `pendingCount` 为 `0`。
+
+这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 时实际归档 588 篇。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 执行 V1 最新页增量和 V4 正文下载。
 
 ## Key 故障转移
 

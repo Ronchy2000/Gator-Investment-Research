@@ -41,7 +41,7 @@ EdgeOne Pages / dist
 
 ### API Key 池
 
-`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；当前池中有九个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
+`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；截至 `2026-08-05` 当前池中有十个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
 
 `wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429、5xx，以及可切换的业务错误会触发下一个 Key；成功切换后，同一次任务继续使用该 Key，只有所有 Key 都失败时才终止同步。Key 数量可调整，代码不依赖固定数量。
 
@@ -56,9 +56,9 @@ EdgeOne Pages / dist
 5. 失败文章写入 `pendingArticles`，下次执行时与新文章一起处理。
 6. 单篇成功后立即原子更新索引，因此部分失败不会丢失已完成结果。
 7. 请求按日期分配到 Key 池，鉴权、额度、限流或临时采集失败时自动切换。
-8. 若配置了公众号公开显示的文章总数且本地仍有缺口，使用 `--history-v2` 分批回补并提交游标进度。
+8. 历史补录以 V2 的 `PagingInfo.IsEnd` 为准；`backfillComplete=true`、空 `backfillOffset` 和空 `pendingArticles` 共同表示已到接口末页且下载完整。
 
-V1 第一页暂时为空时会最多重试三次。日常 Action 默认只请求每个公众号最新一页；这足以覆盖每日增量，并把列表请求控制在约 120 次/月。V2 历史接口在免费套餐下每个 Key 另有 10 次 Pro 月额度，因此只允许本地显式分批运行，不进入每天两次的 Action。
+V1 第一页暂时为空时会最多重试三次。日常 Action 默认只请求每个公众号最新一页；这足以覆盖每日增量，并把列表请求控制在约 120 次/月。V2 历史接口在免费套餐下每个 Key 另有 10 次 Pro 月额度，因此只允许本地显式分批运行，不进入每天两次的 Action。截至 `2026-08-05`，“像鳄鱼一样思考”已通过 V2 到达真实末页，共归档 588 篇，最早至 `2023-07-22`；接口结果多于此前页面显示的 562 篇，证明公开总数不能作为完成依据。
 
 ### 正文和媒体
 
