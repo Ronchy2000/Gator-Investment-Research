@@ -1,13 +1,12 @@
 {
-  "version": 3,
+  "version": 4,
   "account": {
     "slug": "huode-xinxicha",
-    "mpId": "MP_WXS_3690344459",
-    "name": "获得信息差"
+    "name": "获得信息差",
+    "seedArticleUrl": "https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g"
   },
   "earliestDate": "2026-06-15",
   "updatedAt": "2026-08-05T17:21:28.290745+08:00",
-  "credentialPoolSize": 5,
   "backfillComplete": true,
   "backfillNextPage": 3,
   "pendingArticles": [],

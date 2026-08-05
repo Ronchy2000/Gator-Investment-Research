@@ -42,20 +42,19 @@ source .venv/bin/activate
 python -m pip install -r requirements-wechat.txt
 ```
 
-首次扫码与初始化：
+使用隐藏输入添加 RapidAPI Key；每个账号执行一次：
 
 ```bash
-python -m wechat_sync.auth
-python -m wechat_sync.initialize
+python -m wechat_sync.rapidapi_secrets --add
 ```
 
 执行一次本地增量同步：
 
 ```bash
-python -m wechat_sync.sync --max-pages 20 --delay 2
+python -m wechat_sync.sync --max-pages 1 --delay 2
 ```
 
-本地凭据位于被 Git 忽略的 `data/wechat/credentials.json`。不得提交、打印或截图传播该文件。完整的 Secret 上传和轮换流程见 [AUTOMATION.md](AUTOMATION.md)。
+本地 Key 池位于被 Git 忽略的 `data/wechat/rapidapi-keys.json`。不得提交、打印或截图传播该文件。完整的 Secret 上传和轮换流程见 [AUTOMATION.md](AUTOMATION.md)。
 
 ## 目录结构
 
@@ -75,11 +74,10 @@ public/
   note-assets/            投资随笔图片
   report-assets/          历史研报图片或失效说明占位图
 wechat_sync/
-  auth.py                 本地扫码并维护有序登录账号池
-  client.py               微信读书中转接口与账号故障转移客户端
+  client.py               RapidAPI 列表接口与 Key 故障转移客户端
   downloader.py           微信正文解析与媒体本地化
-  github_secrets.py       安全上传或复制 Actions Secrets
-  initialize.py           首次账户与索引初始化
+  rapidapi_secrets.py     安全维护和上传 RapidAPI Key 池
+  initialize.py           新公众号非敏感配置初始化
   sync.py                 首次回补与增量同步入口
   validate.py             归档完整性检查
   accounts.json           双公众号非敏感配置
@@ -97,9 +95,9 @@ wechat_sync/
 
 ## 分支约定
 
-- `master`：Astro 生产站，也是 EdgeOne Pages 与每日同步任务的来源。
-- `legacy/docsify-archive`：切换前的旧 Docsify `master` 快照，只读保留。
-- `feature/wechat-mp-sync`：迁移开发记录，用于追溯新站建设过程。
+- `master`：RapidAPI 同步与 Astro 生产站，也是 EdgeOne Pages 的来源。
+- `legacy/weread-sync`：微信读书扫码与中转接口实现，只读保留。
+- `legacy/docsify-archive`：旧 Docsify 站点快照，只读保留。
 
 自动同步提交只包含：
 
@@ -119,7 +117,7 @@ content: sync 3 WeChat articles
 ## 相关文档
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)：完整系统架构和数据流。
-- [AUTOMATION.md](AUTOMATION.md)：凭据、GitHub Actions 和运维。
+- [AUTOMATION.md](AUTOMATION.md)：RapidAPI Key、GitHub Actions 和运维。
 - [DEPLOYMENT.md](DEPLOYMENT.md)：EdgeOne Pages 部署。
 - [wechat_sync/README.md](wechat_sync/README.md)：同步参数和失败行为。
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)：第三方代码来源与许可证。

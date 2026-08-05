@@ -1,351 +1,260 @@
-"""Minimal client for the WeRead relay used by wechat-mp-tools."""
+"""RapidAPI client with ordered API-key failover for WeChat article lists."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 import requests
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_CREDENTIAL_FILE = PROJECT_ROOT / "data" / "wechat" / "credentials.json"
-DEFAULT_PLATFORM_URL = "https://weread.111965.xyz"
+DEFAULT_KEY_FILE = PROJECT_ROOT / "data" / "wechat" / "rapidapi-keys.json"
+DEFAULT_API_HOST = "weixin-wechat-official-accounts-platform.p.rapidapi.com"
+DEFAULT_API_URL = f"https://{DEFAULT_API_HOST}"
+HISTORY_PATH = "/api/weixin/get-account-history-articles/v1"
+SWITCHABLE_CODES = {100, 301, 302, 303, 500, 600, 601, 602}
 
 
-class WeReadRelayError(RuntimeError):
-    """Base error for the WeRead relay."""
+class RapidAPIError(RuntimeError):
+    """The RapidAPI article-list service could not return usable data."""
 
 
-class CredentialsExpiredError(WeReadRelayError):
-    """The stored WeRead credential is no longer accepted."""
+class RapidAPIKeyError(RapidAPIError):
+    """An API key is invalid, unauthorized, or out of quota."""
 
 
-class RateLimitedError(WeReadRelayError):
-    """The relay rejected the request because of rate limiting."""
-
-
-class RelayServerError(WeReadRelayError):
-    """The relay failed for the current credential with a server error."""
-
-
-class RelayNetworkError(WeReadRelayError):
-    """The relay request failed before receiving a usable response."""
+class RapidAPINetworkError(RapidAPIError):
+    """The request failed before a usable API response was received."""
 
 
 @dataclass(frozen=True)
-class Credentials:
-    vid: str
-    token: str
-    platform_url: str
-
-
-@dataclass(frozen=True)
-class WeChatAccount:
-    mp_id: str
-    name: str
-    cover_url: str
-    intro: str
-
-
-def _credentials_from_payload(payload: Any) -> list[Credentials]:
-    if isinstance(payload, list):
-        raw_accounts = payload
-        default_platform_url = DEFAULT_PLATFORM_URL
-    elif isinstance(payload, dict):
-        raw_accounts = payload.get("accounts")
-        if not isinstance(raw_accounts, list):
-            raw_accounts = [payload]
-        default_platform_url = str(payload.get("platform_url", "")).strip()
-    else:
-        raise WeReadRelayError("微信读书账号池必须是 JSON 对象或数组")
-
-    credentials: list[Credentials] = []
-    seen: set[tuple[str, str]] = set()
-    for position, item in enumerate(raw_accounts, start=1):
-        if not isinstance(item, dict):
-            raise WeReadRelayError(f"微信读书账号池第 {position} 项格式无效")
-        vid = str(item.get("vid", "")).strip()
-        token = str(item.get("token", "")).strip()
-        platform_url = str(item.get("platform_url", "")).strip()
-        platform_url = platform_url or default_platform_url or DEFAULT_PLATFORM_URL
-        if not vid or not token:
-            raise WeReadRelayError(
-                f"微信读书账号池第 {position} 项缺少 vid 或 token"
-            )
-        key = (vid, platform_url.rstrip("/"))
-        if key in seen:
-            continue
-        seen.add(key)
-        credentials.append(
-            Credentials(vid=vid, token=token, platform_url=platform_url)
-        )
-
-    if not credentials:
-        raise WeReadRelayError("微信读书账号池中没有可用凭据")
-    return credentials
-
-
-def load_local_credentials_pool(
-    path: Path = DEFAULT_CREDENTIAL_FILE,
-) -> list[Credentials]:
-    """Load the ordered credential pool from the ignored local file."""
-    if not path.exists():
-        raise WeReadRelayError(
-            "未找到微信读书凭据，请先运行 python -m wechat_sync.auth"
-        )
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        raise WeReadRelayError(f"无法读取本地微信读书账号池: {error}") from error
-    return _credentials_from_payload(payload)
-
-
-def load_credentials_pool(
-    path: Path = DEFAULT_CREDENTIAL_FILE,
-) -> list[Credentials]:
-    """Load an ordered pool from Actions secrets or the ignored local file."""
-    env_pool = os.environ.get("WEREAD_ACCOUNTS", "").strip()
-    if env_pool:
-        try:
-            return _credentials_from_payload(json.loads(env_pool))
-        except ValueError as error:
-            raise WeReadRelayError(
-                "WEREAD_ACCOUNTS 不是有效 JSON，请重新上传账号池 Secret"
-            ) from error
-
-    env_vid = os.environ.get("WEREAD_VID", "").strip()
-    env_token = os.environ.get("WEREAD_TOKEN", "").strip()
-    env_platform = os.environ.get("WEREAD_PLATFORM_URL", "").strip()
-    if env_vid and env_token:
-        return [
-            Credentials(
-                vid=env_vid,
-                token=env_token,
-                platform_url=env_platform or DEFAULT_PLATFORM_URL,
-            )
-        ]
-
-    return load_local_credentials_pool(path)
-
-
-def load_credentials(path: Path = DEFAULT_CREDENTIAL_FILE) -> Credentials:
-    """Load the first credential for backward-compatible callers."""
-    return load_credentials_pool(path)[0]
-
-
-def _error_code(payload: Any) -> Optional[int]:
-    if not isinstance(payload, dict):
-        return None
-    for key in ("ret", "errCode", "err_code", "code"):
-        try:
-            return int(payload[key])
-        except (KeyError, TypeError, ValueError):
-            continue
-    return None
-
-
-class WeReadClient:
-    def __init__(
-        self,
-        credentials: Union[Credentials, Sequence[Credentials]],
-        timeout_seconds: int = 30,
-    ):
-        if isinstance(credentials, Credentials):
-            pool = [credentials]
-        else:
-            pool = list(credentials)
-        if not pool:
-            raise WeReadRelayError("微信读书账号池为空")
-
-        self._credentials = pool
-        self._timeout_seconds = timeout_seconds
-        self._active_index = 0
-        self._sessions: list[requests.Session] = []
-        for credential in pool:
-            session = requests.Session()
-            session.headers.update(
-                {
-                    "xid": credential.vid,
-                    "Authorization": f"Bearer {credential.token}",
-                    "User-Agent": (
-                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/120.0.0.0 Safari/537.36"
-                    ),
-                }
-            )
-            self._sessions.append(session)
+class APIKeyPool:
+    keys: tuple[str, ...]
 
     @property
-    def credential_count(self) -> int:
-        return len(self._credentials)
+    def size(self) -> int:
+        return len(self.keys)
 
-    def _credential_order(self) -> list[int]:
-        count = self.credential_count
-        return [(self._active_index + offset) % count for offset in range(count)]
 
-    def _request_json_with_credential(
+def _deduplicate_keys(values: Sequence[Any]) -> tuple[str, ...]:
+    keys: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        key = str(value).strip()
+        if key and key not in seen:
+            seen.add(key)
+            keys.append(key)
+    if not keys:
+        raise RapidAPIKeyError("RapidAPI Key 池为空")
+    return tuple(keys)
+
+
+def _parse_key_pool(value: str) -> APIKeyPool:
+    raw = value.strip()
+    if not raw:
+        raise RapidAPIKeyError("RapidAPI Key 池为空")
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        payload = [item for line in raw.splitlines() for item in line.split(",")]
+
+    if isinstance(payload, dict):
+        payload = payload.get("keys")
+    if isinstance(payload, str):
+        payload = [payload]
+    if not isinstance(payload, list):
+        raise RapidAPIKeyError("RAPIDAPI_KEYS 必须是 JSON 数组或包含 keys 的对象")
+    return APIKeyPool(keys=_deduplicate_keys(payload))
+
+
+def load_api_key_pool(path: Path = DEFAULT_KEY_FILE) -> APIKeyPool:
+    """Load keys from Actions secrets or an ignored local file."""
+    env_pool = os.environ.get("RAPIDAPI_KEYS", "").strip()
+    if env_pool:
+        return _parse_key_pool(env_pool)
+
+    env_key = os.environ.get("RAPIDAPI_KEY", "").strip()
+    if env_key:
+        return APIKeyPool(keys=(env_key,))
+
+    if not path.exists():
+        raise RapidAPIKeyError(
+            "未找到 RapidAPI Key；请配置 RAPIDAPI_KEYS，或运行 "
+            "python -m wechat_sync.rapidapi_secrets --add"
+        )
+    try:
+        return _parse_key_pool(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise RapidAPIKeyError(f"无法读取本地 RapidAPI Key 池: {error}") from error
+
+
+def _business_code(payload: Any) -> Optional[int]:
+    if not isinstance(payload, dict):
+        return None
+    try:
+        return int(payload.get("code"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _https_url(value: Any) -> str:
+    url = str(value or "").strip()
+    if url.startswith("http://"):
+        return "https://" + url.removeprefix("http://")
+    if url.startswith("//"):
+        return "https:" + url
+    return url
+
+
+def _stable_article_id(url: str, item: dict[str, Any]) -> str:
+    parsed = urlsplit(url)
+    query = parse_qs(parsed.query)
+    message_id = str(item.get("appmsgid") or query.get("mid", [""])[0]).strip()
+    position = str(item.get("position") or query.get("idx", ["1"])[0]).strip()
+    if message_id:
+        account_id = str(query.get("__biz", [""])[0]).strip()
+        account_hash = hashlib.sha256(account_id.encode("utf-8")).hexdigest()[:8]
+        return f"wx-{account_hash}-{message_id}-{position or '1'}"
+    return "wx-" + hashlib.sha256(url.encode("utf-8")).hexdigest()[:20]
+
+
+def _canonical_article_url(value: Any) -> str:
+    url = _https_url(value)
+    parsed = urlsplit(url)
+    if parsed.netloc.lower() != "mp.weixin.qq.com":
+        return url
+    allowed = {"__biz", "mid", "idx", "sn"}
+    query = [
+        (key, item)
+        for key, values in parse_qs(parsed.query).items()
+        if key in allowed
+        for item in values
+    ]
+    if parsed.path.rstrip("/") == "/s" and query:
+        return urlunsplit(("https", "mp.weixin.qq.com", "/s", urlencode(query), ""))
+    return urlunsplit(("https", "mp.weixin.qq.com", parsed.path, "", ""))
+
+
+def _extract_rows(payload: Any) -> list[dict[str, Any]]:
+    if not isinstance(payload, dict):
+        return []
+    data = payload.get("data")
+    if isinstance(data, dict):
+        data = data.get("data")
+    if not isinstance(data, list):
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        url = _canonical_article_url(item.get("url"))
+        published = item.get("post_time")
+        if not url or published is None:
+            continue
+        rows.append(
+            {
+                "id": _stable_article_id(url, item),
+                "title": str(item.get("title") or "").strip(),
+                "url": url,
+                "coverUrl": _https_url(item.get("cover_url")),
+                "publishTime": published,
+            }
+        )
+    return rows
+
+
+class RapidAPIClient:
+    def __init__(
         self,
-        credential_index: int,
-        method: str,
-        path: str,
-        **kwargs: Any,
-    ) -> Any:
-        credential = self._credentials[credential_index]
-        session = self._sessions[credential_index]
-        url = f"{credential.platform_url.rstrip('/')}{path}"
+        key_pool: APIKeyPool,
+        timeout_seconds: int = 120,
+        api_url: str = DEFAULT_API_URL,
+    ) -> None:
+        self._keys = key_pool.keys
+        self._timeout_seconds = timeout_seconds
+        self._api_url = api_url.rstrip("/")
+        # Spread scheduled runs across accounts instead of exhausting key 1 first.
+        self._active_index = date.today().toordinal() % len(self._keys)
+        self._session = requests.Session()
+        self._session.headers.update(
+            {
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "x-rapidapi-host": DEFAULT_API_HOST,
+                "User-Agent": "Gator-Investment-Research/rapidapi-sync",
+            }
+        )
+
+    @property
+    def key_count(self) -> int:
+        return len(self._keys)
+
+    def _key_order(self) -> list[int]:
+        return [
+            (self._active_index + offset) % self.key_count
+            for offset in range(self.key_count)
+        ]
+
+    def _request_page(self, key_index: int, identifier: str, page: int) -> Any:
         try:
-            response = session.request(
-                method,
-                url,
+            response = self._session.post(
+                f"{self._api_url}{HISTORY_PATH}",
+                params={"url": identifier, "page": page},
+                headers={"x-rapidapi-key": self._keys[key_index]},
                 timeout=self._timeout_seconds,
-                **kwargs,
             )
         except requests.Timeout as error:
-            raise RelayNetworkError("微信读书中转服务请求超时") from error
+            raise RapidAPINetworkError("RapidAPI 请求超时") from error
         except requests.RequestException as error:
-            raise RelayNetworkError(
-                f"微信读书中转服务网络请求失败: {type(error).__name__}"
+            raise RapidAPINetworkError(
+                f"RapidAPI 网络请求失败: {type(error).__name__}"
             ) from error
+
         response_text = (response.text or "").strip()
-        if response.status_code == 401 or "WeReadError401" in response_text:
-            raise CredentialsExpiredError("微信读书登录凭据已失效，请重新扫码")
-        if response.status_code == 429 or "WeReadError429" in response_text:
-            raise RateLimitedError("微信读书中转服务触发频率限制，请稍后再试")
+        if response.status_code in {401, 403, 429}:
+            raise RapidAPIKeyError(f"RapidAPI 返回 HTTP {response.status_code}")
         if 500 <= response.status_code < 600:
-            raise RelayServerError(
-                f"微信读书中转服务返回 HTTP {response.status_code}"
-            )
+            raise RapidAPINetworkError(f"RapidAPI 返回 HTTP {response.status_code}")
         if response.status_code != 200:
-            detail = response_text[:300]
-            raise WeReadRelayError(
-                f"微信读书中转服务返回 HTTP {response.status_code}: {detail}"
+            raise RapidAPIError(
+                f"RapidAPI 返回 HTTP {response.status_code}: {response_text[:300]}"
             )
         try:
             payload = response.json()
         except ValueError as error:
-            raise WeReadRelayError("微信读书中转服务返回了无效 JSON") from error
+            raise RapidAPIError("RapidAPI 返回了无效 JSON") from error
 
-        code = _error_code(payload)
-        if code == 200003:
-            raise CredentialsExpiredError("微信读书登录凭据已失效，请重新扫码")
-        if code == 200013:
-            raise RateLimitedError("微信读书中转服务触发频率限制，请稍后再试")
+        code = _business_code(payload)
+        if code != 0:
+            message = str(payload.get("message") or "未知错误")
+            if code in SWITCHABLE_CODES:
+                raise RapidAPIKeyError(f"RapidAPI 业务错误 {code}: {message}")
+            raise RapidAPIError(f"RapidAPI 业务错误 {code}: {message}")
         return payload
 
-    def _request_json(
-        self,
-        method: str,
-        path: str,
-        **kwargs: Any,
-    ) -> Any:
-        last_switchable_error: Optional[WeReadRelayError] = None
-        for credential_index in self._credential_order():
+    def fetch_articles(self, identifier: str, page: int = 1) -> list[dict[str, Any]]:
+        last_error: Optional[RapidAPIError] = None
+        for key_index in self._key_order():
             try:
-                payload = self._request_json_with_credential(
-                    credential_index,
-                    method,
-                    path,
-                    **kwargs,
-                )
-            except (
-                CredentialsExpiredError,
-                RateLimitedError,
-                RelayNetworkError,
-                RelayServerError,
-            ) as error:
-                last_switchable_error = error
+                payload = self._request_page(key_index, identifier, page)
+            except (RapidAPIKeyError, RapidAPINetworkError) as error:
+                last_error = error
                 print(
-                    f"账号池第 {credential_index + 1}/{self.credential_count} 个账号"
-                    f"不可用（{error}），尝试下一个账号"
+                    f"RapidAPI Key 池第 {key_index + 1}/{self.key_count} 个不可用"
+                    f"（{error}），尝试下一个"
                 )
                 continue
-            self._active_index = credential_index
-            return payload
+            self._active_index = key_index
+            return _extract_rows(payload)
 
-        if last_switchable_error is not None:
-            raise last_switchable_error
-        raise WeReadRelayError("微信读书账号池中没有可用账号")
-
-    def resolve_account(self, article_url: str) -> list[WeChatAccount]:
-        payload = self._request_json(
-            "POST",
-            "/api/v2/platform/wxs2mp",
-            json={"url": article_url},
-            headers={"Content-Type": "application/json"},
-        )
-        raw_accounts = payload if isinstance(payload, list) else [payload]
-        accounts = []
-        for item in raw_accounts:
-            if not isinstance(item, dict) or not item.get("id"):
-                continue
-            cover_url = str(item.get("cover", "")).strip()
-            if cover_url.startswith("http://"):
-                cover_url = "https://" + cover_url.removeprefix("http://")
-            elif cover_url.startswith("//"):
-                cover_url = "https:" + cover_url
-            accounts.append(
-                WeChatAccount(
-                    mp_id=str(item["id"]),
-                    name=str(item.get("name", "")).strip(),
-                    cover_url=cover_url,
-                    intro=str(item.get("intro", "")).strip(),
-                )
-            )
-        return accounts
-
-    @staticmethod
-    def _extract_articles(payload: Any) -> list[dict[str, Any]]:
-        if isinstance(payload, list):
-            return [item for item in payload if isinstance(item, dict)]
-        if isinstance(payload, dict):
-            for key in ("articles", "items", "list", "data"):
-                items = payload.get(key)
-                if isinstance(items, list):
-                    return [item for item in items if isinstance(item, dict)]
-        return []
-
-    def fetch_articles(self, mp_id: str, page: int = 1) -> list[dict[str, Any]]:
-        last_switchable_error: Optional[WeReadRelayError] = None
-        received_empty_response = False
-        for credential_index in self._credential_order():
-            try:
-                payload = self._request_json_with_credential(
-                    credential_index,
-                    "GET",
-                    f"/api/v2/platform/mps/{mp_id}/articles",
-                    params={"page": page},
-                )
-            except (
-                CredentialsExpiredError,
-                RateLimitedError,
-                RelayNetworkError,
-                RelayServerError,
-            ) as error:
-                last_switchable_error = error
-                print(
-                    f"账号池第 {credential_index + 1}/{self.credential_count} 个账号"
-                    f"不可用（{error}），尝试下一个账号"
-                )
-                continue
-
-            articles = self._extract_articles(payload)
-            if articles:
-                self._active_index = credential_index
-                return articles
-            received_empty_response = True
-            if self.credential_count > 1:
-                print(
-                    f"账号池第 {credential_index + 1}/{self.credential_count} 个账号"
-                    f"返回第 {page} 页空列表，尝试下一个账号"
-                )
-
-        if received_empty_response:
-            return []
-        if last_switchable_error is not None:
-            raise last_switchable_error
-        return []
+        if last_error is not None:
+            raise last_error
+        raise RapidAPIError("RapidAPI Key 池中没有可用 Key")

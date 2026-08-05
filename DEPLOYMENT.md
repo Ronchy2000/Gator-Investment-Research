@@ -58,7 +58,7 @@
 
 如果构建日志使用的是 `22.11.0` 并触发 `package.json` 的版本错误，取消控制台中的旧版本固定值，让根目录 `.nvmrc` 选择较新的 Node.js 22，再重新部署。
 
-不要把 `WEREAD_ACCOUNTS`、`WEREAD_VID` 或 `WEREAD_TOKEN` 添加到 EdgeOne 环境变量。Python 同步发生在 GitHub Actions；EdgeOne 只构建已经写入仓库的 Markdown 和图片。
+不要把 `RAPIDAPI_KEYS` 或 `RAPIDAPI_KEY` 添加到 EdgeOne 环境变量。Python 同步发生在 GitHub Actions；EdgeOne 只构建已经写入仓库的 Markdown 和图片。
 
 ## 四、自定义域名
 
@@ -77,7 +77,7 @@ https://gator.ronchy2000.top
 使用 EdgeOne 的 GitHub 仓库集成时，不需要额外配置 `EDGEONE_API_TOKEN`：
 
 ```text
-北京时间 10:00 / 18:30
+北京时间 10:17 / 18:47
   -> GitHub Actions 检查微信公众号
   -> 有内容或同步状态变化时提交并推送 master
   -> EdgeOne Pages 检测 master 更新
@@ -125,9 +125,9 @@ EdgeOne Pages 对项目总存储、部署文件数量和单文件大小存在平
 
 ## 八、不应配置或提交的内容
 
-- 不在 EdgeOne 中配置 `WEREAD_ACCOUNTS`、`WEREAD_VID` 或 `WEREAD_TOKEN`。
+- 不在 EdgeOne 中配置 `RAPIDAPI_KEYS` 或 `RAPIDAPI_KEY`。
 - 不在 EdgeOne 中配置 GitHub PAT 或扫码凭据。
-- 不提交本地 `data/wechat/credentials.json` 或登录二维码。
+- 不提交本地 `data/wechat/rapidapi-keys.json` 或任何 API Key。
 - 不把 Output directory 设置成 `docs` 或仓库根目录。
 - 不提交本地生成的 `dist/`；由 EdgeOne Pages 每次构建生成。
 

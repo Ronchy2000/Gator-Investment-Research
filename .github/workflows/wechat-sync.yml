@@ -28,10 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WEREAD_ACCOUNTS: ${{ secrets.WEREAD_ACCOUNTS }}
-      WEREAD_VID: ${{ secrets.WEREAD_VID }}
-      WEREAD_TOKEN: ${{ secrets.WEREAD_TOKEN }}
-      WEREAD_PLATFORM_URL: ${{ secrets.WEREAD_PLATFORM_URL }}
+      RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
+      RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
       SYNC_MAX_PAGES: ${{ inputs.max_pages || '1' }}
 
     steps:
@@ -45,16 +43,16 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          if [[ -z "$WEREAD_ACCOUNTS" && ( -z "$WEREAD_VID" || -z "$WEREAD_TOKEN" ) ]]; then
-            echo "::error title=Repository Secret 名称或配置错误::未读取到 WEREAD_ACCOUNTS，也没有可兼容使用的 WEREAD_VID/WEREAD_TOKEN。"
+          if [[ -z "$RAPIDAPI_KEYS" && -z "$RAPIDAPI_KEY" ]]; then
+            echo "::error title=Repository Secret 名称或配置错误::未读取到 RAPIDAPI_KEYS，也没有可兼容使用的 RAPIDAPI_KEY。"
             {
               echo "## Repository Secrets 配置错误"
               echo
               echo '请在 `Settings -> Secrets and variables -> Actions` 中创建：'
               echo
-              echo '- `WEREAD_ACCOUNTS`（推荐，支持有序账号池）'
+              echo '- `RAPIDAPI_KEYS`（推荐，JSON 字符串数组形式的 Key 池）'
               echo
-              echo '旧版 `WEREAD_VID` 与 `WEREAD_TOKEN` 同时存在时仍可兼容运行，但只能使用一个账号。'
+              echo '单个 `RAPIDAPI_KEY` 仅作为兼容后备。不要继续配置微信读书扫码凭据。'
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -157,9 +155,9 @@ jobs:
             echo "## 微信公众号自动同步失败"
             echo
             if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
-              echo '未读取到 `WEREAD_ACCOUNTS`，也没有同时读取到旧版 `WEREAD_VID` 与 `WEREAD_TOKEN`。'
+              echo '未读取到 `RAPIDAPI_KEYS`，也没有读取到兼容用的 `RAPIDAPI_KEY`。'
             else
-              echo "请检查微信读书凭据、公开中转服务限流、文章资源下载或 Astro 构建日志。"
+              echo "请检查 RapidAPI 配额、第三方采集状态、文章资源下载或 Astro 构建日志。"
             fi
             echo
             echo "运行记录：${run_url}"
@@ -167,9 +165,9 @@ jobs:
 
           issue_number="$(gh issue list --state open --search '微信公众号自动同步失败 in:title' --json number --jq '.[0].number // empty' || true)"
           if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
-            guidance='请上传账号池 Secret `WEREAD_ACCOUNTS`；旧版 `WEREAD_VID` 与 `WEREAD_TOKEN` 仅作为单账号兼容后备。'
+            guidance='请上传 Key 池 Secret `RAPIDAPI_KEYS`；单个 `RAPIDAPI_KEY` 仅作为兼容后备。'
           else
-            guidance='若所有账号均提示 401，请在本地重新扫码并更新 `WEREAD_ACCOUNTS`；若所有账号均提示 429，请等待下次定时任务。'
+            guidance='若所有 Key 均提示 401/403，请检查订阅和 Key；若提示 429 或配额耗尽，请补充 Key 或等待月度额度重置；业务码 301 通常是上游临时采集失败。'
           fi
           body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then

@@ -61,7 +61,7 @@
 ## 它如何运转
 
 ```text
-微信公众号公开内容
+RapidAPI 公众号文章列表
         ↓
 每日增量归档与媒体本地化
         ↓
@@ -72,9 +72,9 @@ Astro 生成静态页面
 EdgeOne Pages 自动发布
 ```
 
-自动化每天上午、下午分别检查两个公众号，并为每个来源维护独立索引。新文章成功入库后才会进入生产站；下载失败的内容会保留到下一次重试，纯图片文章也必须确认图片完整后才算归档完成。
+自动化每天上午、下午分别通过 RapidAPI 检查两个公众号，并为每个来源维护独立索引。多个 API Key 按日期轮换并自动故障转移，不再依赖微信读书扫码登录。新文章成功入库后才会进入生产站；下载失败的内容会保留到下一次重试，纯图片文章也必须确认图片完整后才算归档完成。
 
-在页面记录总数为 562 篇时，“像鳄鱼一样思考”的中转列表只覆盖其中 448 篇。人工提供的 3 个更早原文链接已完成本地回填，历史缺口由 114 篇降至 111 篇；此后的每日新增文章不改变这项历史缺口统计。公开中转的历史窗口会延迟、波动且不连续，因此日常 Action 只负责最新文章增量更新，列表接口遗漏的旧文章使用可断点续跑的本地工具补齐。
+日常 Action 只读取最新列表页，避免无意义消耗第三方额度；历史缺口通过手动提高分页上限分批补齐。RapidAPI 返回的长链接会与旧版短链接按标题和发布日期交叉去重，不会重复生成文章。
 
 ## 项目文档
 
@@ -95,7 +95,7 @@ README 只负责介绍项目。实现、部署与运维细节分别放在以下�
 
 ## 致谢
 
-公众号同步能力参考并受益于 [x554960766/wechat-mp-tools](https://github.com/x554960766/wechat-mp-tools)。本项目的微信读书扫码登录协议、公众号文章列表接口与下载流程以该项目的开源实现为重要基础，在此向作者 **xuyi** 表示感谢。
+公众号下载能力参考并受益于 [x554960766/wechat-mp-tools](https://github.com/x554960766/wechat-mp-tools)，在此向作者 **xuyi** 表示感谢。当前生产同步通过 [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform) 获取公开文章列表，并复用本项目的正文与媒体本地化流程。
 
 本仓库在此基础上实现了面向双公众号的独立增量索引、失败重试、正文与媒体完整性保护、Astro 内容归档及 GitHub Actions 自动发布。具体参考版本、提交与 MIT 许可证全文见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
@@ -105,4 +105,4 @@ README 只负责介绍项目。实现、部署与运维细节分别放在以下�
 
 本站仅用于公开信息整理、学习和阅读，不构成任何投资建议。文章版权归原作者所有；投资有风险，请独立判断并承担相应责任。
 
-项目代码采用 [MIT License](LICENSE)。旧版 Docsify 站点继续以只读形式保存在 [`legacy/docsify-archive`](https://github.com/Ronchy2000/Gator-Investment-Research/tree/legacy/docsify-archive) 分支，并部署于 [gator0.ronchy2000.top](https://gator0.ronchy2000.top/)。
+项目代码采用 [MIT License](LICENSE)。旧版 Docsify 站点继续以只读形式保存在 [`legacy/docsify-archive`](https://github.com/Ronchy2000/Gator-Investment-Research/tree/legacy/docsify-archive) 分支，并部署于 [gator0.ronchy2000.top](https://gator0.ronchy2000.top/)；微信读书同步实现冻结在 [`legacy/weread-sync`](https://github.com/Ronchy2000/Gator-Investment-Research/tree/legacy/weread-sync) 分支。

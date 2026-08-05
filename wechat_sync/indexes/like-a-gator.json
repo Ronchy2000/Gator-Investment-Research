@@ -1,13 +1,12 @@
 {
-  "version": 3,
+  "version": 4,
   "account": {
     "slug": "like-a-gator",
-    "mpId": "MP_WXS_3922514597",
-    "name": "像鳄鱼一样思考"
+    "name": "像鳄鱼一样思考",
+    "seedArticleUrl": "https://mp.weixin.qq.com/s/8MrwDixwxXjTawO7yFIQvg"
   },
   "earliestDate": "2000-01-01",
   "updatedAt": "2026-08-05T17:21:33.603094+08:00",
-  "credentialPoolSize": 5,
   "backfillComplete": false,
   "backfillNextPage": 2,
   "pendingArticles": [],

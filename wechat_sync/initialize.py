@@ -1,4 +1,4 @@
-"""Resolve a seed article and upsert its non-secret account configuration."""
+"""Add or update non-secret configuration for a WeChat account."""
 
 from __future__ import annotations
 
@@ -8,13 +8,6 @@ import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
-
-from wechat_sync.client import (
-    WeChatAccount,
-    WeReadClient,
-    WeReadRelayError,
-    load_credentials_pool,
-)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -26,54 +19,53 @@ DEFAULT_SEED_URL = "https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g"
 DEFAULT_EARLIEST_DATE = "2026-06-15"
 
 
-def _select_account(
-    accounts: list[WeChatAccount],
-    expected_name: str,
-) -> WeChatAccount:
-    exact_matches = [account for account in accounts if account.name == expected_name]
-    if len(exact_matches) == 1:
-        return exact_matches[0]
-    if len(accounts) == 1 and not accounts[0].name:
-        return accounts[0]
-    available_names = ", ".join(account.name or "未命名" for account in accounts)
-    raise WeReadRelayError(
-        f"种子链接未唯一解析为公众号“{expected_name}”，返回结果：{available_names or '空'}"
-    )
-
-
 def _save_account(
     path: Path,
     slug: str,
-    account: WeChatAccount,
+    name: str,
     seed_url: str,
     earliest_date: str,
 ) -> None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        payload = {"version": 1, "accounts": []}
+        payload = {"version": 2, "accounts": []}
     if not isinstance(payload, dict) or not isinstance(payload.get("accounts"), list):
-        raise WeReadRelayError("accounts.json 结构无效")
+        raise ValueError("accounts.json 结构无效")
 
+    existing = next(
+        (
+            item
+            for item in payload["accounts"]
+            if isinstance(item, dict) and str(item.get("slug", "")) == slug
+        ),
+        {},
+    )
     configured_account = {
         "slug": slug,
-        "name": account.name or DEFAULT_ACCOUNT_NAME,
-        "mp_id": account.mp_id,
-        "intro": account.intro,
+        "name": name,
+        "intro": str(existing.get("intro", "")).strip(),
         "seed_article_url": seed_url,
         "earliest_date": earliest_date,
     }
+    if existing.get("reported_article_count") is not None:
+        configured_account["reported_article_count"] = int(
+            existing["reported_article_count"]
+        )
+    if existing.get("history_note"):
+        configured_account["history_note"] = str(existing["history_note"])
+
     accounts = [
         item
         for item in payload["accounts"]
         if not isinstance(item, dict) or str(item.get("slug", "")) != slug
     ]
     accounts.append(configured_account)
-    payload = {"version": 1, "accounts": accounts}
+    updated = {"version": 2, "accounts": accounts}
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = path.with_suffix(path.suffix + ".tmp")
     temporary_path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(updated, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     temporary_path.replace(path)
@@ -102,12 +94,10 @@ def main() -> int:
         raise SystemExit("earliest-date 必须使用 YYYY-MM-DD 格式") from error
 
     try:
-        client = WeReadClient(load_credentials_pool())
-        account = _select_account(client.resolve_account(args.seed_url), args.name)
         _save_account(
             args.output.resolve(),
             args.slug,
-            account,
+            args.name,
             args.seed_url,
             args.earliest_date,
         )
@@ -117,11 +107,11 @@ def main() -> int:
             index_path.write_text(
                 json.dumps(
                     {
-                        "version": 3,
+                        "version": 4,
                         "account": {
                             "slug": args.slug,
-                            "mpId": account.mp_id,
-                            "name": account.name or args.name,
+                            "name": args.name,
+                            "seedArticleUrl": args.seed_url,
                         },
                         "earliestDate": args.earliest_date,
                         "updatedAt": datetime.now().astimezone().isoformat(),
@@ -136,11 +126,11 @@ def main() -> int:
                 + "\n",
                 encoding="utf-8",
             )
-    except (OSError, ValueError, WeReadRelayError) as error:
+    except (OSError, ValueError) as error:
         print(f"初始化失败：{error}")
         return 1
 
-    print(f"公众号初始化成功：{account.name or args.name}")
+    print(f"公众号配置成功：{args.name}")
     print(f"非敏感配置已更新：{args.output.resolve()}")
     return 0
 

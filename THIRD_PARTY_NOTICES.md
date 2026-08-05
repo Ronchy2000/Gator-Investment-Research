@@ -2,9 +2,8 @@
 
 ## wechat-mp-tools
 
-The WeRead QR login protocol, relay API integration, and WeChat article discovery
-workflow used by `wechat_sync/auth.py`, `wechat_sync/client.py`, and
-`wechat_sync/sync.py` are adapted with reference to:
+The WeChat article download, media localization, and archive workflow were
+developed with reference to:
 
 - Project: [x554960766/wechat-mp-tools](https://github.com/x554960766/wechat-mp-tools)
 - Version: `1.7.0`
@@ -35,3 +34,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+The former WeRead QR login and relay integration remain available in the
+read-only `legacy/weread-sync` branch.
+
+## RapidAPI data service
+
+The production `master` branch obtains public WeChat article-list metadata
+through [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform).
+This is an external hosted API service. Its availability, quotas, pricing, and
+terms are controlled by the provider and RapidAPI; no API keys are distributed
+with this repository.

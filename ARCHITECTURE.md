@@ -1,14 +1,14 @@
 # 系统架构
 
-当前 `master` 已将项目从旧研报爬虫和 Docsify 前端迁移为“双公众号同步 + Astro 静态站点”。旧站原样保存在 `legacy/docsify-archive`。
+当前 `master` 使用“RapidAPI 双公众号同步 + Astro 静态站点”。微信读书实现保存在 `legacy/weread-sync`，旧 Docsify 站点保存在 `legacy/docsify-archive`。
 
 ## 数据流
 
 ```text
-微信读书扫码凭据
+GitHub Secret: RAPIDAPI_KEYS
       |
       v
-weread.111965.xyz 文章列表
+RapidAPI 公众号历史文章 V1
       |
       v
 wechat_sync/sync.py
@@ -39,26 +39,26 @@ EdgeOne Pages / dist
 
 ## 同步层
 
-### 凭据
+### API Key 池
 
-`wechat_sync/auth.py` 在可信的本地设备完成微信读书扫码，凭据按扫码顺序追加到被 Git 忽略的 `data/wechat/credentials.json`。GitHub Actions 通过单个 `WEREAD_ACCOUNTS` Secret 读取同一有序账号池；旧版 `WEREAD_VID` 和 `WEREAD_TOKEN` 仅作单账号后备。
+`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
+
+`wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429、5xx，以及可切换的业务错误会触发下一个 Key；所有 Key 都失败时才终止该公众号同步。
 
 ### 列表和增量判断
 
-`wechat_sync/client.py` 访问固定的微信读书中转接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
+`wechat_sync/client.py` 通过 RapidAPI 访问第三方公众号历史文章 V1 接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
 
 1. 依次按页获取“获得信息差”和“像鳄鱼一样思考”的文章列表。
-2. 每个公众号独立配置最早收录日期、分页游标、完成索引和失败队列。
-3. 同时使用文章 ID 和去除跟踪参数的原文链接去重。
+2. 每个公众号通过一篇公开种子文章识别，并独立配置最早收录日期、分页断点、完成索引和失败队列。
+3. 同时使用文章 ID、规范化原文链接以及“标题 + 发布日期”去重，兼容旧版短链接和 RapidAPI 长链接。
 4. 日常运行先从第一页查找新增文章，未完成的历史回补再从保存的游标附近继续，并重叠一页去重以抵抗分页漂移。
 5. 失败文章写入 `pendingArticles`，下次执行时与新文章一起处理。
 6. 单篇成功后立即原子更新索引，因此部分失败不会丢失已完成结果。
-7. 请求从账号池首开始，401、429、5xx 或历史空页时切换下一账号；新增账号会触发历史断点重探。
-8. 若配置了公众号公开显示的文章总数且本地仍有缺口，后续运行会继续探测上次空页，避免中转历史窗口延迟开放时永久漏文。
+7. 请求按日期分配到 Key 池，鉴权、额度、限流或临时采集失败时自动切换。
+8. 若配置了公众号公开显示的文章总数且本地仍有缺口，手动提高分页上限时会从历史断点继续补录。
 
-“像鳄鱼一样思考”首个登录账号可见最近 99 篇，第二个账号分批开放更多历史，当前共归档 249 篇。同一账号曾短暂返回第 1–8 页共 398 篇，随后旧页再次为空，证明公开中转的历史窗口会动态变化。账号页面显示总数为 562；同步器会持续重探缺口，完成索引只记录实际下载成功的内容。
-
-第一页因中转缓存暂时为空时会最多重试三次。401、429 和 5xx 会优先切换账号；只有整个账号池均无法处理请求时才会使该公众号同步失败。
+第一页暂时为空时会最多重试三次。日常 Action 默认只请求每个公众号最新一页；这足以覆盖每日增量，并把列表请求控制在约 120 次/月。历史补录通过手动任务分批增加页数，避免耗尽免费额度。
 
 ### 正文和媒体
 
@@ -98,20 +98,20 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 ## 自动化
 
-`.github/workflows/wechat-sync.yml` 每天北京时间 10:00 和 18:30 运行，也支持手动触发，分别覆盖早间信息和收盘后复盘：
+`.github/workflows/wechat-sync.yml` 每天北京时间 10:17 和 18:47 运行，也支持手动触发，分别覆盖早间信息和收盘后复盘：
 
 1. 安装最小 Python 依赖。
-2. 每个公众号默认最多读取 10 页文章列表，常规增量会在遇到已完成文章时提前停止。
+2. 每个公众号默认读取最新 1 页文章列表，遇到已完成文章时提前停止。
 3. 检查 Markdown、索引、封面和正文图片的引用完整性。
 4. 执行 Astro 生产构建，只在完整性检查和构建成功后提交。
 5. 使用工作流自带的 `GITHUB_TOKEN` 提交到 `master`，不需要额外 PAT。
 6. 任何阶段失败时创建或更新唯一的 GitHub Issue；后续恢复时自动关闭。
 
 EdgeOne Pages 监听内容提交并执行 `npm run build`，静态输出目录为 `dist`。
-扫码、GitHub Secrets 与 Action 运维见 `AUTOMATION.md`；新建或迁移 EdgeOne Pages 项目见 `DEPLOYMENT.md`。
+RapidAPI Key、GitHub Secrets 与 Action 运维见 `AUTOMATION.md`；新建或迁移 EdgeOne Pages 项目见 `DEPLOYMENT.md`。
 
 ## 分支布局
 
-- `master`：Astro 生产站，也是定时微信公众号同步任务的提交目标。
-- `legacy/docsify-archive`：切换前的旧 `master` 快照，内容冻结，不再改动。
-- `feature/wechat-mp-sync`：保留迁移开发记录；首次上线后不再作为生产部署来源。
+- `master`：RapidAPI 增量同步与 Astro 生产站，也是定时任务的提交目标。
+- `legacy/weread-sync`：切换前的微信读书扫码与中转接口实现，内容冻结。
+- `legacy/docsify-archive`：Astro 迁移前的 Docsify 旧站快照，内容冻结。
