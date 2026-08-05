@@ -42,6 +42,7 @@ class CollectionState:
     articles: list[ArticleSummary]
     backfill_complete: bool
     backfill_next_page: int
+    backfill_offset: str
 
 
 def _write_actions_outputs(succeeded: int, failed: int) -> None:
@@ -235,6 +236,7 @@ def _collect_articles(
     indexed_title_dates: set[tuple[str, date]],
     backfill_complete: bool,
     backfill_next_page: int,
+    backfill_offset: str,
     known_history_remaining: bool,
     history_page_limit: Optional[int],
     max_pages: int,
@@ -369,6 +371,74 @@ def _collect_articles(
         articles=sorted(collected.values(), key=lambda article: article.published_at),
         backfill_complete=backfill_complete,
         backfill_next_page=backfill_next_page,
+        backfill_offset=backfill_offset,
+    )
+
+
+def _collect_history_articles(
+    client: RapidAPIClient,
+    account: AccountConfig,
+    indexed_ids: set[str],
+    indexed_urls: set[str],
+    indexed_title_dates: set[tuple[str, date]],
+    backfill_offset: str,
+    backfill_next_page: int,
+    max_pages: int,
+    delay_seconds: float,
+) -> CollectionState:
+    collected: dict[str, ArticleSummary] = {}
+    offset = backfill_offset
+    page_number = backfill_next_page if offset else 1
+    backfill_complete = False
+
+    for page_position in range(1, max_pages + 1):
+        try:
+            history_page = client.fetch_history_page(
+                account.seed_article_url,
+                offset,
+            )
+        except RapidAPIError:
+            if page_position == 1:
+                raise
+            print(
+                f"[{account.name}] V2 历史列表额度已停止本批回补，"
+                f"断点保留在第 {page_number} 页"
+            )
+            break
+
+        page_articles = [_normalize_article(row) for row in history_page.rows]
+        for article in page_articles:
+            if (
+                article.published_at.date() >= account.earliest
+                and not _is_indexed(
+                    article,
+                    indexed_ids,
+                    indexed_urls,
+                    indexed_title_dates,
+                )
+            ):
+                collected[_url_key(article.url)] = article
+
+        reached_boundary = any(
+            article.published_at.date() < account.earliest
+            for article in page_articles
+        )
+        if reached_boundary or history_page.is_end or not history_page.next_offset:
+            backfill_complete = True
+            offset = ""
+            page_number += 1
+            break
+
+        offset = history_page.next_offset
+        page_number += 1
+        if page_position < max_pages:
+            time.sleep(delay_seconds)
+
+    return CollectionState(
+        articles=sorted(collected.values(), key=lambda article: article.published_at),
+        backfill_complete=backfill_complete,
+        backfill_next_page=page_number,
+        backfill_offset=offset,
     )
 
 
@@ -378,6 +448,7 @@ def _synchronize_account(
     downloader: WeChatArticleDownloader,
     max_pages: int,
     delay_seconds: float,
+    history_v2: bool,
 ) -> tuple[int, int]:
     index_path = INDEX_ROOT / f"{account.slug}.json"
     index = _load_json(index_path)
@@ -428,29 +499,47 @@ def _synchronize_account(
         and len(existing_entries) < account.reported_count
     )
     backfill_next_page = max(1, int(index.get("backfillNextPage", 1)))
+    backfill_offset = str(index.get("backfillOffset") or "").strip()
+    if history_v2 and not backfill_offset:
+        # V1 page numbers cannot be reused as V2 opaque cursors.
+        backfill_next_page = 1
     if known_history_remaining and backfill_complete:
         backfill_complete = False
         print(
             f"[{account.name}] 已归档 {len(existing_entries)}/"
             f"{account.reported_count} 篇，继续探测可能延迟开放的历史分页"
         )
-    collection = _collect_articles(
-        client=client,
-        account=account,
-        indexed_ids=indexed_ids,
-        indexed_urls=indexed_urls,
-        indexed_title_dates=indexed_title_dates,
-        backfill_complete=backfill_complete,
-        backfill_next_page=backfill_next_page,
-        known_history_remaining=known_history_remaining,
-        history_page_limit=(
-            (account.reported_count + LIST_PAGE_SIZE - 1) // LIST_PAGE_SIZE
-            if known_history_remaining and account.reported_count is not None
-            else None
-        ),
-        max_pages=max_pages,
-        delay_seconds=delay_seconds,
-    )
+    if history_v2:
+        collection = _collect_history_articles(
+            client=client,
+            account=account,
+            indexed_ids=indexed_ids,
+            indexed_urls=indexed_urls,
+            indexed_title_dates=indexed_title_dates,
+            backfill_offset=backfill_offset,
+            backfill_next_page=backfill_next_page,
+            max_pages=max_pages,
+            delay_seconds=delay_seconds,
+        )
+    else:
+        collection = _collect_articles(
+            client=client,
+            account=account,
+            indexed_ids=indexed_ids,
+            indexed_urls=indexed_urls,
+            indexed_title_dates=indexed_title_dates,
+            backfill_complete=backfill_complete,
+            backfill_next_page=backfill_next_page,
+            backfill_offset=backfill_offset,
+            known_history_remaining=known_history_remaining,
+            history_page_limit=(
+                (account.reported_count + LIST_PAGE_SIZE - 1) // LIST_PAGE_SIZE
+                if known_history_remaining and account.reported_count is not None
+                else None
+            ),
+            max_pages=max_pages,
+            delay_seconds=delay_seconds,
+        )
     for article in collection.articles:
         if not _is_indexed(
             article, indexed_ids, indexed_urls, indexed_title_dates
@@ -461,7 +550,7 @@ def _synchronize_account(
 
     def save_state() -> None:
         next_index = {
-            "version": 4,
+            "version": 5,
             "account": {
                 "slug": account.slug,
                 "name": account.name,
@@ -470,6 +559,7 @@ def _synchronize_account(
             "earliestDate": account.earliest.isoformat(),
             "backfillComplete": collection.backfill_complete,
             "backfillNextPage": collection.backfill_next_page,
+            "backfillOffset": collection.backfill_offset,
             "pendingArticles": [
                 _pending_record(article)
                 for article in sorted(
@@ -547,6 +637,7 @@ def synchronize(
     max_pages: int,
     delay_seconds: float,
     selected_slugs: set[str],
+    history_v2: bool,
 ) -> tuple[int, int, list[str]]:
     accounts = _load_accounts(selected_slugs)
     key_pool = load_api_key_pool()
@@ -566,6 +657,7 @@ def synchronize(
                 downloader=downloader,
                 max_pages=max_pages,
                 delay_seconds=delay_seconds,
+                history_v2=history_v2,
             )
         except (OSError, ValueError, RapidAPIError) as error:
             account_errors.append(f"{account.name}: {error}")
@@ -594,6 +686,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="每个公众号最多读取的列表页数（默认 1）",
     )
     parser.add_argument("--delay", type=float, default=2.0, help="请求间隔秒数")
+    parser.add_argument(
+        "--history-v2",
+        action="store_true",
+        help="使用带 offset 游标的 V2 接口回补历史；会消耗 Pro 月度额度",
+    )
     return parser
 
 
@@ -617,6 +714,7 @@ def main() -> int:
             max_pages=args.max_pages,
             delay_seconds=args.delay,
             selected_slugs=set(args.account),
+            history_v2=args.history_v2,
         )
     except (OSError, ValueError, RapidAPIError) as error:
         print(f"同步失败: {error}", file=sys.stderr)

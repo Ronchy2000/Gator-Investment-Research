@@ -50,7 +50,7 @@ python -m wechat_sync.sync \
 
 同步器执行以下步骤：
 
-1. 通过 RapidAPI 历史文章 V1 接口获取最新列表页。
+1. 通过 RapidAPI 已弃用但额度较宽松的 V1 接口获取最新列表页。
 2. 使用文章 ID、规范化链接和“标题 + 发布日期”与现有索引去重。
 3. 新文章加入 `pendingArticles`，下载失败时保留到下一次。
 4. 通过 RapidAPI 文章详情 V4 接口取得正文 HTML，再从微信 CDN 下载封面和正文图片。
@@ -61,16 +61,19 @@ RapidAPI 返回完整长链接，而旧数据大量使用微信短链接，因�
 
 ## 历史补录
 
-增加 `--max-pages` 可在检查最新页后继续历史断点：
+完整历史必须使用 V2 游标接口，不能把 V1 的 `page` 当作可靠的历史回补方式。V2 要把上一页返回的 `PagingInfo.Offset` 作为下一次请求的 `offset` 表单字段：
 
 ```bash
 python -m wechat_sync.sync \
   --account like-a-gator \
-  --max-pages 20 \
+  --history-v2 \
+  --max-pages 8 \
   --delay 3
 ```
 
-每页通常有 10 篇文章，每个列表页消耗一次 RapidAPI 请求，每篇新文章还会消耗一次详情请求。免费额度下应分批执行，不要无意义重复扫描。`backfillNextPage` 保存在对应索引中。
+每页通常有 10 组群发消息。V2 在 RapidAPI 免费套餐中同时消耗普通月额度和独立的 Pro 月额度；实测每个 Key 的 Pro 月额度为 10 次，因此应分批执行。同步器把不透明游标保存在对应索引的 `backfillOffset` 中，下次从断点继续；`backfillNextPage` 仅用于显示进度。
+
+GitHub Action 不启用 `--history-v2`。自动任务每天只读取 V1 最新一页，以免两次定时任务迅速耗尽 Pro 额度。历史补录应在本地显式执行，完成后提交生成的文章、资源和索引。
 
 ## Key 故障转移
 

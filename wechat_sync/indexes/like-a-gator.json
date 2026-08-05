@@ -1,14 +1,14 @@
 {
-  "version": 4,
+  "version": 5,
   "account": {
     "slug": "like-a-gator",
     "name": "像鳄鱼一样思考",
     "seedArticleUrl": "https://mp.weixin.qq.com/s/8MrwDixwxXjTawO7yFIQvg"
   },
   "earliestDate": "2000-01-01",
-  "updatedAt": "2026-08-05T17:21:33.603094+08:00",
   "backfillComplete": false,
-  "backfillNextPage": 2,
+  "backfillNextPage": 16,
+  "backfillOffset": "WABgAGiB8OWvj8G/pGk=",
   "pendingArticles": [],
   "articles": [
     {
@@ -651,6 +651,15 @@
       "assetCount": 10
     },
     {
+      "articleId": "wx-dc354e7c-2247490697-1",
+      "title": "A股：多云、震荡、局部过热（2026.4.22）",
+      "publishedAt": "2026-04-22T15:37:14+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247490697&idx=1&sn=6cd6466b4243ae0bfd7406913ad2bee9",
+      "markdownPath": "src/content/articles/2026-04-22-wx-dc354e7c-2247490697-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247490697-1/cover.jpg",
+      "assetCount": 10
+    },
+    {
       "articleId": "hBloEOvc8BpcHrgekWe1lw",
       "title": "A股：晴转多云（2026.4.21）",
       "publishedAt": "2026-04-21T15:42:51+08:00",
@@ -846,6 +855,15 @@
       "sourceUrl": "https://mp.weixin.qq.com/s/B4biLMChlXZzZ807aobRfQ",
       "markdownPath": "src/content/articles/2026-03-20-B4biLMChlXZzZ807aobRfQ.md",
       "cover": "/article-assets/B4biLMChlXZzZ807aobRfQ/cover.jpg",
+      "assetCount": 9
+    },
+    {
+      "articleId": "wx-dc354e7c-2247490437-1",
+      "title": "A股：美好的事情即将发生（2026.3.20）",
+      "publishedAt": "2026-03-20T16:42:03+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247490437&idx=1&sn=f4bd5d7275e5a13776f64bd556c7f316",
+      "markdownPath": "src/content/articles/2026-03-20-wx-dc354e7c-2247490437-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247490437-1/cover.jpg",
       "assetCount": 9
     },
     {
@@ -4088,5 +4106,6 @@
       "cover": "/article-assets/RuqVmveeLR4VNYd-PKko_Q/cover.jpg",
       "assetCount": 4
     }
-  ]
+  ],
+  "updatedAt": "2026-08-05T21:22:41.457916+08:00"
 }

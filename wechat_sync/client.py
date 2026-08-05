@@ -18,7 +18,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_KEY_FILE = PROJECT_ROOT / "data" / "wechat" / "rapidapi-keys.json"
 DEFAULT_API_HOST = "weixin-wechat-official-accounts-platform.p.rapidapi.com"
 DEFAULT_API_URL = f"https://{DEFAULT_API_HOST}"
-HISTORY_PATH = "/api/weixin/get-account-history-articles/v1"
+LATEST_ARTICLES_PATH = "/api/weixin/get-account-history-articles/v1"
+HISTORY_PATH = "/api/weixin/get-account-history-articles/v2"
 DETAIL_PATH = "/api/weixin/get-article-detail/v4"
 SWITCHABLE_CODES = {100, 301, 302, 303, 500, 600, 601, 602}
 ResponseValue = TypeVar("ResponseValue")
@@ -43,6 +44,13 @@ class APIKeyPool:
     @property
     def size(self) -> int:
         return len(self.keys)
+
+
+@dataclass(frozen=True)
+class HistoryPage:
+    rows: list[dict[str, Any]]
+    next_offset: str
+    is_end: bool
 
 
 def _deduplicate_keys(values: Sequence[Any]) -> tuple[str, ...]:
@@ -173,6 +181,65 @@ def _extract_rows(payload: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def _extract_history_page(payload: Any) -> HistoryPage:
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), dict):
+        raise RapidAPIError("RapidAPI 历史文章响应缺少 data 对象")
+
+    data = payload["data"]
+    message_list = data.get("MsgList")
+    messages = message_list.get("Msg", []) if isinstance(message_list, dict) else []
+    if isinstance(messages, dict):
+        messages = [messages]
+    if not isinstance(messages, list):
+        raise RapidAPIError("RapidAPI 历史文章响应缺少 MsgList.Msg 数组")
+
+    rows: list[dict[str, Any]] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        base_info = message.get("BaseInfo")
+        app_message = message.get("AppMsg")
+        if not isinstance(base_info, dict) or not isinstance(app_message, dict):
+            continue
+        published = base_info.get("DateTime")
+        details = app_message.get("DetailInfo", [])
+        if isinstance(details, dict):
+            details = [details]
+        if not isinstance(details, list):
+            continue
+        for position, detail in enumerate(details, start=1):
+            if not isinstance(detail, dict):
+                continue
+            url = _canonical_article_url(detail.get("ContentUrl"))
+            if not url or published is None:
+                continue
+            identity = {
+                "appmsgid": base_info.get("MsgId"),
+                "position": detail.get("ItemIndex") or position,
+            }
+            rows.append(
+                {
+                    "id": _stable_article_id(url, identity),
+                    "title": str(detail.get("Title") or "").strip(),
+                    "url": url,
+                    "coverUrl": _https_url(detail.get("CoverImgUrl")),
+                    "publishTime": published,
+                }
+            )
+
+    paging_info = data.get("PagingInfo")
+    if not isinstance(paging_info, dict) and isinstance(message_list, dict):
+        paging_info = message_list.get("PagingInfo")
+    if not isinstance(paging_info, dict):
+        paging_info = {}
+    next_offset = str(paging_info.get("Offset") or "").strip()
+    is_end = str(paging_info.get("IsEnd") or "0").strip().lower() in {
+        "1",
+        "true",
+    }
+    return HistoryPage(rows=rows, next_offset=next_offset, is_end=is_end)
+
+
 def _extract_detail(payload: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise RapidAPIError("RapidAPI 文章详情响应不是 JSON 对象")
@@ -238,12 +305,14 @@ class RapidAPIClient:
         method: str,
         path: str,
         params: dict[str, Any],
+        form_encoded: bool = False,
     ) -> Any:
+        request_arguments = {"data": params} if form_encoded else {"params": params}
         try:
             response = self._session.request(
                 method,
                 f"{self._api_url}{path}",
-                params=params,
+                **request_arguments,
                 headers={"x-rapidapi-key": self._keys[key_index]},
                 timeout=self._timeout_seconds,
             )
@@ -299,13 +368,28 @@ class RapidAPIClient:
         raise RapidAPIError("RapidAPI Key 池中没有可用 Key")
 
     def fetch_articles(self, identifier: str, page: int = 1) -> list[dict[str, Any]]:
+        """Fetch recent articles through the low-cost V1 endpoint."""
         return self._with_failover(
             lambda key_index: _extract_rows(
                 self._request_json(
                     key_index,
                     "POST",
-                    HISTORY_PATH,
+                    LATEST_ARTICLES_PATH,
                     {"url": identifier, "page": page},
+                )
+            )
+        )
+
+    def fetch_history_page(self, identifier: str, offset: str = "") -> HistoryPage:
+        """Fetch one V2 history page using the previous response cursor."""
+        return self._with_failover(
+            lambda key_index: _extract_history_page(
+                self._request_json(
+                    key_index,
+                    "POST",
+                    HISTORY_PATH,
+                    {"url": identifier, "offset": offset},
+                    form_encoded=True,
                 )
             )
         )
