@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
+from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -24,6 +25,12 @@ DEFAULT_CONTENT_DIR = PROJECT_ROOT / "src" / "content" / "articles"
 DEFAULT_ASSET_ROOT = PROJECT_ROOT / "public" / "article-assets"
 MAX_ASSET_BYTES = 25 * 1024 * 1024
 CSS_URL_RE = re.compile(r"url\(\s*(['\"]?)([^'\")]+)\1\s*\)", re.IGNORECASE)
+PUBLISHED_AT_RE = re.compile(
+    r"(?:var\s+(?:ct|create_time)\s*=|[\"'](?:ct|create_time)[\"']\s*:)"
+    r"\s*[\"']?(\d{10,13})",
+    re.IGNORECASE,
+)
+SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 
 class ArticleDownloadError(RuntimeError):
@@ -127,6 +134,53 @@ class WeChatArticleDownloader:
         )
 
     def download(self, summary: ArticleSummary, source_name: str) -> DownloadedArticle:
+        response = self._get(summary.url, referer="https://mp.weixin.qq.com/")
+        return self._download_response(summary, source_name, response)
+
+    def download_url(
+        self,
+        url: str,
+        source_name: str,
+        *,
+        verify_source: bool = True,
+    ) -> DownloadedArticle:
+        """Inspect and download a known public WeChat article URL in one request."""
+        response = self._get(url, referer="https://mp.weixin.qq.com/")
+        response.encoding = response.apparent_encoding or "utf-8"
+        soup = BeautifulSoup(response.text, "html.parser")
+        actual_source = self._source_name(soup)
+        if verify_source and actual_source != source_name:
+            raise ArticleDownloadError(
+                f"公众号不匹配，期望“{source_name}”，实际“{actual_source or '无法识别'}”"
+            )
+
+        title = self._metadata(soup, "og:title")
+        published_at = self._published_at(response.text)
+        if not title or published_at is None:
+            page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
+            raise ArticleDownloadError(
+                "无法从微信页面识别标题或发布时间，页面可能要求验证："
+                f"{page_title or '未知页面'}"
+            )
+
+        canonical_url = self._metadata(soup, "og:url") or response.url or url
+        canonical_url = _canonical_url(canonical_url)
+        article_id = self._article_id(canonical_url)
+        summary = ArticleSummary(
+            article_id=article_id,
+            title=title,
+            url=canonical_url,
+            cover_url=self._metadata(soup, "og:image"),
+            published_at=published_at,
+        )
+        return self._download_response(summary, source_name, response)
+
+    def _download_response(
+        self,
+        summary: ArticleSummary,
+        source_name: str,
+        response: requests.Response,
+    ) -> DownloadedArticle:
         article_key = _safe_article_id(summary.article_id, summary.url)
         final_asset_dir = self._asset_root / article_key
         temporary_asset_dir = self._asset_root / f".{article_key}.tmp"
@@ -139,7 +193,6 @@ class WeChatArticleDownloader:
         temporary_asset_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            response = self._get(summary.url, referer="https://mp.weixin.qq.com/")
             response.encoding = response.apparent_encoding or "utf-8"
             soup = BeautifulSoup(response.text, "html.parser")
             content = soup.select_one("#js_content, .rich_media_content")
@@ -223,6 +276,48 @@ class WeChatArticleDownloader:
             markdown_path=markdown_path,
             asset_count=asset_count,
         )
+
+    @staticmethod
+    def _article_id(url: str) -> str:
+        parsed = urlparse(url)
+        if parsed.netloc.lower() != "mp.weixin.qq.com":
+            raise ArticleDownloadError(f"不是微信公众号文章链接: {url}")
+        path_parts = [part for part in parsed.path.split("/") if part]
+        if (
+            len(path_parts) == 2
+            and path_parts[0] == "s"
+            and re.fullmatch(r"[A-Za-z0-9_-]{1,80}", path_parts[1])
+        ):
+            return path_parts[1]
+        if parsed.path.rstrip("/") == "/s":
+            query = parse_qs(parsed.query)
+            biz = str((query.get("__biz") or [""])[0]).strip()
+            mid = str((query.get("mid") or [""])[0]).strip()
+            idx = str((query.get("idx") or [""])[0]).strip()
+            if biz and mid.isdigit() and idx.isdigit():
+                digest = hashlib.sha256(f"{biz}:{mid}:{idx}".encode("utf-8"))
+                return f"wechat-{digest.hexdigest()[:20]}"
+        raise ArticleDownloadError(f"不支持的微信公众号文章链接格式: {url}")
+
+    @staticmethod
+    def _published_at(source: str) -> Optional[datetime]:
+        match = PUBLISHED_AT_RE.search(source)
+        if match is None:
+            return None
+        timestamp = int(match.group(1))
+        if timestamp > 10_000_000_000:
+            timestamp //= 1000
+        return datetime.fromtimestamp(timestamp, tz=SHANGHAI)
+
+    @staticmethod
+    def _source_name(soup: BeautifulSoup) -> str:
+        for selector in ("#js_name", "#js_account_name"):
+            element = soup.select_one(selector)
+            if isinstance(element, Tag):
+                value = element.get_text(" ", strip=True)
+                if value:
+                    return value
+        return ""
 
     def _get(self, url: str, referer: str) -> requests.Response:
         response = self._session.get(

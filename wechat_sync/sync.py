@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable, Optional
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
 from .client import WeReadClient, WeReadRelayError, load_credentials_pool
@@ -33,6 +33,7 @@ class AccountConfig:
     slug: str
     name: str
     mp_id: str
+    gh_id: Optional[str]
     earliest: date
     reported_count: Optional[int]
 
@@ -76,12 +77,15 @@ def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
         slug = str(item.get("slug", "")).strip()
         name = str(item.get("name", "")).strip()
         mp_id = str(item.get("mp_id", "")).strip()
+        gh_id = str(item.get("gh_id", "")).strip() or None
         earliest_value = str(item.get("earliest_date", "")).strip()
         raw_reported_count = item.get("reported_article_count")
         if not SLUG_RE.fullmatch(slug) or not name or not mp_id or not earliest_value:
             raise ValueError(f"公众号配置缺少有效 slug、name、mp_id 或 earliest_date: {item}")
         if slug in seen_slugs:
             raise ValueError(f"公众号 slug 重复: {slug}")
+        if gh_id is not None and not re.fullmatch(r"gh_[A-Za-z0-9]+", gh_id):
+            raise ValueError(f"公众号 gh_id 格式无效: {slug}")
         seen_slugs.add(slug)
         reported_count = None
         if raw_reported_count is not None:
@@ -94,6 +98,7 @@ def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
                     slug=slug,
                     name=name,
                     mp_id=mp_id,
+                    gh_id=gh_id,
                     earliest=date.fromisoformat(earliest_value),
                     reported_count=reported_count,
                 )
@@ -158,6 +163,16 @@ def _url_key(value: str) -> str:
     parsed = urlsplit(value.strip())
     if parsed.netloc.lower() == "mp.weixin.qq.com" and parsed.path.startswith("/s/"):
         return urlunsplit(("https", "mp.weixin.qq.com", parsed.path.rstrip("/"), "", ""))
+    if parsed.netloc.lower() == "mp.weixin.qq.com" and parsed.path.rstrip("/") == "/s":
+        allowed = {"__biz", "mid", "idx", "sn"}
+        query = [
+            (key, item)
+            for key, item in parse_qsl(parsed.query, keep_blank_values=False)
+            if key in allowed
+        ]
+        return urlunsplit(
+            ("https", "mp.weixin.qq.com", "/s", urlencode(sorted(query)), "")
+        )
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, ""))
 
 
