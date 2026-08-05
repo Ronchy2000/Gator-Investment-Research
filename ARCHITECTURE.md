@@ -47,7 +47,7 @@ EdgeOne Pages / dist
 
 ### 列表和增量判断
 
-`wechat_sync/client.py` 通过 RapidAPI 访问第三方公众号历史文章 V1 接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
+`wechat_sync/client.py` 通过 RapidAPI 访问第三方公众号历史文章 V1 和文章详情 V4 接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
 
 1. 依次按页获取“获得信息差”和“像鳄鱼一样思考”的文章列表。
 2. 每个公众号通过一篇公开种子文章识别，并独立配置最早收录日期、分页断点、完成索引和失败队列。
@@ -62,7 +62,7 @@ EdgeOne Pages / dist
 
 ### 正文和媒体
 
-`wechat_sync/downloader.py` 直接请求微信公众号文章：
+新文章先通过详情 V4 接口取得正文 HTML，再由 `wechat_sync/downloader.py` 处理正文与微信 CDN 媒体。列表返回的微信长链接不会被直接请求，避免跳转到验证码页面：
 
 - 接受包含文本或图片的正文节点，纯图片文章不会被误判为空正文。
 - 纯图片文章必须解析出可用图片，远程图片未全部本地化时不会进入完成索引。

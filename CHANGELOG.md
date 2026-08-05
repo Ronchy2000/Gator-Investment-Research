@@ -8,6 +8,7 @@
 - 新增 `RAPIDAPI_KEYS` Key 池，按日期分摊额度，并在鉴权、限流、配额或上游采集失败时自动故障转移。
 - 使用种子文章 URL 识别公众号，不再依赖扫码、`vid`、微信读书 token 或公开中转服务。
 - 增加“标题 + 发布日期”去重，兼容旧版短链接与 RapidAPI 长链接。
+- 新文章正文改由 RapidAPI 文章详情 V4 获取，避免列表长链接触发微信验证码，并继续完整本地化封面与正文图片。
 - 新增隐藏输入、剪贴板复制及 GitHub CLI Secret 上传工具。
 - 删除生产分支的扫码、微信读书 Secret 上传和 Just One API 独立补录程序；旧代码仍可在历史分支追溯。
 - 删除已合并的 `feature/wechat-mp-sync` 和已被 Docsify 历史分支覆盖的 `backup/legacy-crawler-2026-06-16`。

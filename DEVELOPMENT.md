@@ -74,8 +74,8 @@ public/
   note-assets/            投资随笔图片
   report-assets/          历史研报图片或失效说明占位图
 wechat_sync/
-  client.py               RapidAPI 列表接口与 Key 故障转移客户端
-  downloader.py           微信正文解析与媒体本地化
+  client.py               RapidAPI 列表、详情接口与 Key 故障转移客户端
+  downloader.py           详情 HTML 解析与微信媒体本地化
   rapidapi_secrets.py     安全维护和上传 RapidAPI Key 池
   initialize.py           新公众号非敏感配置初始化
   sync.py                 首次回补与增量同步入口

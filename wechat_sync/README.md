@@ -1,6 +1,6 @@
 # 微信公众号同步器
 
-同步器通过 RapidAPI 获取公众号文章列表，再直接下载微信原文、封面和正文图片，生成 Astro 使用的 Markdown 内容。
+同步器通过 RapidAPI 获取公众号文章列表和完整文章 HTML，再下载封面与正文图片，生成 Astro 使用的 Markdown 内容。这样不会用列表接口返回的微信长链接直接请求正文，避免触发微信验证码页面。
 
 ## 当前来源
 
@@ -51,7 +51,7 @@ python -m wechat_sync.sync \
 1. 通过 RapidAPI 历史文章 V1 接口获取最新列表页。
 2. 使用文章 ID、规范化链接和“标题 + 发布日期”与现有索引去重。
 3. 新文章加入 `pendingArticles`，下载失败时保留到下一次。
-4. 从 `mp.weixin.qq.com` 下载正文、封面和正文图片。
+4. 通过 RapidAPI 文章详情 V4 接口取得正文 HTML，再从微信 CDN 下载封面和正文图片。
 5. 正文与媒体全部成功后写入 `src/content/articles` 和 `public/article-assets`。
 6. 每完成一篇即原子更新 `indexes/<slug>.json`。
 
@@ -68,7 +68,7 @@ python -m wechat_sync.sync \
   --delay 3
 ```
 
-每页通常有 10 篇文章，每页消耗一次 RapidAPI 请求。免费额度下应分批执行，不要无意义重复扫描。`backfillNextPage` 保存在对应索引中。
+每页通常有 10 篇文章，每个列表页消耗一次 RapidAPI 请求，每篇新文章还会消耗一次详情请求。免费额度下应分批执行，不要无意义重复扫描。`backfillNextPage` 保存在对应索引中。
 
 ## Key 故障转移
 

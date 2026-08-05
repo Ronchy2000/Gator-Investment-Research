@@ -10,7 +10,7 @@ import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import parse_qs, urljoin, urlparse
 from zoneinfo import ZoneInfo
 
@@ -137,6 +137,34 @@ class WeChatArticleDownloader:
         response = self._get(summary.url, referer="https://mp.weixin.qq.com/")
         return self._download_response(summary, source_name, response)
 
+    def download_detail(
+        self,
+        summary: ArticleSummary,
+        source_name: str,
+        detail: dict[str, Any],
+    ) -> DownloadedArticle:
+        """Archive HTML returned by the RapidAPI article-detail endpoint."""
+        actual_source = str(detail.get("sourceName") or "").strip()
+        if actual_source != source_name:
+            raise ArticleDownloadError(
+                f"公众号不匹配，期望“{source_name}”，实际“{actual_source or '无法识别'}”"
+            )
+
+        html = str(detail.get("html") or "").strip()
+        soup = BeautifulSoup(html, "html.parser")
+        content = soup.select_one("#js_content, .rich_media_content") or soup.body
+        if content is None:
+            raise ArticleDownloadError("RapidAPI 文章详情不包含可归档的正文节点")
+
+        return self._archive_content(
+            summary=summary,
+            source_name=source_name,
+            content=content,
+            title=str(detail.get("title") or summary.title).strip(),
+            description=str(detail.get("description") or "").strip(),
+            cover_url=str(detail.get("coverUrl") or summary.cover_url).strip(),
+        )
+
     def download_url(
         self,
         url: str,
@@ -181,6 +209,32 @@ class WeChatArticleDownloader:
         source_name: str,
         response: requests.Response,
     ) -> DownloadedArticle:
+        response.encoding = response.apparent_encoding or "utf-8"
+        soup = BeautifulSoup(response.text, "html.parser")
+        content = soup.select_one("#js_content, .rich_media_content")
+        if content is None:
+            page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
+            raise ArticleDownloadError(
+                f"正文节点不存在，微信返回页面标题：{page_title or '未知'}"
+            )
+        return self._archive_content(
+            summary=summary,
+            source_name=source_name,
+            content=content,
+            title=self._metadata(soup, "og:title") or summary.title,
+            description=self._metadata(soup, "og:description"),
+            cover_url=summary.cover_url or self._metadata(soup, "og:image"),
+        )
+
+    def _archive_content(
+        self,
+        summary: ArticleSummary,
+        source_name: str,
+        content: Tag,
+        title: str,
+        description: str,
+        cover_url: str,
+    ) -> DownloadedArticle:
         article_key = _safe_article_id(summary.article_id, summary.url)
         final_asset_dir = self._asset_root / article_key
         temporary_asset_dir = self._asset_root / f".{article_key}.tmp"
@@ -193,14 +247,6 @@ class WeChatArticleDownloader:
         temporary_asset_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            response.encoding = response.apparent_encoding or "utf-8"
-            soup = BeautifulSoup(response.text, "html.parser")
-            content = soup.select_one("#js_content, .rich_media_content")
-            if content is None:
-                page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
-                raise ArticleDownloadError(
-                    f"正文节点不存在，微信返回页面标题：{page_title or '未知'}"
-                )
             visible_text = content.get_text(" ", strip=True)
             has_background_image = any(
                 CSS_URL_RE.search(str(node.get("style", "")))
@@ -212,9 +258,6 @@ class WeChatArticleDownloader:
                 and not has_background_image
             ):
                 raise ArticleDownloadError("正文节点不包含文本或图片")
-
-            title = self._metadata(soup, "og:title") or summary.title
-            description = self._metadata(soup, "og:description")
 
             self._sanitize(content)
             asset_count, usable_image_count = self._localize_content_images(
@@ -233,7 +276,6 @@ class WeChatArticleDownloader:
                 )
 
             cover_path = ""
-            cover_url = summary.cover_url or self._metadata(soup, "og:image")
             if cover_url:
                 cover_path = self._download_asset(
                     _absolute_url(cover_url, summary.url),

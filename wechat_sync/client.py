@@ -8,7 +8,7 @@ import os
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Callable, Optional, Sequence, TypeVar
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 import requests
@@ -19,7 +19,9 @@ DEFAULT_KEY_FILE = PROJECT_ROOT / "data" / "wechat" / "rapidapi-keys.json"
 DEFAULT_API_HOST = "weixin-wechat-official-accounts-platform.p.rapidapi.com"
 DEFAULT_API_URL = f"https://{DEFAULT_API_HOST}"
 HISTORY_PATH = "/api/weixin/get-account-history-articles/v1"
+DETAIL_PATH = "/api/weixin/get-article-detail/v4"
 SWITCHABLE_CODES = {100, 301, 302, 303, 500, 600, 601, 602}
+ResponseValue = TypeVar("ResponseValue")
 
 
 class RapidAPIError(RuntimeError):
@@ -171,6 +173,33 @@ def _extract_rows(payload: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def _extract_detail(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise RapidAPIError("RapidAPI 文章详情响应不是 JSON 对象")
+    data = payload.get("data")
+    if isinstance(data, dict) and isinstance(data.get("data"), dict):
+        data = data["data"]
+    if not isinstance(data, dict):
+        raise RapidAPIError("RapidAPI 文章详情缺少 data 对象")
+
+    detail = {
+        "title": str(data.get("title") or "").strip(),
+        "sourceName": str(data.get("nickname") or "").strip(),
+        "sourceUrl": _canonical_article_url(
+            data.get("article_url") or data.get("url")
+        ),
+        "description": str(data.get("desc") or "").strip(),
+        "coverUrl": _https_url(data.get("cover_url")),
+        "html": str(data.get("html") or "").strip(),
+    }
+    missing = [key for key in ("title", "sourceName", "html") if not detail[key]]
+    if missing:
+        raise RapidAPIError(
+            "RapidAPI 文章详情缺少必要字段: " + ", ".join(missing)
+        )
+    return detail
+
+
 class RapidAPIClient:
     def __init__(
         self,
@@ -203,11 +232,18 @@ class RapidAPIClient:
             for offset in range(self.key_count)
         ]
 
-    def _request_page(self, key_index: int, identifier: str, page: int) -> Any:
+    def _request_json(
+        self,
+        key_index: int,
+        method: str,
+        path: str,
+        params: dict[str, Any],
+    ) -> Any:
         try:
-            response = self._session.post(
-                f"{self._api_url}{HISTORY_PATH}",
-                params={"url": identifier, "page": page},
+            response = self._session.request(
+                method,
+                f"{self._api_url}{path}",
+                params=params,
                 headers={"x-rapidapi-key": self._keys[key_index]},
                 timeout=self._timeout_seconds,
             )
@@ -240,11 +276,14 @@ class RapidAPIClient:
             raise RapidAPIError(f"RapidAPI 业务错误 {code}: {message}")
         return payload
 
-    def fetch_articles(self, identifier: str, page: int = 1) -> list[dict[str, Any]]:
+    def _with_failover(
+        self,
+        request: Callable[[int], ResponseValue],
+    ) -> ResponseValue:
         last_error: Optional[RapidAPIError] = None
         for key_index in self._key_order():
             try:
-                payload = self._request_page(key_index, identifier, page)
+                result = request(key_index)
             except (RapidAPIKeyError, RapidAPINetworkError) as error:
                 last_error = error
                 print(
@@ -253,8 +292,33 @@ class RapidAPIClient:
                 )
                 continue
             self._active_index = key_index
-            return _extract_rows(payload)
+            return result
 
         if last_error is not None:
             raise last_error
         raise RapidAPIError("RapidAPI Key 池中没有可用 Key")
+
+    def fetch_articles(self, identifier: str, page: int = 1) -> list[dict[str, Any]]:
+        return self._with_failover(
+            lambda key_index: _extract_rows(
+                self._request_json(
+                    key_index,
+                    "POST",
+                    HISTORY_PATH,
+                    {"url": identifier, "page": page},
+                )
+            )
+        )
+
+    def fetch_article_detail(self, article_url: str) -> dict[str, Any]:
+        """Fetch archive-ready HTML instead of triggering WeChat's link captcha."""
+        return self._with_failover(
+            lambda key_index: _extract_detail(
+                self._request_json(
+                    key_index,
+                    "GET",
+                    DETAIL_PATH,
+                    {"articleUrl": article_url},
+                )
+            )
+        )

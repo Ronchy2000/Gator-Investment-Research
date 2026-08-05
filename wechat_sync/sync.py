@@ -505,7 +505,8 @@ def _synchronize_account(
     for position, article in enumerate(pending, start=1):
         print(f"[{account.name} {position}/{len(pending)}] 下载 {article.title}")
         try:
-            downloaded = downloader.download(article, account.name)
+            detail = client.fetch_article_detail(article.url)
+            downloaded = downloader.download_detail(article, account.name, detail)
         except Exception as error:
             failures.append((article, str(error)))
             print(f"  失败: {error}", file=sys.stderr)
