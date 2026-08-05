@@ -41,9 +41,9 @@ EdgeOne Pages / dist
 
 ### API Key 池
 
-`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；当前生产容量按五个已订阅同一 API 产品的 Key 规划，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
+`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；当前池中有九个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
 
-`wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429、5xx，以及可切换的业务错误会触发下一个 Key；成功切换后，同一次任务继续使用该 Key，只有所有 Key 都失败时才终止同步。Key 数量可调整，代码不依赖固定为五个。
+`wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429、5xx，以及可切换的业务错误会触发下一个 Key；成功切换后，同一次任务继续使用该 Key，只有所有 Key 都失败时才终止同步。Key 数量可调整，代码不依赖固定数量。
 
 ### 列表和增量判断
 

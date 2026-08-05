@@ -29,7 +29,7 @@ python -m wechat_sync.rapidapi_secrets \
 
 生成的 Repository Secret 名称固定为 `RAPIDAPI_KEYS`，值为 JSON 字符串数组。也可通过 `--copy` 复制后在 GitHub 网页手动配置。
 
-多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。当前生产容量按五 Key 池规划，但同步器支持任意非空数量并自动去重。
+多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。当前生产池包含 9 个 Key；同步器支持任意非空数量并自动去重。
 
 ## 增量同步
 
