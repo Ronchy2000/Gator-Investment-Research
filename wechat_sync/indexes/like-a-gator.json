@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491463-1",
+      "title": "股市：反弹继续，勤复盘（2026.8.6）",
+      "publishedAt": "2026-08-06T15:28:05+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491463&idx=1&sn=1845fe0421d1d7c9bb61dd9609446786",
+      "markdownPath": "src/content/articles/2026-08-06-wx-dc354e7c-2247491463-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491463-1/cover.jpg",
+      "assetCount": 9
+    },
+    {
       "articleId": "jkdFryULryRUNYlOQnDGuQ",
       "title": "股市：反弹的结构决定高度（2026.8.5）",
       "publishedAt": "2026-08-05T15:55:06+08:00",
@@ -5241,5 +5250,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-05T22:55:06.854292+08:00"
+  "updatedAt": "2026-08-06T15:30:34.853675+08:00"
 }
