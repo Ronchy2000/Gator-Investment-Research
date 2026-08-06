@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247483969-1",
+      "title": "8.6海外科技彻底引爆！",
+      "publishedAt": "2026-08-06T08:43:16+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247483969&idx=1&sn=fcd33c5fd2613f56b0f87064b2f7d9aa",
+      "markdownPath": "src/content/articles/2026-08-06-wx-7a94aab6-2247483969-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247483969-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "KMXfEF9gnscnHUC32x_plg",
       "title": "8.5数据中心设备出大消息！",
       "publishedAt": "2026-08-05T08:46:49+08:00",
@@ -471,5 +480,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-05T22:55:00.702130+08:00"
+  "updatedAt": "2026-08-06T09:38:45.991491+08:00"
 }
