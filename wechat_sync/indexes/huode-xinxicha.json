@@ -12,6 +12,24 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247483976-1",
+      "title": "8.7宇树上市，科技升温！",
+      "publishedAt": "2026-08-07T08:36:37+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247483976&idx=1&sn=ff9b66bb33d08718fbf7700e309fc196",
+      "markdownPath": "src/content/articles/2026-08-07-wx-7a94aab6-2247483976-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247483976-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
+      "articleId": "wx-7a94aab6-2247483976-2",
+      "title": "苹果想要长鑫，但长鑫为什么不急？",
+      "publishedAt": "2026-08-07T08:36:37+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247483976&idx=2&sn=1ccea66600915fb56cf4b02057b8cffe",
+      "markdownPath": "src/content/articles/2026-08-07-wx-7a94aab6-2247483976-2.md",
+      "cover": "/article-assets/wx-7a94aab6-2247483976-2/cover.jpg",
+      "assetCount": 2
+    },
+    {
       "articleId": "wx-7a94aab6-2247483969-1",
       "title": "8.6海外科技彻底引爆！",
       "publishedAt": "2026-08-06T08:43:16+08:00",
@@ -480,5 +498,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-06T09:38:45.991491+08:00"
+  "updatedAt": "2026-08-07T10:04:18.496201+08:00"
 }
