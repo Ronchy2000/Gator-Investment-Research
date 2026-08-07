@@ -9,7 +9,7 @@
 - 数据源：RapidAPI 的文章列表 V1、历史文章 V2 与文章详情 V4。
 - 公众号：“获得信息差”和“像鳄鱼一样思考”。
 - 凭据：一个名为 `RAPIDAPI_KEYS` 的 Repository Secret，截至 `2026-08-05` 当前包含 10 个 Key。
-- 调度：北京时间每天 `10:17`、`18:47`，也可手动运行。
+- 调度：北京时间每天 `09:07`、`16:37`，也可手动运行。
 - 部署：Action 只提交完整文章；EdgeOne Pages 监听 `master` 并发布 `dist/`。
 
 RapidAPI Key 不属于 EdgeOne 构建环境。EdgeOne 无需、也不应配置任何公众号同步凭据。
@@ -29,7 +29,7 @@ RAPIDAPI_KEYS
   -> EdgeOne Pages 自动部署
 ```
 
-工作流文件为 `.github/workflows/wechat-sync.yml`，每天北京时间 `10:17` 和 `18:47` 各运行一次，也支持手动执行。
+工作流文件为 `.github/workflows/wechat-sync.yml`，每天北京时间 `09:07` 和 `16:37` 各运行一次，也支持手动执行。
 
 ## API 职责
 

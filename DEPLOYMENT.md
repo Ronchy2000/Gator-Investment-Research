@@ -77,7 +77,7 @@ https://gator.ronchy2000.top
 使用 EdgeOne 的 GitHub 仓库集成时，不需要额外配置 `EDGEONE_API_TOKEN`：
 
 ```text
-北京时间 10:17 / 18:47
+北京时间 09:07 / 16:37
   -> GitHub Actions 检查微信公众号
   -> 有内容或同步状态变化时提交并推送 master
   -> EdgeOne Pages 检测 master 更新

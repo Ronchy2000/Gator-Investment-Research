@@ -64,7 +64,7 @@ python -m wechat_sync.sync \
   --delay 3
 ```
 
-V2 使用不透明游标并受独立 Pro 月额度限制，应分批重复运行；到达真实末页后停止。完整 API 说明、完成条件和已知链接导入方式见 [wechat_sync/README.md](wechat_sync/README.md)。日常增量不需要在本地执行，GitHub Actions 会在北京时间 `10:17`、`18:47` 自动处理。
+V2 使用不透明游标并受独立 Pro 月额度限制，应分批重复运行；到达真实末页后停止。完整 API 说明、完成条件和已知链接导入方式见 [wechat_sync/README.md](wechat_sync/README.md)。日常增量不需要在本地执行，GitHub Actions 会在北京时间 `09:07`、`16:37` 自动处理。
 
 本地 Key 池位于被 Git 忽略的 `data/wechat/rapidapi-keys.json`。不得提交、打印或截图传播该文件。完整的 Secret 上传和轮换流程见 [AUTOMATION.md](AUTOMATION.md)。
 

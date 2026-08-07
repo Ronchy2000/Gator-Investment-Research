@@ -98,7 +98,7 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 ## 自动化
 
-`.github/workflows/wechat-sync.yml` 每天北京时间 10:17 和 18:47 运行，也支持手动触发，分别覆盖早间信息和收盘后复盘：
+`.github/workflows/wechat-sync.yml` 每天北京时间 09:07 和 16:37 运行，也支持手动触发，分别覆盖早间信息和收盘后复盘：
 
 1. 安装最小 Python 依赖。
 2. 每个公众号默认读取最新 1 页文章列表，遇到已完成文章时提前停止。
