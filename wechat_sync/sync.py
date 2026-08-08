@@ -24,7 +24,6 @@ CONFIG_PATH = Path(__file__).resolve().parent / "accounts.json"
 INDEX_ROOT = Path(__file__).resolve().parent / "indexes"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 MAX_LIST_PAGES_PER_ACCOUNT = 40
-LIST_PAGE_SIZE = 10
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -213,21 +212,6 @@ def _save_index(path: Path, index: dict[str, Any]) -> None:
     temporary_path.replace(path)
 
 
-def _fetch_page(
-    client: RapidAPIClient,
-    identifier: str,
-    page: int,
-    retries: int = 3,
-) -> list[dict[str, Any]]:
-    for attempt in range(1, retries + 1):
-        rows = client.fetch_articles(identifier, page)
-        if rows or page > 1 or attempt == retries:
-            return rows
-        print(f"第 1 页为空，{attempt}/{retries} 次尝试后等待重试")
-        time.sleep(attempt * 2)
-    return []
-
-
 def _collect_articles(
     client: RapidAPIClient,
     account: AccountConfig,
@@ -237,135 +221,68 @@ def _collect_articles(
     backfill_complete: bool,
     backfill_next_page: int,
     backfill_offset: str,
-    known_history_remaining: bool,
-    history_page_limit: Optional[int],
     max_pages: int,
     delay_seconds: float,
 ) -> CollectionState:
     collected: dict[str, ArticleSummary] = {}
-    pages_used = 0
-    inspected_pages: set[int] = set()
-    reached_history_boundary = False
+    offset = ""
+    prior_urls: set[str] = set()
+    reached_incremental_boundary = False
 
-    # Once historical backfill has started, always inspect the newest pages first.
-    if indexed_ids:
-        reached_incremental_boundary = False
-        prior_urls: set[str] = set()
-        for page in range(1, max_pages + 1):
-            rows = _fetch_page(client, account.seed_article_url, page)
-            pages_used += 1
-            inspected_pages.add(page)
-            if not rows:
-                if page == 1:
-                    print(
-                        f"[{account.name}] 文章列表第一页暂时为空，"
-                        "跳过本轮增量边界检查并继续历史回补"
-                    )
-                reached_incremental_boundary = True
-                break
+    # V1 was retired by the provider. Start V2 at the newest cursor here;
+    # persisted cursors remain reserved for explicit historical backfills.
+    for page_position in range(1, max_pages + 1):
+        history_page = client.fetch_history_page(account.seed_article_url, offset)
+        page_articles = [_normalize_article(row) for row in history_page.rows]
+        if not page_articles:
+            if page_position == 1:
+                raise RapidAPIError(
+                    f"{account.name} V2 最新文章列表为空，RapidAPI 数据可能尚未刷新"
+                )
+            reached_incremental_boundary = True
+            break
 
-            page_articles = [_normalize_article(row) for row in rows]
-            page_urls = {_url_key(article.url) for article in page_articles}
-            if page_urls and page_urls.issubset(prior_urls):
-                reached_incremental_boundary = True
-                break
-            prior_urls.update(page_urls)
+        page_urls = {_url_key(article.url) for article in page_articles}
+        if page_urls and page_urls.issubset(prior_urls):
+            reached_incremental_boundary = True
+            break
+        prior_urls.update(page_urls)
 
-            for article in page_articles:
-                if (
-                    article.published_at.date() >= account.earliest
-                    and not _is_indexed(
-                        article, indexed_ids, indexed_urls, indexed_title_dates
-                    )
-                ):
-                    collected[_url_key(article.url)] = article
+        for article in page_articles:
+            if (
+                article.published_at.date() >= account.earliest
+                and not _is_indexed(
+                    article, indexed_ids, indexed_urls, indexed_title_dates
+                )
+            ):
+                collected[_url_key(article.url)] = article
 
-            if any(article.published_at.date() < account.earliest for article in page_articles):
-                reached_incremental_boundary = True
-                break
-            if any(
+        if (
+            any(
+                article.published_at.date() < account.earliest
+                for article in page_articles
+            )
+            or any(
                 _is_indexed(
                     article, indexed_ids, indexed_urls, indexed_title_dates
                 )
                 for article in page_articles
-            ):
-                reached_incremental_boundary = True
-                break
-            if pages_used < max_pages:
-                time.sleep(delay_seconds)
-
-        if not reached_incremental_boundary and pages_used >= max_pages:
-            raise RapidAPIError(
-                f"{account.name} 连续 {max_pages} 页仍未遇到已入库文章，"
-                "为避免增量漏文已停止，请提高 --max-pages 后重试"
             )
+            or history_page.is_end
+            or not history_page.next_offset
+        ):
+            reached_incremental_boundary = True
+            break
 
-    if not backfill_complete and pages_used < max_pages:
-        start_page = 1 if not indexed_ids else max(1, backfill_next_page - 1)
-        prior_urls: set[str] = set()
-        last_page = start_page - 1
-        candidate_page = start_page
-        while pages_used < max_pages:
-            page = candidate_page
-            candidate_page += 1
-            if known_history_remaining and history_page_limit is not None:
-                page = ((page - 1) % history_page_limit) + 1
-                if len(inspected_pages) >= history_page_limit:
-                    break
-            if page in inspected_pages:
-                continue
-            rows = _fetch_page(client, account.seed_article_url, page)
-            pages_used += 1
-            inspected_pages.add(page)
-            last_page = page
-            if not rows:
-                if page == 1:
-                    if not indexed_ids:
-                        raise RapidAPIError(
-                            f"{account.name} 文章列表第一页为空，RapidAPI 数据可能尚未刷新"
-                        )
-                if known_history_remaining:
-                    if pages_used < max_pages:
-                        time.sleep(delay_seconds)
-                    continue
-                backfill_complete = True
-                break
+        offset = history_page.next_offset
+        if page_position < max_pages:
+            time.sleep(delay_seconds)
 
-            page_articles = [_normalize_article(row) for row in rows]
-            page_urls = {_url_key(article.url) for article in page_articles}
-            if page_urls and page_urls.issubset(prior_urls):
-                if known_history_remaining:
-                    if pages_used < max_pages:
-                        time.sleep(delay_seconds)
-                    continue
-                backfill_complete = True
-                break
-            prior_urls.update(page_urls)
-
-            for article in page_articles:
-                if (
-                    article.published_at.date() >= account.earliest
-                    and not _is_indexed(
-                        article, indexed_ids, indexed_urls, indexed_title_dates
-                    )
-                ):
-                    collected[_url_key(article.url)] = article
-
-            if any(article.published_at.date() < account.earliest for article in page_articles):
-                backfill_complete = True
-                reached_history_boundary = True
-                break
-            if pages_used < max_pages:
-                time.sleep(delay_seconds)
-
-        if known_history_remaining and not reached_history_boundary:
-            backfill_complete = False
-            if history_page_limit is not None:
-                backfill_next_page = ((candidate_page - 1) % history_page_limit) + 1
-            else:
-                backfill_next_page = last_page + 1
-        else:
-            backfill_next_page = max(backfill_next_page, last_page + 1)
+    if not reached_incremental_boundary:
+        raise RapidAPIError(
+            f"{account.name} 连续 {max_pages} 页仍未遇到已入库文章，"
+            "为避免增量漏文已停止，请提高 --max-pages 后重试"
+        )
 
     return CollectionState(
         articles=sorted(collected.values(), key=lambda article: article.published_at),
@@ -501,9 +418,9 @@ def _synchronize_account(
     backfill_next_page = max(1, int(index.get("backfillNextPage", 1)))
     backfill_offset = str(index.get("backfillOffset") or "").strip()
     if history_v2 and not backfill_offset:
-        # V1 page numbers cannot be reused as V2 opaque cursors.
+        # Legacy page numbers cannot be reused as V2 opaque cursors.
         backfill_next_page = 1
-    if known_history_remaining and backfill_complete:
+    if history_v2 and known_history_remaining and backfill_complete:
         backfill_complete = False
         print(
             f"[{account.name}] 已归档 {len(existing_entries)}/"
@@ -531,12 +448,6 @@ def _synchronize_account(
             backfill_complete=backfill_complete,
             backfill_next_page=backfill_next_page,
             backfill_offset=backfill_offset,
-            known_history_remaining=known_history_remaining,
-            history_page_limit=(
-                (account.reported_count + LIST_PAGE_SIZE - 1) // LIST_PAGE_SIZE
-                if known_history_remaining and account.reported_count is not None
-                else None
-            ),
             max_pages=max_pages,
             delay_seconds=delay_seconds,
         )

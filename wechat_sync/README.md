@@ -49,11 +49,11 @@ Headers:
 | 名称 | 方法与参数 | 主要返回 | 适用场景 |
 | --- | --- | --- | --- |
 | Convert article link V1 | `GET /api/weixin/convert-article-link/v1`，查询参数 `link` | 规范化后的完整微信文章链接 | 手里只有短链接或中间链接时转换；不是文章下载接口 |
-| Account history V1 | `POST /api/weixin/get-account-history-articles/v1`，查询参数 `url`、`page` | 较新的文章列表 | 日常检查最新文章；已弃用且深分页不可靠 |
-| Account history V2 | `POST /api/weixin/get-account-history-articles/v2`，表单字段 `url`、`offset` | `MsgList` 和下一页 `PagingInfo.Offset` | 首次补齐公众号全部旧文章 |
+| Account history V1 | `POST /api/weixin/get-account-history-articles/v1`，查询参数 `url`、`page` | 已弃用的旧文章列表 | `2026-08-08` 起实测返回 `API INVALID`，生产不再调用 |
+| Account history V2 | `POST /api/weixin/get-account-history-articles/v2`，表单字段 `url`、`offset` | `MsgList` 和下一页 `PagingInfo.Offset` | 日常最新页增量及首次补齐全部旧文章 |
 | Article detail V4 | `GET /api/weixin/get-article-detail/v4`，查询参数 `articleUrl` | 标题、公众号、摘要、封面和完整正文 HTML | 将列表中的每篇文章下载为可归档正文 |
 
-V1/V2 是两个历史文章**列表**版本：V1 适合低成本读取最新页，V2 适合按游标遍历旧文章。V4 是单篇文章**详情**接口。RapidAPI 页面给出的 Convert V1 `curl` 模板如果没有 `link` 查询参数，只是请求骨架，不能列文章或下载正文。
+V1/V2 是两个历史文章**列表**版本；列表 V1 已失效，V2 既可从空游标读取最新页，也可按游标遍历旧文章。V4 是单篇文章**详情**接口。RapidAPI 页面给出的 Convert V1 `curl` 模板如果没有 `link` 查询参数，只是请求骨架，不能列文章或下载正文。
 
 对应的接口提供方说明：
 
@@ -87,16 +87,7 @@ converted = requests.get(
 )
 converted.raise_for_status()
 
-# 日常增量：V1 只读最新第 1 页。
-latest = requests.post(
-    f"{base_url}/api/weixin/get-account-history-articles/v1",
-    headers=headers,
-    params={"url": article_url, "page": 1},
-    timeout=120,
-)
-latest.raise_for_status()
-
-# 历史补录：首次 offset 为空，后续使用上一页 PagingInfo.Offset。
+# 最新增量和历史补录都使用 V2：首次 offset 为空。
 history = requests.post(
     f"{base_url}/api/weixin/get-account-history-articles/v2",
     headers={**headers, "Content-Type": "application/x-www-form-urlencoded"},
@@ -136,7 +127,7 @@ python -m wechat_sync.sync \
 
 同步器执行以下步骤：
 
-1. 通过 RapidAPI 已弃用但额度较宽松的 V1 接口获取最新列表页。
+1. 通过 RapidAPI V2 从空游标获取最新列表页，并在需要时继续读取下一页。
 2. 使用文章 ID、规范化链接和“标题 + 发布日期”与现有索引去重。
 3. 新文章加入 `pendingArticles`，下载失败时保留到下一次。
 4. 通过 RapidAPI 文章详情 V4 接口取得正文 HTML，再从微信 CDN 下载封面和正文图片。
@@ -147,7 +138,7 @@ RapidAPI 返回完整长链接，而旧数据大量使用微信短链接，因�
 
 ## 历史补录
 
-完整历史必须使用 V2 游标接口，不能把 V1 的 `page` 当作可靠的历史回补方式。V2 要把上一页返回的 `PagingInfo.Offset` 作为下一次请求的 `offset` 表单字段：
+完整历史使用 V2 游标接口。V2 要把上一页返回的 `PagingInfo.Offset` 作为下一次请求的 `offset` 表单字段：
 
 ```bash
 python -m wechat_sync.sync \
@@ -159,7 +150,7 @@ python -m wechat_sync.sync \
 
 每页通常有 10 组群发消息。V2 在 RapidAPI 免费套餐中同时消耗普通月额度和独立的 Pro 月额度；实测每个 Key 的 Pro 月额度为 10 次，因此应分批执行。同步器把不透明游标保存在对应索引的 `backfillOffset` 中，下次从断点继续；`backfillNextPage` 仅用于显示进度。
 
-GitHub Action 不启用 `--history-v2`。自动任务每天只读取 V1 最新一页，以免两次定时任务迅速耗尽 Pro 额度。历史补录应在本地显式执行，完成后提交生成的文章、资源和索引。
+GitHub Action 不启用 `--history-v2`，但日常增量也使用 V2：它每次从空游标读取最新页，不保存增量游标。`--history-v2` 仅表示启用持久化历史断点，从 `backfillOffset` 继续。两种模式都会消耗 Pro 额度，历史补录应在本地显式执行，完成后提交生成的文章、资源和索引。
 
 每批结束后检查状态：
 
@@ -179,7 +170,7 @@ jq '{
 2. `backfillOffset` 为空字符串。
 3. `pendingCount` 为 `0`。
 
-这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 并清理 7 份旧编码损坏的重复归档后，实际有 581 篇唯一文章。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 执行 V1 最新页增量和 V4 正文下载。
+这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 并清理 7 份旧编码损坏的重复归档后，实际有 581 篇唯一文章。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 执行 V2 最新页增量和 V4 正文下载。
 
 ## Key 故障转移
 

@@ -171,7 +171,7 @@ jobs:
           if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
             guidance='请上传 Key 池 Secret `RAPIDAPI_KEYS`；单个 `RAPIDAPI_KEY` 仅作为兼容后备。'
           else
-            guidance='若所有 Key 均提示 401/403，请检查订阅和 Key；若提示 429 或配额耗尽，请补充 Key 或等待月度额度重置；业务码 301 通常是上游临时采集失败。'
+            guidance='若所有 Key 均提示 401/403，请检查订阅和 Key；若提示 429 或 Pro 配额耗尽，请补充可用额度或等待月度重置；业务码 301/300 与 HTTP 5xx 通常是上游接口故障。'
           fi
           body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then

@@ -18,7 +18,6 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_KEY_FILE = PROJECT_ROOT / "data" / "wechat" / "rapidapi-keys.json"
 DEFAULT_API_HOST = "weixin-wechat-official-accounts-platform.p.rapidapi.com"
 DEFAULT_API_URL = f"https://{DEFAULT_API_HOST}"
-LATEST_ARTICLES_PATH = "/api/weixin/get-account-history-articles/v1"
 HISTORY_PATH = "/api/weixin/get-account-history-articles/v2"
 DETAIL_PATH = "/api/weixin/get-article-detail/v4"
 SWITCHABLE_CODES = {100, 301, 302, 303, 500, 600, 601, 602}
@@ -150,35 +149,6 @@ def _canonical_article_url(value: Any) -> str:
     if parsed.path.rstrip("/") == "/s" and query:
         return urlunsplit(("https", "mp.weixin.qq.com", "/s", urlencode(query), ""))
     return urlunsplit(("https", "mp.weixin.qq.com", parsed.path, "", ""))
-
-
-def _extract_rows(payload: Any) -> list[dict[str, Any]]:
-    if not isinstance(payload, dict):
-        return []
-    data = payload.get("data")
-    if isinstance(data, dict):
-        data = data.get("data")
-    if not isinstance(data, list):
-        return []
-
-    rows: list[dict[str, Any]] = []
-    for item in data:
-        if not isinstance(item, dict):
-            continue
-        url = _canonical_article_url(item.get("url"))
-        published = item.get("post_time")
-        if not url or published is None:
-            continue
-        rows.append(
-            {
-                "id": _stable_article_id(url, item),
-                "title": str(item.get("title") or "").strip(),
-                "url": url,
-                "coverUrl": _https_url(item.get("cover_url")),
-                "publishTime": published,
-            }
-        )
-    return rows
 
 
 def _extract_history_page(payload: Any) -> HistoryPage:
@@ -367,21 +337,8 @@ class RapidAPIClient:
             raise last_error
         raise RapidAPIError("RapidAPI Key 池中没有可用 Key")
 
-    def fetch_articles(self, identifier: str, page: int = 1) -> list[dict[str, Any]]:
-        """Fetch recent articles through the low-cost V1 endpoint."""
-        return self._with_failover(
-            lambda key_index: _extract_rows(
-                self._request_json(
-                    key_index,
-                    "POST",
-                    LATEST_ARTICLES_PATH,
-                    {"url": identifier, "page": page},
-                )
-            )
-        )
-
     def fetch_history_page(self, identifier: str, offset: str = "") -> HistoryPage:
-        """Fetch one V2 history page using the previous response cursor."""
+        """Fetch one V2 article-list page using the previous response cursor."""
         return self._with_failover(
             lambda key_index: _extract_history_page(
                 self._request_json(
