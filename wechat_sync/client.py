@@ -18,9 +18,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_KEY_FILE = PROJECT_ROOT / "data" / "wechat" / "rapidapi-keys.json"
 DEFAULT_API_HOST = "weixin-wechat-official-accounts-platform.p.rapidapi.com"
 DEFAULT_API_URL = f"https://{DEFAULT_API_HOST}"
+LATEST_ARTICLES_PATH = "/api/weixin/get-account-history-articles/v1"
 HISTORY_PATH = "/api/weixin/get-account-history-articles/v2"
 DETAIL_PATH = "/api/weixin/get-article-detail/v4"
-SWITCHABLE_CODES = {100, 301, 302, 303, 500, 600, 601, 602}
+SWITCHABLE_CODES = {100, 302, 303, 500, 600, 601, 602}
 ResponseValue = TypeVar("ResponseValue")
 
 
@@ -149,6 +150,35 @@ def _canonical_article_url(value: Any) -> str:
     if parsed.path.rstrip("/") == "/s" and query:
         return urlunsplit(("https", "mp.weixin.qq.com", "/s", urlencode(query), ""))
     return urlunsplit(("https", "mp.weixin.qq.com", parsed.path, "", ""))
+
+
+def _extract_rows(payload: Any) -> list[dict[str, Any]]:
+    if not isinstance(payload, dict):
+        raise RapidAPIError("RapidAPI V1 文章列表响应不是 JSON 对象")
+    data = payload.get("data")
+    if isinstance(data, dict):
+        data = data.get("data")
+    if not isinstance(data, list):
+        raise RapidAPIError("RapidAPI V1 文章列表响应缺少 data 数组")
+
+    rows: list[dict[str, Any]] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        url = _canonical_article_url(item.get("url"))
+        published = item.get("post_time")
+        if not url or published is None:
+            continue
+        rows.append(
+            {
+                "id": _stable_article_id(url, item),
+                "title": str(item.get("title") or "").strip(),
+                "url": url,
+                "coverUrl": _https_url(item.get("cover_url")),
+                "publishTime": published,
+            }
+        )
+    return rows
 
 
 def _extract_history_page(payload: Any) -> HistoryPage:
@@ -293,6 +323,25 @@ class RapidAPIClient:
                 f"RapidAPI 网络请求失败: {type(error).__name__}"
             ) from error
 
+        quota_headers = [
+            f"{name.removeprefix('x-ratelimit-')}={value}"
+            for name, value in sorted(
+                (header.lower(), header_value)
+                for header, header_value in response.headers.items()
+                if header.lower().startswith("x-ratelimit-")
+                and (
+                    header.lower().endswith("-limit")
+                    or header.lower().endswith("-remaining")
+                )
+            )
+        ]
+        if quota_headers:
+            endpoint = path.rsplit("/", 1)[-1]
+            print(
+                f"RapidAPI {endpoint} 配额（Key {key_index + 1}/"
+                f"{self.key_count}）：{', '.join(quota_headers)}"
+            )
+
         response_text = (response.text or "").strip()
         if response.status_code in {401, 403, 429}:
             raise RapidAPIKeyError(f"RapidAPI 返回 HTTP {response.status_code}")
@@ -310,6 +359,10 @@ class RapidAPIClient:
         code = _business_code(payload)
         if code != 0:
             message = str(payload.get("message") or "未知错误")
+            if code == 301:
+                raise RapidAPINetworkError(
+                    f"RapidAPI 业务错误 {code}: {message}"
+                )
             if code in SWITCHABLE_CODES:
                 raise RapidAPIKeyError(f"RapidAPI 业务错误 {code}: {message}")
             raise RapidAPIError(f"RapidAPI 业务错误 {code}: {message}")
@@ -323,7 +376,7 @@ class RapidAPIClient:
         for key_index in self._key_order():
             try:
                 result = request(key_index)
-            except (RapidAPIKeyError, RapidAPINetworkError) as error:
+            except RapidAPIKeyError as error:
                 last_error = error
                 print(
                     f"RapidAPI Key 池第 {key_index + 1}/{self.key_count} 个不可用"
@@ -336,6 +389,19 @@ class RapidAPIClient:
         if last_error is not None:
             raise last_error
         raise RapidAPIError("RapidAPI Key 池中没有可用 Key")
+
+    def fetch_articles(self, identifier: str, page: int = 1) -> list[dict[str, Any]]:
+        """Fetch recent articles through the low-cost V1 endpoint."""
+        return self._with_failover(
+            lambda key_index: _extract_rows(
+                self._request_json(
+                    key_index,
+                    "POST",
+                    LATEST_ARTICLES_PATH,
+                    {"url": identifier, "page": page},
+                )
+            )
+        )
 
     def fetch_history_page(self, identifier: str, offset: str = "") -> HistoryPage:
         """Fetch one V2 article-list page using the previous response cursor."""

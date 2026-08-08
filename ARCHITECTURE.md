@@ -8,7 +8,7 @@
 GitHub Secret: RAPIDAPI_KEYS
       |
       v
-RapidAPI 列表 V2 + 文章详情 V4
+RapidAPI 列表 V1/V2 + 文章详情 V4
       |
       v
 wechat_sync/sync.py
@@ -43,13 +43,13 @@ EdgeOne Pages / dist
 
 `wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；截至 `2026-08-05` 当前池中有十个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
 
-`wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429、5xx，以及可切换的业务错误会触发下一个 Key；成功切换后，同一次任务继续使用该 Key，只有所有 Key 都失败时才终止同步。Key 数量可调整，代码不依赖固定数量。
+`wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429 及明确的鉴权、限流和额度业务错误会触发下一个 Key；HTTP 5xx、超时和上游采集错误不会盲目轮询整个 Key 池。成功切换后，同一次任务继续使用该 Key。Key 数量可调整，代码不依赖固定数量。
 
 ### 列表和增量判断
 
-`wechat_sync/client.py` 通过 RapidAPI 访问公众号文章列表 V2 和文章详情 V4 接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
+`wechat_sync/client.py` 通过 RapidAPI 访问公众号文章列表 V1/V2 和文章详情 V4 接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
 
-1. 日常任务通过 V2 空游标获取“获得信息差”和“像鳄鱼一样思考”的最新列表页。
+1. 日常任务优先通过 V1 获取“获得信息差”和“像鳄鱼一样思考”的最新列表页，V1 无效时按本轮策略回退 V2。
 2. 每个公众号通过一篇公开种子文章识别，并独立配置最早收录日期、分页断点、完成索引和失败队列。
 3. 同时使用文章 ID、规范化原文链接以及“标题 + 发布日期”去重，兼容旧版短链接和 RapidAPI 长链接。
 4. 本地历史模式通过 V2 从 `PagingInfo.Offset` 游标断点继续；日常增量游标不会覆盖历史进度。
@@ -58,7 +58,7 @@ EdgeOne Pages / dist
 7. 请求按日期分配到 Key 池，鉴权、额度、限流或临时采集失败时自动切换。
 8. 历史补录以 V2 的 `PagingInfo.IsEnd` 为准；`backfillComplete=true`、空 `backfillOffset` 和空 `pendingArticles` 共同表示已到接口末页且下载完整。
 
-日常 Action 默认只请求每个公众号最新一页；这足以覆盖每日增量，并把列表请求控制在约 120 次/月。V2 在免费套餐下每个 Key 另有 10 次 Pro 月额度，因此每天两次同步两个公众号理论上需要约 12 个同额度 Key，或改用足够额度的套餐。显式 `--history-v2` 模式还会保存游标并从断点继续，应只在本地分批运行。截至 `2026-08-05`，“像鳄鱼一样思考”已通过 V2 到达真实末页；清理 7 份旧编码损坏的重复归档后，共有 581 篇唯一文章，最早至 `2023-07-22`。结果仍多于此前页面显示的 562 篇，证明公开总数不能作为完成依据。
+日常 Action 默认只请求每个公众号最新一页。上午任务仅用 V1，下午任务允许 V2 Pro 兜底，每周日下午在 V1 成功时额外用 V2 做安全核查。V1 持续失效时，V2 上限由原来的约 120 次/月降为约 60 次/月；按每个 Key 10 次 Pro 额度计算，现有 10 个 Key 留有余量。显式 `--history-v2` 模式还会保存游标并从断点继续，应只在本地分批运行。截至 `2026-08-05`，“像鳄鱼一样思考”已通过 V2 到达真实末页；清理 7 份旧编码损坏的重复归档后，共有 581 篇唯一文章，最早至 `2023-07-22`。结果仍多于此前页面显示的 562 篇，证明公开总数不能作为完成依据。
 
 ### 正文和媒体
 
@@ -98,7 +98,7 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 ## 自动化
 
-`.github/workflows/wechat-sync.yml` 每天北京时间 09:07 和 16:37 运行，也支持手动触发，分别覆盖早间信息和收盘后复盘：
+`.github/workflows/wechat-sync.yml` 每天北京时间 09:07 和 16:37 运行，也支持手动触发。上午 V1 故障时正常跳过，下午允许 V2 兜底；星期日下午执行 V2 安全核查，分别覆盖早间信息和收盘后复盘：
 
 1. 安装最小 Python 依赖。
 2. 每个公众号默认读取最新 1 页文章列表，遇到已完成文章时提前停止。

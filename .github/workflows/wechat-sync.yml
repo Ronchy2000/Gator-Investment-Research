@@ -35,6 +35,7 @@ jobs:
       RAPIDAPI_KEYS: ${{ secrets.RAPIDAPI_KEYS }}
       RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
       SYNC_MAX_PAGES: ${{ inputs.max_pages || '1' }}
+      EVENT_SCHEDULE: ${{ github.event.schedule }}
 
     steps:
       - name: Checkout
@@ -75,7 +76,26 @@ jobs:
         id: synchronize
         if: steps.credentials.outcome == 'success'
         continue-on-error: true
-        run: python -m wechat_sync.sync --max-pages "$SYNC_MAX_PAGES" --delay 3
+        shell: bash
+        run: |
+          args=(--max-pages "$SYNC_MAX_PAGES" --delay 3)
+          mode="V1 优先，V2 Pro 允许兜底"
+
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" && "$EVENT_SCHEDULE" == "7 9 * * *" ]]; then
+            args+=(--no-v2-fallback)
+            mode="仅 V1；V1 不可用时等待下午任务"
+          elif [[ "$GITHUB_EVENT_NAME" == "schedule" && "$(TZ=Asia/Shanghai date +%u)" == "7" ]]; then
+            args+=(--v2-audit)
+            mode="V1 优先，V2 Pro 兜底，并执行每周安全核查"
+          fi
+
+          echo "同步模式：$mode"
+          {
+            echo "## 文章列表同步策略"
+            echo
+            echo "- $mode"
+          } >> "$GITHUB_STEP_SUMMARY"
+          python -m wechat_sync.sync "${args[@]}"
 
       - name: Detect generated changes
         id: changes
@@ -171,7 +191,7 @@ jobs:
           if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
             guidance='请上传 Key 池 Secret `RAPIDAPI_KEYS`；单个 `RAPIDAPI_KEY` 仅作为兼容后备。'
           else
-            guidance='若所有 Key 均提示 401/403，请检查订阅和 Key；若提示 429 或 Pro 配额耗尽，请补充可用额度或等待月度重置；业务码 301/300 与 HTTP 5xx 通常是上游接口故障。'
+            guidance='同步器会先用 V1，允许兜底的任务才会使用 V2 Pro。若所有 Key 均提示 401/403，请检查订阅和 Key；若 V2 提示 429 或 Pro 配额耗尽，请等待月度重置；业务码 300/301 与 HTTP 5xx 通常是上游接口故障。'
           fi
           body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then
