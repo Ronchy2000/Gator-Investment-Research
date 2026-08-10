@@ -227,87 +227,7 @@ def _collection_state(
     )
 
 
-def _fetch_v1_page(
-    client: RapidAPIClient,
-    identifier: str,
-    page: int,
-    retries: int = 3,
-) -> list[dict[str, Any]]:
-    for attempt in range(1, retries + 1):
-        rows = client.fetch_articles(identifier, page)
-        if rows or page > 1:
-            return rows
-        if attempt < retries:
-            print(f"V1 第 1 页为空，{attempt}/{retries} 次尝试后等待重试")
-            time.sleep(attempt * 2)
-    raise RapidAPIError("V1 最新文章列表连续返回空页")
-
-
-def _collect_v1_articles(
-    client: RapidAPIClient,
-    account: AccountConfig,
-    indexed_ids: set[str],
-    indexed_urls: set[str],
-    indexed_title_dates: set[tuple[str, date]],
-    backfill_complete: bool,
-    backfill_next_page: int,
-    backfill_offset: str,
-    max_pages: int,
-    delay_seconds: float,
-) -> CollectionState:
-    collected: dict[str, ArticleSummary] = {}
-    prior_urls: set[str] = set()
-    reached_incremental_boundary = False
-
-    for page_number in range(1, max_pages + 1):
-        rows = _fetch_v1_page(client, account.seed_article_url, page_number)
-        if not rows:
-            reached_incremental_boundary = True
-            break
-
-        page_articles = [_normalize_article(row) for row in rows]
-        page_urls = {_url_key(article.url) for article in page_articles}
-        if page_urls and page_urls.issubset(prior_urls):
-            reached_incremental_boundary = True
-            break
-        prior_urls.update(page_urls)
-
-        for article in page_articles:
-            if (
-                article.published_at.date() >= account.earliest
-                and not _is_indexed(
-                    article, indexed_ids, indexed_urls, indexed_title_dates
-                )
-            ):
-                collected[_url_key(article.url)] = article
-
-        if any(
-            article.published_at.date() < account.earliest
-            or _is_indexed(
-                article, indexed_ids, indexed_urls, indexed_title_dates
-            )
-            for article in page_articles
-        ):
-            reached_incremental_boundary = True
-            break
-        if page_number < max_pages:
-            time.sleep(delay_seconds)
-
-    if not reached_incremental_boundary:
-        raise RapidAPIError(
-            f"{account.name} 的 V1 连续 {max_pages} 页仍未遇到已入库文章，"
-            "为避免漏文转交 V2 检查"
-        )
-
-    return _collection_state(
-        collected.values(),
-        backfill_complete,
-        backfill_next_page,
-        backfill_offset,
-    )
-
-
-def _collect_v2_articles(
+def _collect_articles(
     client: RapidAPIClient,
     account: AccountConfig,
     indexed_ids: set[str],
@@ -324,7 +244,7 @@ def _collect_v2_articles(
     prior_urls: set[str] = set()
     reached_incremental_boundary = False
 
-    # Incremental V2 starts at the newest cursor; persisted cursors remain
+    # Incremental sync starts at the newest V2 cursor; persisted cursors remain
     # reserved for explicit historical backfills.
     for page_position in range(1, max_pages + 1):
         history_page = client.fetch_history_page(account.seed_article_url, offset)
@@ -381,80 +301,6 @@ def _collect_v2_articles(
 
     return _collection_state(
         collected.values(),
-        backfill_complete,
-        backfill_next_page,
-        backfill_offset,
-    )
-
-
-def _collect_articles(
-    client: RapidAPIClient,
-    account: AccountConfig,
-    indexed_ids: set[str],
-    indexed_urls: set[str],
-    indexed_title_dates: set[tuple[str, date]],
-    backfill_complete: bool,
-    backfill_next_page: int,
-    backfill_offset: str,
-    max_pages: int,
-    delay_seconds: float,
-    allow_v2_fallback: bool,
-    audit_v2: bool,
-) -> CollectionState:
-    common_arguments = {
-        "client": client,
-        "account": account,
-        "indexed_ids": indexed_ids,
-        "indexed_urls": indexed_urls,
-        "indexed_title_dates": indexed_title_dates,
-        "backfill_complete": backfill_complete,
-        "backfill_next_page": backfill_next_page,
-        "backfill_offset": backfill_offset,
-        "max_pages": max_pages,
-        "delay_seconds": delay_seconds,
-    }
-    try:
-        v1_collection = _collect_v1_articles(**common_arguments)
-    except RapidAPIError as v1_error:
-        if not allow_v2_fallback:
-            print(
-                f"[{account.name}] V1 暂不可用（{v1_error}）；"
-                "本轮按额度策略跳过列表发现，等待允许 V2 兜底的任务"
-            )
-            return _collection_state(
-                [],
-                backfill_complete,
-                backfill_next_page,
-                backfill_offset,
-            )
-        print(
-            f"[{account.name}] V1 暂不可用（{v1_error}），"
-            "回退到 V2 Pro 最新页"
-        )
-        try:
-            v2_collection = _collect_v2_articles(**common_arguments)
-        except RapidAPIError as v2_error:
-            raise RapidAPIError(
-                f"V1 与 V2 均不可用；V1: {v1_error}；V2: {v2_error}"
-            ) from v2_error
-        print(f"[{account.name}] 本轮文章列表来源：V2 Pro 兜底")
-        return v2_collection
-
-    print(f"[{account.name}] 本轮文章列表来源：V1 普通额度")
-    if not audit_v2:
-        return v1_collection
-
-    print(f"[{account.name}] 执行每周 V2 Pro 安全核查")
-    try:
-        v2_collection = _collect_v2_articles(**common_arguments)
-    except RapidAPIError as v2_error:
-        print(
-            f"[{account.name}] V2 安全核查失败（{v2_error}），"
-            "保留已成功取得的 V1 结果"
-        )
-        return v1_collection
-    return _collection_state(
-        [*v1_collection.articles, *v2_collection.articles],
         backfill_complete,
         backfill_next_page,
         backfill_offset,
@@ -535,8 +381,6 @@ def _synchronize_account(
     max_pages: int,
     delay_seconds: float,
     history_v2: bool,
-    allow_v2_fallback: bool,
-    audit_v2: bool,
 ) -> tuple[int, int]:
     index_path = INDEX_ROOT / f"{account.slug}.json"
     index = _load_json(index_path)
@@ -621,8 +465,6 @@ def _synchronize_account(
             backfill_offset=backfill_offset,
             max_pages=max_pages,
             delay_seconds=delay_seconds,
-            allow_v2_fallback=allow_v2_fallback,
-            audit_v2=audit_v2,
         )
     for article in collection.articles:
         if not _is_indexed(
@@ -722,8 +564,6 @@ def synchronize(
     delay_seconds: float,
     selected_slugs: set[str],
     history_v2: bool,
-    allow_v2_fallback: bool,
-    audit_v2: bool,
 ) -> tuple[int, int, list[str]]:
     accounts = _load_accounts(selected_slugs)
     key_pool = load_api_key_pool()
@@ -744,8 +584,6 @@ def synchronize(
                 max_pages=max_pages,
                 delay_seconds=delay_seconds,
                 history_v2=history_v2,
-                allow_v2_fallback=allow_v2_fallback,
-                audit_v2=audit_v2,
             )
         except (OSError, ValueError, RapidAPIError) as error:
             account_errors.append(f"{account.name}: {error}")
@@ -779,17 +617,6 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="使用带 offset 游标的 V2 接口回补历史；会消耗 Pro 月度额度",
     )
-    parser.add_argument(
-        "--no-v2-fallback",
-        action="store_false",
-        dest="allow_v2_fallback",
-        help="V1 不可用时跳过列表发现，不消耗 V2 Pro 额度",
-    )
-    parser.add_argument(
-        "--v2-audit",
-        action="store_true",
-        help="V1 成功时仍使用 V2 做一次安全核查；建议低频执行",
-    )
     return parser
 
 
@@ -808,17 +635,12 @@ def main() -> int:
     if args.delay < 0:
         print("--delay 不能小于 0", file=sys.stderr)
         return 2
-    if args.v2_audit and not args.allow_v2_fallback:
-        print("--v2-audit 不能与 --no-v2-fallback 同时使用", file=sys.stderr)
-        return 2
     try:
         succeeded, failed, account_errors = synchronize(
             max_pages=args.max_pages,
             delay_seconds=args.delay,
             selected_slugs=set(args.account),
             history_v2=args.history_v2,
-            allow_v2_fallback=args.allow_v2_fallback,
-            audit_v2=args.v2_audit,
         )
     except (OSError, ValueError, RapidAPIError) as error:
         print(f"同步失败: {error}", file=sys.stderr)

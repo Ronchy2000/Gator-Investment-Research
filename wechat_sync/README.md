@@ -49,11 +49,11 @@ Headers:
 | 名称 | 方法与参数 | 主要返回 | 适用场景 |
 | --- | --- | --- | --- |
 | Convert article link V1 | `GET /api/weixin/convert-article-link/v1`，查询参数 `link` | 规范化后的完整微信文章链接 | 手里只有短链接或中间链接时转换；不是文章下载接口 |
-| Account history V1 | `POST /api/weixin/get-account-history-articles/v1`，查询参数 `url`、`page` | 较新的文章列表 | 日常低成本首选；当前失效时自动转入受控兜底 |
-| Account history V2 | `POST /api/weixin/get-account-history-articles/v2`，表单字段 `url`、`offset` | `MsgList` 和下一页 `PagingInfo.Offset` | V1 失败后的 Pro 兜底、每周核查及历史补录 |
+| Account history V1 | `POST /api/weixin/get-account-history-articles/v1`，查询参数 `url`、`page` | 旧版历史文章列表 | 提供方已标记过期；生产代码不再调用 |
+| Account history V2 | `POST /api/weixin/get-account-history-articles/v2`，表单字段 `url`、`offset` | `MsgList` 和下一页 `PagingInfo.Offset` | 日常增量和历史补录的唯一列表接口 |
 | Article detail V4 | `GET /api/weixin/get-article-detail/v4`，查询参数 `articleUrl` | 标题、公众号、摘要、封面和完整正文 HTML | 将列表中的每篇文章下载为可归档正文 |
 
-V1/V2 是两个历史文章**列表**版本。列表 V1 自 `2026-08-08` 起实测返回 `API INVALID`，但仍保留为普通额度首选，以便上游恢复后自动重新启用；V2 从空游标读取最新页时作为 Pro 兜底，使用持久化游标时负责历史补录。V4 是单篇文章**详情**接口。RapidAPI 页面给出的 Convert V1 只做链接转换，不能列文章或下载正文。
+Account history V1/V2 是两个历史文章**列表**版本。提供方已将历史文章 V1 标记为过期并要求迁移，且实测返回 `API INVALID`，因此生产代码已完全移除该调用。V2 从空游标读取最新页时负责日常增量，使用持久化游标时负责历史补录。V4 是单篇文章**详情**接口。名称相似的 Convert article link V1 是独立的链接转换工具，仍可使用，但不能列文章或下载正文。
 
 对应的接口提供方说明：
 
@@ -87,15 +87,7 @@ converted = requests.get(
 )
 converted.raise_for_status()
 
-# 日常增量先尝试低成本 V1。
-latest = requests.post(
-    f"{base_url}/api/weixin/get-account-history-articles/v1",
-    headers=headers,
-    params={"url": article_url, "page": 1},
-    timeout=120,
-)
-
-# V1 业务码非 0、响应无效或空页时，才用 V2 兜底。
+# 日常增量直接从 V2 最新页开始。
 history = requests.post(
     f"{base_url}/api/weixin/get-account-history-articles/v2",
     headers={**headers, "Content-Type": "application/x-www-form-urlencoded"},
@@ -114,7 +106,7 @@ detail = requests.get(
 detail.raise_for_status()
 ```
 
-实际使用应同时检查 HTTP 状态、JSON 的 `code`、`message` 和返回结构，不能把 HTTP 200 直接视为成功。V1 第 1 页连续为空、业务码非 0 或字段缺失都会触发兜底；V2 首次请求的 `offset` 留空，历史补录再把响应中的 `PagingInfo.Offset` 作为下一次表单值。本项目已经封装这些校验、Key 切换、端点降级、断点保存、去重、正文下载和图片本地化逻辑。
+实际使用应同时检查 HTTP 状态、JSON 的 `code`、`message` 和返回结构，不能把 HTTP 200 直接视为成功。V2 日常增量首次请求的 `offset` 留空，历史补录再把响应中的 `PagingInfo.Offset` 作为下一次表单值。本项目已经封装这些校验、Key 切换、断点保存、去重、正文下载和图片本地化逻辑。
 
 ## 增量同步
 
@@ -122,18 +114,6 @@ detail.raise_for_status()
 
 ```bash
 python -m wechat_sync.sync --max-pages 1 --delay 3
-```
-
-默认模式为 V1 优先、V2 允许兜底。只允许普通额度 V1：
-
-```bash
-python -m wechat_sync.sync --max-pages 1 --no-v2-fallback
-```
-
-在 V1 成功时仍用 V2 做一次低频安全核查：
-
-```bash
-python -m wechat_sync.sync --max-pages 1 --v2-audit
 ```
 
 仅同步指定公众号：
@@ -147,7 +127,7 @@ python -m wechat_sync.sync \
 
 同步器执行以下步骤：
 
-1. 先通过 RapidAPI 列表 V1 获取最新页；V1 无效、空页或响应异常时，按运行策略回退 V2 Pro。
+1. 通过 RapidAPI 历史文章 V2 获取最新页。
 2. 使用文章 ID、规范化链接和“标题 + 发布日期”与现有索引去重。
 3. 新文章加入 `pendingArticles`，下载失败时保留到下一次。
 4. 通过 RapidAPI 文章详情 V4 接口取得正文 HTML，再从微信 CDN 下载封面和正文图片。
@@ -170,7 +150,7 @@ python -m wechat_sync.sync \
 
 每页通常有 10 组群发消息。V2 在 RapidAPI 免费套餐中同时消耗普通月额度和独立的 Pro 月额度；实测每个 Key 的 Pro 月额度为 10 次，因此应分批执行。同步器把不透明游标保存在对应索引的 `backfillOffset` 中，下次从断点继续；`backfillNextPage` 仅用于显示进度。
 
-GitHub Action 不启用 `--history-v2`。北京时间 `09:07` 的任务附加 `--no-v2-fallback`，V1 失效时正常跳过列表发现；`16:37` 的任务允许 V2 兜底，确保最迟每天完成一次可靠增量检查。每周日下午任务附加 `--v2-audit`，用于发现 V1 返回成功但缓存陈旧的情况。显式 `--history-v2` 只用于本地持久化历史断点。
+GitHub Action 不启用 `--history-v2`。北京时间 `09:07` 和 `16:37` 的任务都从空游标读取 V2 最新页；显式 `--history-v2` 只用于本地持久化历史断点。两个公众号每天检查两次约消耗 120 次 V2 Pro 调用/月，按每个 Key 10 次计算至少需要 12 个有效 Key，建议准备 15 个以覆盖 31 天、手动执行和失败重试。
 
 每批结束后检查状态：
 
@@ -190,7 +170,7 @@ jq '{
 2. `backfillOffset` 为空字符串。
 3. `pendingCount` 为 `0`。
 
-这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 并清理 7 份旧编码损坏的重复归档后，实际有 581 篇唯一文章。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 执行 V1/V2 双层增量和 V4 正文下载。
+这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 并清理 7 份旧编码损坏的重复归档后，实际有 581 篇唯一文章。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 执行 V2 增量发现和 V4 正文下载。
 
 ## Key 故障转移
 
@@ -199,7 +179,7 @@ jq '{
 - HTTP `401`、`403`、`429`。
 - 业务码 `100`、`302`、`303`、`500`、`600`、`601`、`602`。
 
-HTTP `5xx`、网络超时、连接失败和业务码 `301` 通常是端点或上游故障，与 Key 无关，因此不会把同一失败请求盲目重复到整个 Key 池。发生在 V1 时会直接进入 V2 兜底；发生在 V2 或 V4 时保留任务错误或 pending 文章，等待下次重试。所有请求都会记录端点、Key 序号及 RapidAPI 返回的额度头，但不会打印 Key 内容。
+HTTP `5xx`、网络超时、连接失败和业务码 `301` 通常是端点或上游故障，与 Key 无关，因此不会把同一失败请求盲目重复到整个 Key 池。发生在 V2 或 V4 时保留任务错误或 pending 文章，等待下次重试。所有请求都会记录端点、Key 序号及 RapidAPI 返回的额度头，但不会打印 Key 内容。
 
 HTTP `429` 是套餐额度或速率限制信号。额度由 RapidAPI 侧统计，无需在本地保存；下次运行仍会按日期选择起点，并在遇到已耗尽 Key 时继续故障转移。
 
