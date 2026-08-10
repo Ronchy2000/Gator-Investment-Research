@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491487-1",
+      "title": "股市：继续赛马，多复盘（2026.8.10）",
+      "publishedAt": "2026-08-10T15:43:57+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491487&idx=1&sn=90a7a3345f66c3ef30a239d16363328b",
+      "markdownPath": "src/content/articles/2026-08-10-wx-dc354e7c-2247491487-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491487-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247491477-1",
       "title": "股市：反弹加速，赛马环节（2026.8.7）",
       "publishedAt": "2026-08-07T16:03:17+08:00",
@@ -5259,5 +5268,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-07T17:28:32.585152+08:00"
+  "updatedAt": "2026-08-10T19:09:06.741826+08:00"
 }
