@@ -138,7 +138,7 @@ gh secret list --repo Ronchy2000/Gator-Investment-Research
 2. 点击 `Run workflow`，分支选择 `master`。
 3. `max_pages` 保持 `1`，只检查每个公众号最新一页。
 4. 确认 `Check synchronization credentials` 和 `Synchronize articles` 成功。
-5. 有新文章时，工作流会提交 `content: sync N WeChat article(s)`；没有新文章时不会产生提交。
+5. 有新文章时，工作流按北京时间提交 `content: sync N WeChat article(s) (YYYY-MM-DD)`；没有新增文章文件时不会校验、构建或提交，但仍会关闭已经恢复的同步告警 Issue。
 
 正文详情与媒体下载仍包含纯图片文章保护：文章没有可见文字时，必须成功解析并保存至少一张正文图片，否则保留到下一次同步重试。
 

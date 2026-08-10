@@ -88,53 +88,64 @@ jobs:
       - name: Detect generated changes
         id: changes
         if: always()
+        env:
+          SYNC_OUTCOME: ${{ steps.synchronize.outcome }}
         shell: bash
         run: |
-          status="$(git status --porcelain -- src/content/articles public/article-assets wechat_sync/indexes)"
-          if [[ -n "$status" ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          new_article_count="$(git ls-files --others --exclude-standard -- src/content/articles | wc -l | tr -d ' ')"
+          echo "new_article_count=$new_article_count" >> "$GITHUB_OUTPUT"
+          if [[ "$new_article_count" -gt 0 ]]; then
+            echo "has_new_articles=true" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "has_new_articles=false" >> "$GITHUB_OUTPUT"
+            if [[ "$SYNC_OUTCOME" == "success" ]]; then
+              {
+                echo "## 本次没有新增文章"
+                echo
+                echo "同步成功，但未生成新的文章文件，因此不会创建空提交。"
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
 
       - name: Validate generated archive
         id: integrity
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.has_new_articles == 'true'
         run: python -m wechat_sync.validate
 
       - name: Set up Node.js
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.has_new_articles == 'true'
         uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Install website dependencies
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.has_new_articles == 'true'
         run: npm ci
 
       - name: Build production website
         id: build
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.has_new_articles == 'true'
         run: npm run build
 
       - name: Commit synchronized content
-        if: steps.changes.outputs.changed == 'true'
-        env:
-          ARTICLES_SYNCED: ${{ steps.synchronize.outputs.articles_synced }}
+        if: steps.changes.outputs.has_new_articles == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/content/articles public/article-assets wechat_sync/indexes
-          if [[ ! "$ARTICLES_SYNCED" =~ ^[0-9]+$ ]]; then
-            ARTICLES_SYNCED="$(git diff --cached --name-only --diff-filter=A -- src/content/articles | wc -l | tr -d ' ')"
+          article_count="$(git diff --cached --name-only --diff-filter=A -- src/content/articles | wc -l | tr -d ' ')"
+          if [[ "$article_count" -eq 0 ]]; then
+            echo "暂存区没有新增文章文件，跳过提交。"
+            exit 0
           fi
-          if [[ "$ARTICLES_SYNCED" == "1" ]]; then
+          if [[ "$article_count" == "1" ]]; then
             article_label="article"
           else
             article_label="articles"
           fi
-          git commit -m "content: sync ${ARTICLES_SYNCED} WeChat ${article_label}"
+          sync_date="$(TZ=Asia/Shanghai date +%F)"
+          git commit -m "content: sync ${article_count} WeChat ${article_label} (${sync_date})"
           git pull --rebase origin master
           git push origin HEAD:master
 
