@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247483986-1",
+      "title": "8.11海外光通信大跌",
+      "publishedAt": "2026-08-11T08:25:45+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247483986&idx=1&sn=8934dd2f57c89c1291a0515899aa3d2a",
+      "markdownPath": "src/content/articles/2026-08-11-wx-7a94aab6-2247483986-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247483986-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247483981-1",
       "title": "8.10周末消息汇总",
       "publishedAt": "2026-08-10T08:30:00+08:00",
@@ -507,5 +516,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-10T18:00:28.113856+08:00"
+  "updatedAt": "2026-08-11T10:26:04.938293+08:00"
 }
