@@ -2,14 +2,12 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # Articles are published before 09:00 and before 16:30 (Asia/Shanghai).
-    # Run ~5-10 min after each window so new posts appear on the site quickly.
-    # GitHub may still execute a scheduled run late (occasionally ~30 min),
-    # which only delays the sync — the article is already published.
-    # Offset off the :00/:30 high-load minutes where GitHub may delay/drop runs.
-    - cron: "7 9 * * *"
+    # GitHub creates scheduled runs late even when no runner queue is present.
+    # Recent observed latency was ~2h in the morning and 42-82m in the afternoon.
+    # Start early so actual runs land near 09:00 and 16:00 Asia/Shanghai.
+    - cron: "7 7 * * *"
       timezone: "Asia/Shanghai"
-    - cron: "37 16 * * *"
+    - cron: "37 15 * * *"
       timezone: "Asia/Shanghai"
   workflow_dispatch:
     inputs:

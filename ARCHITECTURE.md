@@ -41,7 +41,7 @@ EdgeOne Pages / dist
 
 ### API Key 池
 
-`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；截至 `2026-08-05` 当前池中有十个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
+`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；截至 `2026-08-11` 当前池中有 15 个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
 
 `wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429 及明确的鉴权、限流和额度业务错误会触发下一个 Key；HTTP 5xx、超时和上游采集错误不会盲目轮询整个 Key 池。成功切换后，同一次任务继续使用该 Key。Key 数量可调整，代码不依赖固定数量。
 
@@ -98,7 +98,7 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 ## 自动化
 
-`.github/workflows/wechat-sync.yml` 每天北京时间 09:07 和 16:37 运行，也支持手动触发；两次任务均通过 V2 检查两个公众号的最新文章，分别覆盖早间信息和收盘后复盘：
+`.github/workflows/wechat-sync.yml` 每天北京时间配置 07:07 和 15:37 触发，也支持手动运行。该提前量用于抵消 GitHub 调度器的实测延迟，目标实际启动窗口约为 09:00 和 16:00 左右；两次任务均通过 V2 检查两个公众号的最新文章，分别覆盖早间信息和收盘后复盘：
 
 1. 安装最小 Python 依赖。
 2. 每个公众号默认读取最新 1 页文章列表，遇到已完成文章时提前停止。
