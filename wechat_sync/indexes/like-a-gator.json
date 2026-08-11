@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491498-1",
+      "title": "股市：分歧加大，注意下（2026.8.11）",
+      "publishedAt": "2026-08-11T15:37:57+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491498&idx=1&sn=fe8bb980baa48541e960cfe405001934",
+      "markdownPath": "src/content/articles/2026-08-11-wx-dc354e7c-2247491498-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491498-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-dc354e7c-2247491487-1",
       "title": "股市：继续赛马，多复盘（2026.8.10）",
       "publishedAt": "2026-08-10T15:43:57+08:00",
@@ -5268,5 +5277,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-10T19:09:06.741826+08:00"
+  "updatedAt": "2026-08-11T16:32:23.706960+08:00"
 }
