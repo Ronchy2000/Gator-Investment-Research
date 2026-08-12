@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247483991-1",
+      "title": "8.12科技业绩持续爆发！",
+      "publishedAt": "2026-08-12T08:23:12+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247483991&idx=1&sn=3428dfd64b3e8766b59741829f9ddba3",
+      "markdownPath": "src/content/articles/2026-08-12-wx-7a94aab6-2247483991-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247483991-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247483986-1",
       "title": "8.11海外光通信大跌",
       "publishedAt": "2026-08-11T08:25:45+08:00",
@@ -516,5 +525,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-11T10:26:04.938293+08:00"
+  "updatedAt": "2026-08-12T10:46:38.807739+08:00"
 }
