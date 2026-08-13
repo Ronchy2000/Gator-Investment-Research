@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484001-1",
+      "title": "8.14存储业绩炸裂！",
+      "publishedAt": "2026-08-14T07:47:47+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484001&idx=1&sn=5202a24990238b410ca02faf8577f7e8",
+      "markdownPath": "src/content/articles/2026-08-14-wx-7a94aab6-2247484001-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484001-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247483996-1",
       "title": "8.13海外科技继续大涨",
       "publishedAt": "2026-08-13T08:28:18+08:00",
@@ -534,5 +543,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-13T16:52:37.055702+08:00"
+  "updatedAt": "2026-08-14T07:54:28.675310+08:00"
 }
