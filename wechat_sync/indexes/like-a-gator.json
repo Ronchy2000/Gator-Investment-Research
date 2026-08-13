@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491521-1",
+      "title": "股市：短线休息了，后面再看（2026.8.13）",
+      "publishedAt": "2026-08-13T15:41:26+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491521&idx=1&sn=2c789b188bc70bf69849edde217652e5",
+      "markdownPath": "src/content/articles/2026-08-13-wx-dc354e7c-2247491521-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491521-1/cover.jpg",
+      "assetCount": 9
+    },
+    {
       "articleId": "wx-dc354e7c-2247491509-1",
       "title": "股市：明天再看看，不对就溜（2026.8.12）",
       "publishedAt": "2026-08-12T15:45:24+08:00",
@@ -5286,5 +5295,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-12T16:49:48.949197+08:00"
+  "updatedAt": "2026-08-13T16:52:47.281192+08:00"
 }

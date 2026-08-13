@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247483996-1",
+      "title": "8.13海外科技继续大涨",
+      "publishedAt": "2026-08-13T08:28:18+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247483996&idx=1&sn=eaf53fdfadc53a916c9c780856a4621f",
+      "markdownPath": "src/content/articles/2026-08-13-wx-7a94aab6-2247483996-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247483996-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247483991-1",
       "title": "8.12科技业绩持续爆发！",
       "publishedAt": "2026-08-12T08:23:12+08:00",
@@ -525,5 +534,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-12T10:46:38.807739+08:00"
+  "updatedAt": "2026-08-13T16:52:37.055702+08:00"
 }
