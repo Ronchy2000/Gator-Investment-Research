@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491534-1",
+      "title": "股市：下周看三个东西（2026.8.14）",
+      "publishedAt": "2026-08-14T15:48:57+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491534&idx=1&sn=43fe026d4d7bb0f07138edb9ce451d34",
+      "markdownPath": "src/content/articles/2026-08-14-wx-dc354e7c-2247491534-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491534-1/cover.jpg",
+      "assetCount": 10
+    },
+    {
       "articleId": "wx-dc354e7c-2247491521-1",
       "title": "股市：短线休息了，后面再看（2026.8.13）",
       "publishedAt": "2026-08-13T15:41:26+08:00",
@@ -5295,5 +5304,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-13T16:52:47.281192+08:00"
+  "updatedAt": "2026-08-14T16:46:45.741874+08:00"
 }
