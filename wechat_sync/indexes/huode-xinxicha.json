@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484009-1",
+      "title": "8.16鸡蛋行业观察",
+      "publishedAt": "2026-08-16T16:15:10+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484009&idx=1&sn=3eced613e44daaa5f2cb5c2613bcc674",
+      "markdownPath": "src/content/articles/2026-08-16-wx-7a94aab6-2247484009-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484009-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-7a94aab6-2247484001-1",
       "title": "8.14存储业绩炸裂！",
       "publishedAt": "2026-08-14T07:47:47+08:00",
@@ -543,5 +552,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-14T07:54:28.675310+08:00"
+  "updatedAt": "2026-08-17T07:31:17.540193+08:00"
 }
