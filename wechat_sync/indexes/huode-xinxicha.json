@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484015-1",
+      "title": "8.17周末消息汇总",
+      "publishedAt": "2026-08-17T08:30:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484015&idx=1&sn=44b4ea04baf0d09170fc1e6aca19a746",
+      "markdownPath": "src/content/articles/2026-08-17-wx-7a94aab6-2247484015-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484015-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484009-1",
       "title": "8.16鸡蛋行业观察",
       "publishedAt": "2026-08-16T16:15:10+08:00",
@@ -552,5 +561,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-17T07:31:17.540193+08:00"
+  "updatedAt": "2026-08-17T10:39:00.504515+08:00"
 }
