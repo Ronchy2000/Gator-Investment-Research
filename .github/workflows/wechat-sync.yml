@@ -2,10 +2,9 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # GitHub creates scheduled runs late even when no runner queue is present.
-    # Recent observed latency was ~2h in the morning and 42-82m in the afternoon.
-    # Start early so actual runs land near 09:00 and 16:00 Asia/Shanghai.
-    - cron: "7 7 * * *"
+    # Recent morning runs started 23-47m after their configured time.
+    # Schedule at 08:37 so the actual run lands near 09:00 Asia/Shanghai.
+    - cron: "37 8 * * *"
       timezone: "Asia/Shanghai"
     - cron: "37 15 * * *"
       timezone: "Asia/Shanghai"
