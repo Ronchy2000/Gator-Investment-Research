@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491545-1",
+      "title": "股市：《牛来》是部烂片（2026.8.17）",
+      "publishedAt": "2026-08-17T17:05:27+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491545&idx=1&sn=7997a5ea91ee8ca893aaf077e560528d",
+      "markdownPath": "src/content/articles/2026-08-17-wx-dc354e7c-2247491545-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491545-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-dc354e7c-2247491534-1",
       "title": "股市：下周看三个东西（2026.8.14）",
       "publishedAt": "2026-08-14T15:48:57+08:00",
@@ -5304,5 +5313,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-14T16:46:45.741874+08:00"
+  "updatedAt": "2026-08-17T18:10:04.678675+08:00"
 }
