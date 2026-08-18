@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491555-1",
+      "title": "股市：除了快枪手，都可以休息了（2026.8.18）",
+      "publishedAt": "2026-08-18T16:26:52+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491555&idx=1&sn=b03f1a77f8422fe6fd152615ab246ca3",
+      "markdownPath": "src/content/articles/2026-08-18-wx-dc354e7c-2247491555-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491555-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247491545-1",
       "title": "股市：《牛来》是部烂片（2026.8.17）",
       "publishedAt": "2026-08-17T17:05:27+08:00",
@@ -5313,5 +5322,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-17T18:10:04.678675+08:00"
+  "updatedAt": "2026-08-18T17:00:40.940386+08:00"
 }
