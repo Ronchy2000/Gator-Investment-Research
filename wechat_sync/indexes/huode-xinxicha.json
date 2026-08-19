@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484025-1",
+      "title": "8.19朱雀回收成功海外科技大跌",
+      "publishedAt": "2026-08-19T08:46:26+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484025&idx=1&sn=75fdd4b34c4bc064f4983aa190873909",
+      "markdownPath": "src/content/articles/2026-08-19-wx-7a94aab6-2247484025-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484025-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484020-1",
       "title": "8.18海外存光继续走强",
       "publishedAt": "2026-08-18T08:36:44+08:00",
@@ -570,5 +579,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-18T10:04:40.280676+08:00"
+  "updatedAt": "2026-08-19T10:06:38.384815+08:00"
 }
