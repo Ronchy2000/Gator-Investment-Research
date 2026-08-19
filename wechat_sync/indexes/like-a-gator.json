@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491561-1",
+      "title": "股市：主动休息，好过被动休息",
+      "publishedAt": "2026-08-19T16:17:39+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491561&idx=1&sn=9ba7555dae7bca4b69e6faeaf594e974",
+      "markdownPath": "src/content/articles/2026-08-19-wx-dc354e7c-2247491561-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491561-1/cover.jpg",
+      "assetCount": 3
+    },
+    {
       "articleId": "wx-dc354e7c-2247491555-1",
       "title": "股市：除了快枪手，都可以休息了（2026.8.18）",
       "publishedAt": "2026-08-18T16:26:52+08:00",
@@ -5322,5 +5331,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-18T17:00:40.940386+08:00"
+  "updatedAt": "2026-08-19T20:30:49.277713+08:00"
 }
