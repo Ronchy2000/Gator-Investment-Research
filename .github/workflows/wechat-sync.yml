@@ -74,11 +74,12 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          echo "同步模式：历史文章 V2 直接增量"
+          echo "同步模式：三套 RapidAPI 产品轮询增量"
           {
             echo "## 文章列表同步策略"
             echo
-            echo "- 历史文章 V1 已被提供方弃用，本任务直接使用 V2 获取两个公众号的最新文章。"
+            echo "- 日常增量轮询三套微信公众号产品；未订阅的 Key × 产品组合会被自动隔离。"
+            echo "- 显式历史回补仍固定使用 Official Accounts Platform V2，保护已有 offset 断点。"
           } >> "$GITHUB_STEP_SUMMARY"
           python -m wechat_sync.sync --max-pages "$SYNC_MAX_PAGES" --delay 3
 
@@ -177,7 +178,7 @@ jobs:
             if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
               echo '未读取到 `RAPIDAPI_KEYS`，也没有读取到兼容用的 `RAPIDAPI_KEY`。'
             else
-              echo "请检查 RapidAPI 配额、第三方采集状态、文章资源下载或 Astro 构建日志。"
+              echo "请检查各 RapidAPI 产品的订阅/配额、第三方采集状态、文章资源下载或 Astro 构建日志。"
             fi
             echo
             echo "运行记录：${run_url}"
@@ -187,7 +188,7 @@ jobs:
           if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
             guidance='请上传 Key 池 Secret `RAPIDAPI_KEYS`；单个 `RAPIDAPI_KEY` 仅作为兼容后备。'
           else
-            guidance='同步器直接使用历史文章 V2。若所有 Key 均提示 401/403，请检查订阅和 Key；若提示 429 或 Pro 配额耗尽，请补充 Key 或等待月度重置；业务码 300/301 与 HTTP 5xx 通常是上游接口故障。'
+            guidance='同步器会分别探测三套产品。某个 Key 在某产品提示 401/403/429 只会禁用该组合；若三套产品都失败，请检查订阅、配额和账号标识。HTTP 5xx 通常是对应产品的上游故障。'
           fi
           body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then

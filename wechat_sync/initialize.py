@@ -25,11 +25,14 @@ def _save_account(
     name: str,
     seed_url: str,
     earliest_date: str,
+    biz: str,
+    wechat_data_wxid: str,
+    wechat_id: str,
 ) -> None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        payload = {"version": 2, "accounts": []}
+        payload = {"version": 3, "accounts": []}
     if not isinstance(payload, dict) or not isinstance(payload.get("accounts"), list):
         raise ValueError("accounts.json 结构无效")
 
@@ -48,6 +51,14 @@ def _save_account(
         "seed_article_url": seed_url,
         "earliest_date": earliest_date,
     }
+    for key, value in (
+        ("biz", biz),
+        ("wechat_data_wxid", wechat_data_wxid),
+        ("wechat_id", wechat_id),
+    ):
+        configured_value = value.strip() or str(existing.get(key, "")).strip()
+        if configured_value:
+            configured_account[key] = configured_value
     if existing.get("reported_article_count") is not None:
         configured_account["reported_article_count"] = int(
             existing["reported_article_count"]
@@ -61,7 +72,7 @@ def _save_account(
         if not isinstance(item, dict) or str(item.get("slug", "")) != slug
     ]
     accounts.append(configured_account)
-    updated = {"version": 2, "accounts": accounts}
+    updated = {"version": 3, "accounts": accounts}
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = path.with_suffix(path.suffix + ".tmp")
     temporary_path.write_text(
@@ -77,6 +88,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--name", default=DEFAULT_ACCOUNT_NAME)
     parser.add_argument("--seed-url", default=DEFAULT_SEED_URL)
     parser.add_argument("--earliest-date", default=DEFAULT_EARLIEST_DATE)
+    parser.add_argument("--biz", default="", help="公众号文章长链接中的 __biz")
+    parser.add_argument(
+        "--wechat-data-wxid",
+        default="",
+        help="可选，WeChat Data 使用的 gh_* 原始 ID",
+    )
+    parser.add_argument(
+        "--wechat-id",
+        default="",
+        help="可选，SIAN user-posts 使用的公众号微信号",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_ACCOUNT_FILE)
     return parser.parse_args()
 
@@ -100,6 +122,9 @@ def main() -> int:
             args.name,
             args.seed_url,
             args.earliest_date,
+            args.biz,
+            args.wechat_data_wxid,
+            args.wechat_id,
         )
         index_path = DEFAULT_INDEX_ROOT / f"{args.slug}.json"
         if not index_path.exists():

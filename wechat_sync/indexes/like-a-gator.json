@@ -12,6 +12,24 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491581-1",
+      "title": "股市：先止血，再愈合（2026.8.25）",
+      "publishedAt": "2026-08-25T15:58:47+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491581&idx=1&sn=26bf245b9c50555b92e275ae30ea4d4d",
+      "markdownPath": "src/content/articles/2026-08-25-wx-dc354e7c-2247491581-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491581-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
+      "articleId": "wx-dc354e7c-2247491573-1",
+      "title": "股市：等鸡肋时间过去（2026.8.24）",
+      "publishedAt": "2026-08-24T17:18:44+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491573&idx=1&sn=a1e2a48b1863857596fea4e5702c2ea5",
+      "markdownPath": "src/content/articles/2026-08-24-wx-dc354e7c-2247491573-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491573-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-dc354e7c-2247491561-1",
       "title": "股市：主动休息，好过被动休息",
       "publishedAt": "2026-08-19T16:17:39+08:00",
@@ -5331,5 +5349,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-19T20:30:49.277713+08:00"
+  "updatedAt": "2026-08-26T12:29:42.041402+08:00"
 }

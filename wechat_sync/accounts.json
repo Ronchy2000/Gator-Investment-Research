@@ -1,11 +1,12 @@
 {
-  "version": 2,
+  "version": 3,
   "accounts": [
     {
       "slug": "huode-xinxicha",
       "name": "获得信息差",
       "intro": "消息汇集地儿，帮你检索收集最前沿的内容",
       "seed_article_url": "https://mp.weixin.qq.com/s/zmDm_g8Jh9M6gEI1R8xq7g",
+      "biz": "MzY5MDM0NDQ1OQ==",
       "earliest_date": "2026-06-15"
     },
     {
@@ -13,6 +14,7 @@
       "name": "像鳄鱼一样思考",
       "intro": "前私募操盘手的每日市场复盘与交易思考",
       "seed_article_url": "https://mp.weixin.qq.com/s/8MrwDixwxXjTawO7yFIQvg",
+      "biz": "MzkyMjUxNDU5Nw==",
       "earliest_date": "2023-07-22"
     }
   ]

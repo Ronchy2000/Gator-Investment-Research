@@ -8,7 +8,7 @@
 GitHub Secret: RAPIDAPI_KEYS
       |
       v
-RapidAPI 历史文章 V2 + 文章详情 V4
+RapidAPI 三产品列表 + 正文详情
       |
       v
 wechat_sync/sync.py
@@ -41,28 +41,28 @@ EdgeOne Pages / dist
 
 ### API Key 池
 
-`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；截至 `2026-08-11` 当前池中有 15 个已订阅同一 API 产品的 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。Key 不会写入日志、仓库或 EdgeOne 环境变量。
+`wechat_sync/rapidapi_secrets.py` 使用隐藏输入维护被 Git 忽略的 `data/wechat/rapidapi-keys.json`。GitHub Actions 通过单个 `RAPIDAPI_KEYS` Secret 读取 JSON Key 数组；截至 `2026-08-11` 当前池中有 15 个 Key，单个 `RAPIDAPI_KEY` 仅作兼容后备。不同 Key 可以订阅不同产品，Key 不会写入日志、仓库或 EdgeOne 环境变量。
 
-`wechat_sync/client.py` 每天从不同 Key 开始请求，使套餐额度在账号池中分摊。HTTP 401、403、429 及明确的鉴权、限流和额度业务错误会触发下一个 Key；HTTP 5xx、超时和上游采集错误不会盲目轮询整个 Key 池。成功切换后，同一次任务继续使用该 Key。Key 数量可调整，代码不依赖固定数量。
+`wechat_sync/client.py` 在三套产品和各自可用 Key 间分别轮询，使彼此独立的套餐额度都能参与同步。HTTP 401、403、429 及明确的鉴权、限流和额度业务错误只会禁用当前“产品 × Key”组合；HTTP 5xx、超时和上游采集错误不会盲目轮询整个 Key 池，而是切换产品。Key 数量和订阅组合都可调整，代码不依赖固定矩阵。
 
 ### 列表和增量判断
 
-`wechat_sync/client.py` 通过 RapidAPI 访问公众号历史文章 V2 和文章详情 V4 接口。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
+`wechat_sync/client.py` 通过 RapidAPI 轮询 Official Accounts Platform、WeChat Data 和 SIAN WeChat Data。`wechat_sync/sync.py` 读取 `wechat_sync/accounts.json` 和已提交的 `wechat_sync/indexes/*.json`：
 
-1. 日常任务直接通过历史文章 V2 获取“获得信息差”和“像鳄鱼一样思考”的最新列表页；已弃用的历史文章 V1 不再调用。
+1. 日常任务轮询三套产品获取“获得信息差”和“像鳄鱼一样思考”的最新列表页；已弃用的历史文章 V1 不再调用。
 2. 每个公众号通过一篇公开种子文章识别，并独立配置最早收录日期、分页断点、完成索引和失败队列。
 3. 同时使用文章 ID、规范化原文链接以及“标题 + 发布日期”去重，兼容旧版短链接和 RapidAPI 长链接。
-4. 本地历史模式通过 V2 从 `PagingInfo.Offset` 游标断点继续；日常增量游标不会覆盖历史进度。
+4. 日常游标编码产品名，避免混用 cursor/page/offset；本地历史模式固定通过 V2 从 `PagingInfo.Offset` 断点继续。
 5. 失败文章写入 `pendingArticles`，下次执行时与新文章一起处理。
 6. 单篇成功后立即原子更新索引，因此部分失败不会丢失已完成结果。
-7. 请求按日期分配到 Key 池，鉴权、额度、限流或临时采集失败时自动切换。
+7. 请求在产品和 Key 两个维度轮询，未订阅、额度、限流或临时采集失败时按故障类型切换。
 8. 历史补录以 V2 的 `PagingInfo.IsEnd` 为准；`backfillComplete=true`、空 `backfillOffset` 和空 `pendingArticles` 共同表示已到接口末页且下载完整。
 
-日常 Action 默认只请求每个公众号最新一页，上午和下午都直接使用 V2。两个公众号每天检查两次约消耗 120 次 V2 Pro 调用/月；按每个 Key 10 次 Pro 额度计算，12 个有效 Key 是 30 天月份的理论下限，建议准备至少 15 个以覆盖 31 天、手动执行和重试。显式 `--history-v2` 模式还会保存游标并从断点继续，应只在本地按剩余额度分批运行。截至 `2026-08-05`，“像鳄鱼一样思考”已通过 V2 到达真实末页；清理 7 份旧编码损坏的重复归档后，共有 581 篇唯一文章，最早至 `2023-07-22`。结果仍多于此前页面显示的 562 篇，证明公开总数不能作为完成依据。
+日常 Action 默认只请求每个公众号最新一页，上午和下午都在三套产品间轮询。两个公众号每天检查两次约产生 120 次列表请求/月，实际消耗分散到各产品独立额度。显式 `--history-v2` 模式仍保存 Official Accounts Platform 的 offset 并从断点继续，应只在本地按该产品剩余额度分批运行。截至 `2026-08-05`，“像鳄鱼一样思考”已通过 V2 到达真实末页；清理 7 份旧编码损坏的重复归档后，共有 581 篇唯一文章，最早至 `2023-07-22`。结果仍多于此前页面显示的 562 篇，证明公开总数不能作为完成依据。
 
 ### 正文和媒体
 
-新文章先通过详情 V4 接口取得正文 HTML，再由 `wechat_sync/downloader.py` 处理正文与微信 CDN 媒体。列表返回的微信长链接不会被直接请求，避免跳转到验证码页面：
+新文章通过三套详情接口之一取得正文 HTML，再由 `wechat_sync/downloader.py` 处理正文与微信 CDN 媒体。列表返回的微信长链接不会被直接请求，避免跳转到验证码页面：
 
 - 接受包含文本或图片的正文节点，纯图片文章不会被误判为空正文。
 - 纯图片文章必须解析出可用图片，远程图片未全部本地化时不会进入完成索引。
@@ -98,7 +98,7 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 ## 自动化
 
-`.github/workflows/wechat-sync.yml` 每天北京时间配置 08:37 和 15:37 触发，也支持手动运行。该提前量用于抵消 GitHub 调度器的实测延迟，目标实际启动窗口约为 09:00 和 16:00 左右；两次任务均通过 V2 检查两个公众号的最新文章，分别覆盖早间信息和收盘后复盘：
+`.github/workflows/wechat-sync.yml` 每天北京时间配置 08:37 和 15:37 触发，也支持手动运行。该提前量用于抵消 GitHub 调度器的实测延迟，目标实际启动窗口约为 09:00 和 16:00 左右；两次任务均轮询三套产品检查两个公众号的最新文章，分别覆盖早间信息和收盘后复盘：
 
 1. 安装最小 Python 依赖。
 2. 每个公众号默认读取最新 1 页文章列表，遇到已完成文章时提前停止。

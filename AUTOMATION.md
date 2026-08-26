@@ -1,12 +1,12 @@
 # GitHub Actions 自动同步
 
-生产分支使用 RapidAPI 上的 **Weixin/Wechat Official Accounts Platform** 获取公众号文章列表和完整正文 HTML，不再依赖微信读书扫码、`vid` 或短期登录令牌。封面与正文图片由仓库下载器从微信 CDN 本地化。
+生产分支轮询 RapidAPI 上三套微信公众号数据产品获取文章列表和完整正文 HTML，不再依赖微信读书扫码、`vid` 或短期登录令牌。封面与正文图片由仓库下载器从微信 CDN 本地化。
 
 ## 当前生产基线
 
 - 生产分支：`master`。
 - 工作流：`.github/workflows/wechat-sync.yml`。
-- 数据源：RapidAPI 的历史文章 V2 与文章详情 V4；已弃用的历史文章 V1 不再调用。
+- 数据源：RapidAPI 三套产品的文章列表与正文接口；显式历史回补固定使用 Official Accounts Platform V2。
 - 公众号：“获得信息差”和“像鳄鱼一样思考”。
 - 凭据：一个名为 `RAPIDAPI_KEYS` 的 Repository Secret，截至 `2026-08-11` 当前包含 15 个 Key。
 - 调度：北京时间每天配置 `08:37`、`15:37`，用于抵消 GitHub 调度延迟，目标实际启动窗口约为 `09:00`、`16:00`；也可手动运行。
@@ -18,11 +18,12 @@ RapidAPI Key 不属于 EdgeOne 构建环境。EdgeOne 无需、也不应配置�
 
 ```text
 RAPIDAPI_KEYS
-  -> 按日期选择一个 Key
-  -> 通过历史文章 V2 查询两个公众号的最新文章页
-  -> Key 无效、限流或额度耗尽时自动切换
+  -> 按日期轮询产品与 Key
+  -> 通过三套产品之一查询两个公众号的最新文章页
+  -> Key 未订阅当前产品、限流或额度耗尽时仅跳过该组合
+  -> 产品上游失败时自动切换另一套产品
   -> 与已归档文章按 ID、链接及“标题 + 日期”去重
-  -> 通过文章详情 V4 获取正文 HTML
+  -> 轮询三套正文详情接口获取 HTML
   -> 下载并本地化封面和正文图片
   -> 完整性检查与 Astro 构建
   -> commit 并 push master
@@ -33,34 +34,42 @@ RAPIDAPI_KEYS
 
 ## API 职责
 
-所有请求都使用主机 `weixin-wechat-official-accounts-platform.p.rapidapi.com`，并携带 `x-rapidapi-host` 与 `x-rapidapi-key` 请求头。几个名称相近的端点用途不同：
+三套产品共用 `RAPIDAPI_KEYS`，每套请求携带自己的 `x-rapidapi-host`。日常增量与正文下载轮询三套产品，显式历史回补只使用第一套，避免破坏已有 V2 offset：
+
+| 产品 | Host | 列表 | 正文 |
+| --- | --- | --- | --- |
+| Official Accounts Platform | `weixin-wechat-official-accounts-platform.p.rapidapi.com` | 历史文章 V2（offset） | 文章详情 V4 |
+| WeChat Data | `wechat-data.p.rapidapi.com` | `/weixin/getps`（cursor） | `/weixin/artinfo` |
+| SIAN WeChat Data | `wechat-Wei-Xin-Gong-Zhong-Hao-official-accounts-data-api.p.rapidapi.com` | `/wechat-accounts/user-posts`（page） | `/wechat-accounts/article-detail` |
+
+Official Accounts Platform 中几个名称相近的端点用途不同：
 
 | 端点 | 请求 | 用途 | 本项目使用方式 |
 | --- | --- | --- | --- |
 | `/api/weixin/convert-article-link/v1` | `GET`，查询参数 `link` | 把微信短链接或中间链接转换为完整文章链接 | 可选工具，不负责列出或下载文章 |
 | `/api/weixin/get-account-history-articles/v1` | `POST`，查询参数 `url`、`page` | 旧版历史文章列表 | 提供方已明确标记过期，生产代码不再调用 |
-| `/api/weixin/get-account-history-articles/v2` | `POST`，表单字段 `url`、`offset` | 使用 `PagingInfo.Offset` 读取最新页或连续历史 | 每天两次增量检查；本地历史补录从保存的游标续传 |
-| `/api/weixin/get-article-detail/v4` | `GET`，查询参数 `articleUrl` | 返回标题、公众号、摘要和完整正文 HTML | 每篇新文章都通过它取得可归档正文 |
+| `/api/weixin/get-account-history-articles/v2` | `POST`，表单字段 `url`、`offset` | 使用 `PagingInfo.Offset` 读取最新页或连续历史 | 日常轮询候选之一；本地历史补录固定从保存的游标续传 |
+| `/api/weixin/get-article-detail/v4` | `GET`，查询参数 `articleUrl` | 返回标题、公众号、摘要和完整正文 HTML | 三套正文候选之一 |
 
-历史文章 V1 和 V2 是两代“公众号历史文章列表”接口，不是正文详情版本。提供方已将历史文章 V1 标记为过期并要求迁移，因此项目只使用历史文章 V2。Convert article link V1 是另一个仍可用的链接转换端点；它不能代替文章列表 V2，也不能代替详情 V4。完整请求示例、返回字段和历史补录操作见 [wechat_sync/README.md](wechat_sync/README.md)。
+历史文章 V1 和 V2 是 Official Accounts Platform 的两代列表接口，不是正文详情版本。提供方已将 V1 标记过期，因此该产品只调用 V2。Convert article link V1 是另一个仍可用的链接转换工具；它不能代替列表或正文接口。完整请求示例、返回字段和历史补录操作见 [wechat_sync/README.md](wechat_sync/README.md)。
 
 ## 1. 准备 RapidAPI Key
 
 1. 登录 [RapidAPI](https://rapidapi.com/)。
-2. 订阅 [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform/pricing) 的可用套餐。
+2. 按需要订阅三套产品中的一套或多套；不同 Key 可以拥有不同订阅组合。
 3. 在接口页面复制 `X-RapidAPI-Key`。
-4. 多个 RapidAPI 账号需要分别订阅该 API，再分别取得 Key。
+4. 多个 RapidAPI 账号分别取得 Key；不需要事先记录每个 Key 开通了哪套产品。
 
-截至 `2026-08-08`，实测免费套餐每个 Key 有 50 次普通月额度，历史文章 V2 另有 10 次 Pro 月额度；套餐和额度可能调整，以 Action 日志中的响应头及 RapidAPI 页面为准。当前调度为：
+各产品的套餐和额度彼此独立，并可能随提供方调整，以 Action 日志中的产品名、响应头及 RapidAPI 页面为准。当前调度为：
 
 ```text
 08:37：计划触发，目标实际在 09:00 左右检查两个公众号
 15:37：计划触发，目标实际在 16:00 左右再次检查两个公众号
-2 个公众号 × 2 次/日 × 30 天 = 约 120 次 V2 Pro 调用
-2 个公众号 × 每天约 1 篇新文章 × 30 天 = 约 60 次详情请求
+2 个公众号 × 2 次/日 × 30 天 = 约 120 次列表请求（在三套产品间轮询）
+2 个公众号 × 每天约 1 篇新文章 × 30 天 = 约 60 次详情请求（在三套产品间轮询）
 ```
 
-按每个 Key 10 次 V2 Pro 月额度计算，理论最低需要 12 个有效 Key 才能覆盖 30 天的 120 次基础调用；考虑 31 天月份、手动运行、分页和失败重试，建议至少准备 15 个。详情 V4 消耗普通额度，实际数量随发文和重试次数变化。不要用多个 Key 并行请求；同步器会按日期分摊，并仅在当前 Key 明确无权限或额度耗尽时按顺序故障转移。
+实际容量等于所有 Key 在三套产品中的可用额度总和，无法再用单一 V2 套餐推导固定 Key 数量。同步器不会并行轰炸接口，而是按产品和 Key 顺序轮询；某个组合明确无权限或额度耗尽时才切换。
 
 Key 池只应包含你有权使用的 Key。多个账号共享使用是否符合免费套餐规则，以 RapidAPI 和接口提供方的最新条款为准；若条款不允许通过多账号叠加免费额度，应改用付费套餐或降低执行频率。
 
@@ -154,7 +163,7 @@ gh secret list --repo Ronchy2000/Gator-Investment-Research
 {"keys":["key-1","key-2","key-3"]}
 ```
 
-同步器不会输出 Key。每天以不同位置作为首选 Key，同一天的两次任务优先从同一位置开始，从而把月度调用量分配到账号池。Key 顺序首尾相接；某个 Key 明确无权限或额度耗尽后立即尝试下一个，切换成功后该次任务的后续请求继续使用新 Key。下一天会按日期重新计算起点，不需要在仓库中保存额度状态。
+同步器不会输出 Key。产品和 Key 都使用轮询顺序：一次请求成功后，下一次从下一套产品、该产品的下一个 Key 开始。可用性按“产品 × Key”隔离；例如 Key 1 未订阅 WeChat Data，不会影响 Key 1 继续调用另外两套产品。下一次 Action 会重新探测，不需要在仓库中保存订阅矩阵或额度状态。
 
 RapidAPI 负责记录每个账号的实际剩余额度。遇到以下情况会尝试下一个 Key：
 
@@ -163,11 +172,11 @@ RapidAPI 负责记录每个账号的实际剩余额度。遇到以下情况会�
 - 业务码 `100`、`302`、`303`、`600`、`601`、`602`：鉴权、限流、额度或权限问题。
 - 业务码 `500`：提供方定义的可切换错误。
 
-业务码 `300/301`、HTTP `5xx`、网络超时或连接失败属于端点/上游故障，不再对全部 Key 重复同一请求。V2/V4 出现此类故障时等待下次任务。HTTP `429` 是额度用完后切换 Key 的主要信号。
+业务码 `300/301`、HTTP `5xx`、网络超时或连接失败属于产品/上游故障，不再对全部 Key 重复同一请求，而是尝试下一套产品。HTTP `429` 是当前“产品 × Key”额度用完或限速后的主要切换信号。
 
 ## 6. 历史补录
 
-日常定时任务直接通过 V2 检查最新 `1` 页，上午和下午行为一致。增量请求总是从空游标读取最新页，不会覆盖历史补录断点。
+日常定时任务轮询三套产品检查最新 `1` 页，上午和下午行为一致。增量请求总是从各产品的第一页读取，不会覆盖 V2 历史补录断点。
 
 历史补录必须在本地显式使用 V2：
 
@@ -203,16 +212,16 @@ jq '{
 | --- | --- | --- |
 | 缺少 `RAPIDAPI_KEYS` | Secret 名称错误或尚未上传 | 按第 3 节重新上传 |
 | Key 池不是有效 JSON | 网页粘贴内容被修改 | 使用工具重新 `--copy` 或 `--upload` |
-| HTTP 401/403 | Key 无效或该账号未订阅接口 | 检查 RapidAPI 订阅并轮换 Key |
-| HTTP 429 | 当前 Key 额度耗尽 | 补充 Key 或等待额度重置 |
+| 某产品 HTTP 401/403 | Key 无效或该 Key 未订阅当前产品 | 正常情况下自动跳过该组合；三套都失败再检查订阅 |
+| 某产品 HTTP 429 | 当前“产品 × Key”额度耗尽 | 自动尝试该产品下一个 Key，再尝试下一套产品 |
 | 历史文章 V1 的 HTTP 503 / 业务码 300 `API INVALID` | 调用了已弃用端点 | 更新到当前代码；生产同步不再调用 V1 |
-| 业务码 301 / HTTP 5xx / 网络超时 | 上游临时采集失败 | 不盲目轮询全部 Key；等待下次任务 |
+| 业务码 301 / HTTP 5xx / 网络超时 | 某套产品上游临时采集失败 | 不盲目轮询全部 Key；自动尝试下一套产品 |
 | 连续多页未遇到已入库文章 | 两次同步之间新增量超过检查范围 | 临时提高 `max_pages`，让 V2 游标继续查到已入库文章 |
-| 文章详情缺少必要字段 | 详情 V4 暂未采集到完整 HTML | 等待下一次任务重试 |
+| 文章详情缺少必要字段 | 当前详情产品暂未采集到完整 HTML | 自动尝试下一套产品；三套都失败则等待重试 |
 | 图片下载失败 | 微信 CDN 资源暂时不可访问 | 文章保留在 pending，下一次重试 |
 | 纯图片正文没有图片 | 图片资源暂时不可用 | 文章保留在 pending，下一次重试 |
 
-日志会显示历史文章 V2 和详情 V4 的额度响应头。若先显示“Key 池第 N/M 个不可用，尝试下一个”后同步成功，这是正常额度故障转移。只有全部 Key 都返回 `401/403/429` 时，才需要检查订阅、Key 或额度。
+日志会同时显示产品名、端点、Key 序号和可用额度响应头。出现“仅在该产品中跳过”或“切换产品”后同步成功属于正常故障转移；只有三套产品都没有可用组合时，才需要检查订阅、Key、账号标识或额度。
 
 ## 8. 本地运行
 

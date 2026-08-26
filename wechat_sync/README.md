@@ -1,6 +1,6 @@
 # 微信公众号同步器
 
-同步器通过 RapidAPI 获取公众号文章列表和完整文章 HTML，再下载封面与正文图片，生成 Astro 使用的 Markdown 内容。这样不会用列表接口返回的微信长链接直接请求正文，避免触发微信验证码页面。
+同步器轮询 RapidAPI 上三套微信公众号数据产品获取文章列表和完整正文 HTML，再下载封面与正文图片，生成 Astro 使用的 Markdown 内容。这样不会用列表接口返回的微信长链接直接请求正文，避免触发微信验证码页面。
 
 ## 当前来源
 
@@ -29,11 +29,19 @@ python -m wechat_sync.rapidapi_secrets \
 
 生成的 Repository Secret 名称固定为 `RAPIDAPI_KEYS`，值为 JSON 字符串数组。也可通过 `--copy` 复制后在 GitHub 网页手动配置。
 
-多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。截至 `2026-08-11` 当前生产池包含 15 个 Key；同步器支持任意非空数量并自动去重。
+多个 Key 必须合并在这一个 Secret 中，不要创建 `RAPIDAPI_KEY_1`、`RAPIDAPI_KEY_2` 等独立名称。截至 `2026-08-11` 当前生产池包含 15 个 Key；同步器支持任意非空数量并自动去重。Key 不要求订阅完全相同的产品，运行时会自动识别每个“Key × 产品”组合是否可用。
 
 ## API 使用说明
 
-RapidAPI 产品名为 [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform)。所有端点共用：
+日常增量和正文下载会轮询三套产品，成功后下一次请求从下一套产品开始，以利用彼此独立的套餐额度：
+
+| 产品 | 文章列表 | 正文详情 | 账号标识 |
+| --- | --- | --- | --- |
+| [Weixin/Wechat Official Accounts Platform](https://rapidapi.com/dataapiman/api/weixin-wechat-official-accounts-platform) | `POST /api/weixin/get-account-history-articles/v2` | `GET /api/weixin/get-article-detail/v4` | 任意公开文章链接 |
+| [WeChat Data](https://rapidapi.com/masxcn/api/wechat-data) | `POST /weixin/getps` | `POST /weixin/artinfo` | `biz` 先经 `/weixin/getinfo` 转为 `gh_*` |
+| [WeChat Official Accounts Data API](https://rapidapi.com/venturessian/api/wechat-Wei-Xin-Gong-Zhong-Hao-official-accounts-data-api) | `GET /wechat-accounts/user-posts` | `GET /wechat-accounts/article-detail` | 配置微信号，或按公众号名称搜索 |
+
+每套产品使用自己的 `x-rapidapi-host`，但共用同一个 `RAPIDAPI_KEYS` Key 池。以下是历史回补固定使用的 Official Accounts Platform 请求头：
 
 ```text
 Host: weixin-wechat-official-accounts-platform.p.rapidapi.com
@@ -44,7 +52,7 @@ Headers:
 
 不要把真实 Key 写入脚本或命令历史；以下示例从环境变量读取单个 Key，仅用于理解接口。项目正式运行时使用 `RAPIDAPI_KEYS` JSON Key 池和内置故障转移。
 
-### 四个端点分别做什么
+### Official Accounts Platform 四个端点
 
 | 名称 | 方法与参数 | 主要返回 | 适用场景 |
 | --- | --- | --- | --- |
@@ -106,7 +114,7 @@ detail = requests.get(
 detail.raise_for_status()
 ```
 
-实际使用应同时检查 HTTP 状态、JSON 的 `code`、`message` 和返回结构，不能把 HTTP 200 直接视为成功。V2 日常增量首次请求的 `offset` 留空，历史补录再把响应中的 `PagingInfo.Offset` 作为下一次表单值。本项目已经封装这些校验、Key 切换、断点保存、去重、正文下载和图片本地化逻辑。
+实际使用应同时检查 HTTP 状态、JSON 的业务状态和返回结构，不能把 HTTP 200 直接视为成功。日常分页游标会编码产品名，避免把一种产品的 cursor/page/offset 误传给另一种产品；显式 `--history-v2` 回补仍固定使用 V2 原始 offset。本项目已经封装这些校验、产品切换、Key 切换、断点保存、去重、正文下载和图片本地化逻辑。
 
 ## 增量同步
 
@@ -127,10 +135,10 @@ python -m wechat_sync.sync \
 
 同步器执行以下步骤：
 
-1. 通过 RapidAPI 历史文章 V2 获取最新页。
+1. 轮询三套 RapidAPI 产品获取最新文章页。
 2. 使用文章 ID、规范化链接和“标题 + 发布日期”与现有索引去重。
 3. 新文章加入 `pendingArticles`，下载失败时保留到下一次。
-4. 通过 RapidAPI 文章详情 V4 接口取得正文 HTML，再从微信 CDN 下载封面和正文图片。
+4. 轮询三套正文详情接口取得 HTML，再从微信 CDN 下载封面和正文图片。
 5. 正文与媒体全部成功后写入 `src/content/articles` 和 `public/article-assets`。
 6. 每完成一篇即原子更新 `indexes/<slug>.json`。
 
@@ -170,18 +178,18 @@ jq '{
 2. `backfillOffset` 为空字符串。
 3. `pendingCount` 为 `0`。
 
-这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 并清理 7 份旧编码损坏的重复归档后，实际有 581 篇唯一文章。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 执行 V2 增量发现和 V4 正文下载。
+这三项分别表示 V2 已返回末页、没有未使用的下一页游标、已发现文章全部下载完整。不要依赖页面显示的固定文章总数；“像鳄鱼一样思考”原先显示 562 篇，但 V2 到达 `IsEnd` 并清理 7 份旧编码损坏的重复归档后，实际有 581 篇唯一文章。截至 `2026-08-05`，该公众号历史补录已经完成，最早文章为 `2023-07-22`。以后只需让 GitHub Action 通过三套产品完成日常增量与正文下载。
 
 ## Key 故障转移
 
-同步器每天从不同 Key 开始，均衡消耗多个 RapidAPI 账号的月度额度。某个 Key 明确无权限或额度耗尽时按池中顺序切换，成功后该次任务继续使用新 Key。以下情况会切换到下一个 Key：
+同步器分别轮询产品和 Key，均衡消耗各产品互不相通的月度额度。可用性按“产品 × Key”记录：旧 Key 没订阅某个产品时，只会在该产品中跳过，仍可继续调用它已经订阅的另外两套产品。以下情况会禁用当前运行中的单个组合并尝试该产品的下一个 Key：
 
 - HTTP `401`、`403`、`429`。
 - 业务码 `100`、`302`、`303`、`500`、`600`、`601`、`602`。
 
-HTTP `5xx`、网络超时、连接失败和业务码 `301` 通常是端点或上游故障，与 Key 无关，因此不会把同一失败请求盲目重复到整个 Key 池。发生在 V2 或 V4 时保留任务错误或 pending 文章，等待下次重试。所有请求都会记录端点、Key 序号及 RapidAPI 返回的额度头，但不会打印 Key 内容。
+HTTP `5xx`、网络超时、连接失败和业务码 `301` 通常是产品或上游故障，与 Key 无关，因此不会把同一失败请求盲目重复到整个 Key 池，而是直接尝试下一套产品。三套产品都失败时才保留任务错误或 pending 文章。所有请求都会记录产品、端点、Key 序号及 RapidAPI 返回的额度头，但不会打印 Key 内容。
 
-HTTP `429` 是套餐额度或速率限制信号。额度由 RapidAPI 侧统计，无需在本地保存；下次运行仍会按日期选择起点，并在遇到已耗尽 Key 时继续故障转移。
+HTTP `429` 是当前产品套餐额度或速率限制信号。额度由 RapidAPI 侧分别统计，无需在本地保存；下次运行仍会重新探测，不要求事先知道每个 Key 开通了哪些产品。
 
 ## 纯图片文章
 
@@ -189,7 +197,7 @@ HTTP `429` 是套餐额度或速率限制信号。额度由 RapidAPI 侧统计�
 
 ## 乱码文章修复
 
-旧版直接请求微信页面时，HTTP 编码误判可能把 UTF-8 中文保存为 `Õ`、`Ķ`、`ń`、`µ` 等高密度乱码。当前 V4 正文流程不会使用该旧编码判断。若历史索引中同时存在损坏的短链接条目和正常 V2 规范条目，可执行：
+旧版直接请求微信页面时，HTTP 编码误判可能把 UTF-8 中文保存为 `Õ`、`Ķ`、`ń`、`µ` 等高密度乱码。当前 RapidAPI 正文流程不会使用该旧编码判断。若历史索引中同时存在损坏的短链接条目和正常 V2 规范条目，可执行：
 
 ```bash
 python -m wechat_sync.repair_mojibake \
@@ -197,7 +205,7 @@ python -m wechat_sync.repair_mojibake \
   --delay 2
 ```
 
-命令会扫描该公众号的全部本地 Markdown，为乱码条目匹配同日且发布时间接近的正常规范条目，先通过详情 V4 重新下载正文和图片；只有全部重新下载成功后，才删除损坏的重复 Markdown、资源目录和索引项。无法唯一匹配时会停止，不会猜测删除。发布完整性检查也会阻止高密度乱码文章进入后续构建。
+命令会扫描该公众号的全部本地 Markdown，为乱码条目匹配同日且发布时间接近的正常规范条目，再通过三套详情产品之一重新下载正文和图片；只有全部重新下载成功后，才删除损坏的重复 Markdown、资源目录和索引项。无法唯一匹配时会停止，不会猜测删除。发布完整性检查也会阻止高密度乱码文章进入后续构建。
 
 ## 手动导入链接
 
@@ -228,10 +236,11 @@ python -m wechat_sync.initialize \
   --slug example-account \
   --name "公众号名称" \
   --seed-url "https://mp.weixin.qq.com/s/example" \
+  --biz "长链接中的__biz" \
   --earliest-date 2026-01-01
 ```
 
-命令只更新非敏感配置，并在缺少时创建空索引。新增栏目还需要在 `src/lib/articles.ts` 中补充前端定义。
+`biz` 不是密钥，可从该公众号任意完整文章链接的 `__biz` 查询参数取得，供 WeChat Data 自动换取 `gh_*` 原始 ID。若已知第三套产品使用的公众号微信号，可额外传 `--wechat-id`；不填写时同步器会按公众号名称尝试唯一匹配。命令只更新非敏感配置，并在缺少时创建空索引。新增栏目还需要在 `src/lib/articles.ts` 中补充前端定义。
 
 ## 输出目录
 

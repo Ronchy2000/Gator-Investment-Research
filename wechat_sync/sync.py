@@ -15,7 +15,12 @@ from typing import Any, Iterable, Optional
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
-from .client import RapidAPIClient, RapidAPIError, load_api_key_pool
+from .client import (
+    AccountReference,
+    RapidAPIClient,
+    RapidAPIError,
+    load_api_key_pool,
+)
 from .downloader import ArticleSummary, WeChatArticleDownloader
 
 
@@ -32,6 +37,9 @@ class AccountConfig:
     slug: str
     name: str
     seed_article_url: str
+    biz: str
+    wechat_data_wxid: str
+    wechat_id: str
     earliest: date
     reported_count: Optional[int]
 
@@ -76,6 +84,9 @@ def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
         slug = str(item.get("slug", "")).strip()
         name = str(item.get("name", "")).strip()
         seed_article_url = str(item.get("seed_article_url", "")).strip()
+        biz = str(item.get("biz", "")).strip()
+        wechat_data_wxid = str(item.get("wechat_data_wxid", "")).strip()
+        wechat_id = str(item.get("wechat_id", "")).strip()
         earliest_value = str(item.get("earliest_date", "")).strip()
         raw_reported_count = item.get("reported_article_count")
         if (
@@ -102,6 +113,9 @@ def _load_accounts(selected_slugs: set[str]) -> list[AccountConfig]:
                     slug=slug,
                     name=name,
                     seed_article_url=seed_article_url,
+                    biz=biz,
+                    wechat_data_wxid=wechat_data_wxid,
+                    wechat_id=wechat_id,
                     earliest=date.fromisoformat(earliest_value),
                     reported_count=reported_count,
                 )
@@ -227,6 +241,16 @@ def _collection_state(
     )
 
 
+def _account_reference(account: AccountConfig) -> AccountReference:
+    return AccountReference(
+        name=account.name,
+        article_url=account.seed_article_url,
+        biz=account.biz,
+        wechat_data_wxid=account.wechat_data_wxid,
+        wechat_id=account.wechat_id,
+    )
+
+
 def _collect_articles(
     client: RapidAPIClient,
     account: AccountConfig,
@@ -244,10 +268,10 @@ def _collect_articles(
     prior_urls: set[str] = set()
     reached_incremental_boundary = False
 
-    # Incremental sync starts at the newest V2 cursor; persisted cursors remain
-    # reserved for explicit historical backfills.
+    # Incremental sync starts at the selected product's newest page; persisted
+    # V2 cursors remain reserved for explicit historical backfills.
     for page_position in range(1, max_pages + 1):
-        history_page = client.fetch_history_page(account.seed_article_url, offset)
+        history_page = client.fetch_history_page(_account_reference(account), offset)
         page_articles = [_normalize_article(row) for row in history_page.rows]
         if not page_articles:
             if page_position == 1:
@@ -326,8 +350,9 @@ def _collect_history_articles(
     for page_position in range(1, max_pages + 1):
         try:
             history_page = client.fetch_history_page(
-                account.seed_article_url,
+                _account_reference(account),
                 offset,
+                preferred_provider="justone",
             )
         except RapidAPIError:
             if page_position == 1:
@@ -521,7 +546,7 @@ def _synchronize_account(
     for position, article in enumerate(pending, start=1):
         print(f"[{account.name} {position}/{len(pending)}] 下载 {article.title}")
         try:
-            detail = client.fetch_article_detail(article.url)
+            detail = client.fetch_article_detail(article.url, account.name)
             downloaded = downloader.download_detail(article, account.name, detail)
         except Exception as error:
             failures.append((article, str(error)))
@@ -568,7 +593,10 @@ def synchronize(
     accounts = _load_accounts(selected_slugs)
     key_pool = load_api_key_pool()
     client = RapidAPIClient(key_pool)
-    print(f"已加载 {client.key_count} 个 RapidAPI Key，按日期轮换并自动故障转移")
+    print(
+        f"已加载 {client.key_count} 个 RapidAPI Key、{client.provider_count} 套产品，"
+        "按产品和 Key 分别轮换并自动故障转移"
+    )
     downloader = WeChatArticleDownloader()
     succeeded = 0
     failed = 0

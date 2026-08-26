@@ -12,6 +12,42 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484050-1",
+      "title": "8.26消费电子超级月将带来！",
+      "publishedAt": "2026-08-26T07:47:44+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484050&idx=1&sn=bcb1cdc69a1e744c1d01bc4f9f851d25",
+      "markdownPath": "src/content/articles/2026-08-26-wx-7a94aab6-2247484050-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484050-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
+      "articleId": "wx-7a94aab6-2247484045-1",
+      "title": "8.25海外存储又双叒崩了！",
+      "publishedAt": "2026-08-25T08:25:57+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484045&idx=1&sn=5bcd400c315d29adbb1107494f18fba7",
+      "markdownPath": "src/content/articles/2026-08-25-wx-7a94aab6-2247484045-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484045-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
+      "articleId": "wx-7a94aab6-2247484040-1",
+      "title": "8.24周末消息汇总",
+      "publishedAt": "2026-08-24T08:30:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484040&idx=1&sn=fef46edebdfbb01617cb2081877beb8e",
+      "markdownPath": "src/content/articles/2026-08-24-wx-7a94aab6-2247484040-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484040-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
+      "articleId": "wx-7a94aab6-2247484035-1",
+      "title": "8.21美债搅动市场美股重挫",
+      "publishedAt": "2026-08-21T08:18:54+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484035&idx=1&sn=b1a034e635022f7542eb005bda1b5179",
+      "markdownPath": "src/content/articles/2026-08-21-wx-7a94aab6-2247484035-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484035-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484030-1",
       "title": "8.20海力士逆天回购科技续命！",
       "publishedAt": "2026-08-20T08:29:37+08:00",
@@ -588,5 +624,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-20T10:05:40.820944+08:00"
+  "updatedAt": "2026-08-26T12:29:34.429189+08:00"
 }
