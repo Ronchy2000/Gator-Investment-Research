@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491617-1",
+      "title": "股市：当下短线选股姿势（2026.8.27）",
+      "publishedAt": "2026-08-27T15:58:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491617&idx=1&sn=035f591c76eda8d143dcbc276f613743",
+      "markdownPath": "src/content/articles/2026-08-27-wx-dc354e7c-2247491617-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491617-1/cover.jpg",
+      "assetCount": 9
+    },
+    {
       "articleId": "wx-dc354e7c-2247491597-1",
       "title": "股市：流程正确，力度不够（2026.8.26）",
       "publishedAt": "2026-08-26T16:29:49+08:00",
@@ -5358,5 +5367,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-08-27T18:29:18.182818+08:00"
+  "updatedAt": "2026-08-28T02:19:36.952060+08:00"
 }
