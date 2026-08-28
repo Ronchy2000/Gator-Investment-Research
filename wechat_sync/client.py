@@ -96,6 +96,7 @@ PROVIDERS = (
     ),
     _Provider("sian", "SIAN WeChat Data", SIAN_HOST, f"https://{SIAN_HOST}"),
 )
+DETAIL_PROVIDER_NAMES = ("justone", "wechat-data")
 PROVIDER_BY_NAME = {provider.name: provider for provider in PROVIDERS}
 KEY_ERROR_TERMS = (
     "not subscribed",
@@ -718,11 +719,24 @@ class RapidAPIClient:
             if (start + offset) % self.key_count not in blocked
         ]
 
+    def _capability_providers(self, capability: str) -> tuple[_Provider, ...]:
+        providers = self._providers
+        if capability == "detail":
+            # SIAN's detail endpoint can flatten WeChat's DOM and move images
+            # into unrelated paragraphs. Keep it for article discovery only.
+            providers = tuple(
+                provider
+                for provider in providers
+                if provider.name in DETAIL_PROVIDER_NAMES
+            )
+        return providers
+
     def _provider_order(self, capability: str) -> list[_Provider]:
-        start = self._provider_cursor[capability]
+        providers = self._capability_providers(capability)
+        start = self._provider_cursor[capability] % len(providers)
         return [
-            self._providers[(start + offset) % len(self._providers)]
-            for offset in range(len(self._providers))
+            providers[(start + offset) % len(providers)]
+            for offset in range(len(providers))
         ]
 
     def _request_json(
@@ -859,18 +873,20 @@ class RapidAPIClient:
                 continue
 
             if provider_name is None:
+                active_providers = self._capability_providers(capability)
                 provider_index = next(
                     index
-                    for index, item in enumerate(self._providers)
+                    for index, item in enumerate(active_providers)
                     if item.name == provider.name
                 )
                 self._provider_cursor[capability] = (
                     provider_index + 1
-                ) % len(self._providers)
+                ) % len(active_providers)
             return provider, result
 
         detail = "；".join(errors) if errors else "没有可用产品"
-        raise RapidAPIError(f"RapidAPI 三套产品均未返回可用数据：{detail}")
+        scope = "三套列表产品" if capability == "history" else "两套可信详情产品"
+        raise RapidAPIError(f"RapidAPI {scope}均未返回可用数据：{detail}")
 
     def _resolve_wechat_data_id(
         self,
@@ -1074,7 +1090,7 @@ class RapidAPIClient:
         article_url: str,
         expected_source_name: str = "",
     ) -> dict[str, Any]:
-        """Fetch archive-ready HTML from all subscribed products in rotation."""
+        """Fetch archive-ready HTML from providers that preserve WeChat DOM order."""
         _, detail = self._with_provider_failover(
             "detail",
             lambda provider: self._fetch_detail_from_provider(

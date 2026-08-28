@@ -174,7 +174,9 @@ class WeChatArticleDownloader:
     ) -> DownloadedArticle:
         """Inspect and download a known public WeChat article URL in one request."""
         response = self._get(url, referer="https://mp.weixin.qq.com/")
-        response.encoding = response.apparent_encoding or "utf-8"
+        # WeChat article pages are UTF-8; charset guessing previously produced
+        # dense mojibake in Chinese articles.
+        response.encoding = "utf-8"
         soup = BeautifulSoup(response.text, "html.parser")
         actual_source = self._source_name(soup)
         if verify_source and actual_source != source_name:
@@ -209,8 +211,14 @@ class WeChatArticleDownloader:
         source_name: str,
         response: requests.Response,
     ) -> DownloadedArticle:
-        response.encoding = response.apparent_encoding or "utf-8"
+        response.encoding = "utf-8"
         soup = BeautifulSoup(response.text, "html.parser")
+        actual_source = self._source_name(soup)
+        if actual_source != source_name:
+            raise ArticleDownloadError(
+                f"公众号不匹配，期望“{source_name}”，"
+                f"实际“{actual_source or '无法识别'}”"
+            )
         content = soup.select_one("#js_content, .rich_media_content")
         if content is None:
             page_title = soup.title.get_text(" ", strip=True) if soup.title else ""

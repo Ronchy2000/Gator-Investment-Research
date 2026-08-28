@@ -8,7 +8,7 @@
 GitHub Secret: RAPIDAPI_KEYS
       |
       v
-RapidAPI 三产品列表 + 正文详情
+RapidAPI 三产品列表 + 原文/可信正文详情
       |
       v
 wechat_sync/sync.py
@@ -62,7 +62,7 @@ EdgeOne Pages / dist
 
 ### 正文和媒体
 
-新文章通过三套详情接口之一取得正文 HTML，再由 `wechat_sync/downloader.py` 处理正文与微信 CDN 媒体。列表返回的微信长链接不会被直接请求，避免跳转到验证码页面：
+新文章先由 `wechat_sync/downloader.py` 尝试读取微信原始 DOM，以原文节点顺序作为图文位置的权威来源；微信返回验证页时，再从 Official Accounts Platform 或 WeChat Data 详情接口取得正文 HTML。SIAN 的文章详情实测会把连续图片插入不相关段落，因此仅参与列表发现，宁可保留 pending 等待重试，也不发布结构错乱的正文：
 
 - 接受包含文本或图片的正文节点，纯图片文章不会被误判为空正文。
 - 纯图片文章必须解析出可用图片，远程图片未全部本地化时不会进入完成索引。

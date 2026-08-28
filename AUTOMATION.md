@@ -1,12 +1,12 @@
 # GitHub Actions 自动同步
 
-生产分支轮询 RapidAPI 上三套微信公众号数据产品获取文章列表和完整正文 HTML，不再依赖微信读书扫码、`vid` 或短期登录令牌。封面与正文图片由仓库下载器从微信 CDN 本地化。
+生产分支轮询 RapidAPI 上三套微信公众号数据产品获取文章列表，不再依赖微信读书扫码、`vid` 或短期登录令牌。正文优先保留微信原始 DOM；原文受限时回退到两套已验证能保持图文顺序的详情接口。封面与正文图片由仓库下载器从微信 CDN 本地化。
 
 ## 当前生产基线
 
 - 生产分支：`master`。
 - 工作流：`.github/workflows/wechat-sync.yml`。
-- 数据源：RapidAPI 三套产品的文章列表与正文接口；显式历史回补固定使用 Official Accounts Platform V2。
+- 数据源：RapidAPI 三套产品的文章列表；正文使用微信原文、Official Accounts Platform 或 WeChat Data；显式历史回补固定使用 Official Accounts Platform V2。
 - 公众号：“获得信息差”和“像鳄鱼一样思考”。
 - 凭据：一个名为 `RAPIDAPI_KEYS` 的 Repository Secret，截至 `2026-08-11` 当前包含 15 个 Key。
 - 调度：每天配置 `23:30 UTC`、`07:57 UTC`（北京时间次日 `07:30`、当日 `15:57`），用于抵消 GitHub 调度延迟，目标实际启动窗口约为北京时间 `09:00`、`16:30`；也可手动运行。
@@ -23,7 +23,7 @@ RAPIDAPI_KEYS
   -> Key 未订阅当前产品、限流或额度耗尽时仅跳过该组合
   -> 产品上游失败时自动切换另一套产品
   -> 与已归档文章按 ID、链接及“标题 + 日期”去重
-  -> 轮询三套正文详情接口获取 HTML
+  -> 优先读取微信原文，失败时轮询两套可信正文详情接口
   -> 下载并本地化封面和正文图片
   -> 完整性检查与 Astro 构建
   -> commit 并 push master
@@ -34,13 +34,13 @@ RAPIDAPI_KEYS
 
 ## API 职责
 
-三套产品共用 `RAPIDAPI_KEYS`，每套请求携带自己的 `x-rapidapi-host`。日常增量与正文下载轮询三套产品，显式历史回补只使用第一套，避免破坏已有 V2 offset：
+三套产品共用 `RAPIDAPI_KEYS`，每套请求携带自己的 `x-rapidapi-host`。日常增量轮询三套产品；正文优先读取微信原文，失败后只轮询前两套；显式历史回补只使用第一套，避免破坏已有 V2 offset：
 
 | 产品 | Host | 列表 | 正文 |
 | --- | --- | --- | --- |
 | Official Accounts Platform | `weixin-wechat-official-accounts-platform.p.rapidapi.com` | 历史文章 V2（offset） | 文章详情 V4 |
 | WeChat Data | `wechat-data.p.rapidapi.com` | `/weixin/getps`（cursor） | `/weixin/artinfo` |
-| SIAN WeChat Data | `wechat-Wei-Xin-Gong-Zhong-Hao-official-accounts-data-api.p.rapidapi.com` | `/wechat-accounts/user-posts`（page） | `/wechat-accounts/article-detail` |
+| SIAN WeChat Data | `wechat-Wei-Xin-Gong-Zhong-Hao-official-accounts-data-api.p.rapidapi.com` | `/wechat-accounts/user-posts`（page） | 不用于归档；实测会重排正文图片 |
 
 Official Accounts Platform 中几个名称相近的端点用途不同：
 
@@ -49,7 +49,7 @@ Official Accounts Platform 中几个名称相近的端点用途不同：
 | `/api/weixin/convert-article-link/v1` | `GET`，查询参数 `link` | 把微信短链接或中间链接转换为完整文章链接 | 可选工具，不负责列出或下载文章 |
 | `/api/weixin/get-account-history-articles/v1` | `POST`，查询参数 `url`、`page` | 旧版历史文章列表 | 提供方已明确标记过期，生产代码不再调用 |
 | `/api/weixin/get-account-history-articles/v2` | `POST`，表单字段 `url`、`offset` | 使用 `PagingInfo.Offset` 读取最新页或连续历史 | 日常轮询候选之一；本地历史补录固定从保存的游标续传 |
-| `/api/weixin/get-article-detail/v4` | `GET`，查询参数 `articleUrl` | 返回标题、公众号、摘要和完整正文 HTML | 三套正文候选之一 |
+| `/api/weixin/get-article-detail/v4` | `GET`，查询参数 `articleUrl` | 返回标题、公众号、摘要和完整正文 HTML | 微信原文受限时的可信正文候选之一 |
 
 历史文章 V1 和 V2 是 Official Accounts Platform 的两代列表接口，不是正文详情版本。提供方已将 V1 标记过期，因此该产品只调用 V2。Convert article link V1 是另一个仍可用的链接转换工具；它不能代替列表或正文接口。完整请求示例、返回字段和历史补录操作见 [wechat_sync/README.md](wechat_sync/README.md)。
 
@@ -66,7 +66,7 @@ Official Accounts Platform 中几个名称相近的端点用途不同：
 23:30 UTC（北京时间次日 07:30）：计划触发，目标实际在北京时间 09:00 左右检查两个公众号
 07:57 UTC（北京时间 15:57）：计划触发，目标实际在北京时间 16:30 左右再次检查两个公众号
 2 个公众号 × 2 次/日 × 30 天 = 约 120 次列表请求（在三套产品间轮询）
-2 个公众号 × 每天约 1 篇新文章 × 30 天 = 约 60 次详情请求（在三套产品间轮询）
+2 个公众号 × 每天约 1 篇新文章 × 30 天 = 最多约 60 次详情请求（仅在微信原文受限时由两套可信详情产品承担）
 ```
 
 实际容量等于所有 Key 在三套产品中的可用额度总和，无法再用单一 V2 套餐推导固定 Key 数量。同步器不会并行轰炸接口，而是按产品和 Key 顺序轮询；某个组合明确无权限或额度耗尽时才切换。
@@ -217,7 +217,7 @@ jq '{
 | 历史文章 V1 的 HTTP 503 / 业务码 300 `API INVALID` | 调用了已弃用端点 | 更新到当前代码；生产同步不再调用 V1 |
 | 业务码 301 / HTTP 5xx / 网络超时 | 某套产品上游临时采集失败 | 不盲目轮询全部 Key；自动尝试下一套产品 |
 | 连续多页未遇到已入库文章 | 两次同步之间新增量超过检查范围 | 临时提高 `max_pages`，让 V2 游标继续查到已入库文章 |
-| 文章详情缺少必要字段 | 当前详情产品暂未采集到完整 HTML | 自动尝试下一套产品；三套都失败则等待重试 |
+| 文章详情缺少必要字段 | 当前详情产品暂未采集到完整 HTML | 自动尝试下一套可信详情产品；都失败则等待重试 |
 | 图片下载失败 | 微信 CDN 资源暂时不可访问 | 文章保留在 pending，下一次重试 |
 | 纯图片正文没有图片 | 图片资源暂时不可用 | 文章保留在 pending，下一次重试 |
 
