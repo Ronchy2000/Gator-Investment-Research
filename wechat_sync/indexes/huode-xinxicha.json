@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484060-1",
+      "title": "8.28英伟达一夜上涨3万亿！",
+      "publishedAt": "2026-08-28T07:44:06+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484060&idx=1&sn=669fd9d1680aaa716bf05dfeb61db24c",
+      "markdownPath": "src/content/articles/2026-08-28-wx-7a94aab6-2247484060-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484060-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484055-1",
       "title": "8.27英伟达王炸业绩利好！",
       "publishedAt": "2026-08-27T08:02:24+08:00",
@@ -633,5 +642,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-27T11:43:03.170243+08:00"
+  "updatedAt": "2026-08-28T16:03:47.730635+08:00"
 }
