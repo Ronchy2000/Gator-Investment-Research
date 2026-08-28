@@ -2,12 +2,10 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # Recent morning runs started 23-47m after their configured time.
-    # Schedule at 08:37 so the actual run lands near 09:00 Asia/Shanghai.
-    - cron: "37 8 * * *"
-      timezone: "Asia/Shanghai"
-    - cron: "37 15 * * *"
-      timezone: "Asia/Shanghai"
+    # GitHub cron is UTC. Recent runs were created 20-95m after schedule.
+    # 23:30 UTC targets ~09:00 and 07:57 UTC targets ~16:30 in UTC+8.
+    - cron: "30 23 * * *"
+    - cron: "57 7 * * *"
   workflow_dispatch:
     inputs:
       max_pages:
