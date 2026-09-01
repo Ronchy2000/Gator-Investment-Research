@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484070-1",
+      "title": "科技又有大进展！",
+      "publishedAt": "2026-09-01T07:54:10+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484070&idx=1&sn=29a5d398d2f874c81f72ace7a410df5c",
+      "markdownPath": "src/content/articles/2026-09-01-wx-7a94aab6-2247484070-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484070-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484065-1",
       "title": "8.31周末消息汇总！",
       "publishedAt": "2026-08-31T08:25:00+08:00",
@@ -651,5 +660,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-08-31T09:27:56.992168+08:00"
+  "updatedAt": "2026-09-01T09:57:26.931510+08:00"
 }
