@@ -2,10 +2,10 @@ name: WeChat Article Sync
 
 on:
   schedule:
-    # GitHub cron is UTC. Recent runs were created 20-95m after schedule.
-    # 23:30 UTC targets ~09:00 and 07:57 UTC targets ~16:30 in UTC+8.
+    # GitHub cron is UTC and scheduled runs can be delayed by several hours.
+    # 23:30 UTC targets ~09:00 and 03:17 UTC targets ~17:00 in UTC+8.
     - cron: "30 23 * * *"
-    - cron: "57 7 * * *"
+    - cron: "17 3 * * *"
   workflow_dispatch:
     inputs:
       max_pages:

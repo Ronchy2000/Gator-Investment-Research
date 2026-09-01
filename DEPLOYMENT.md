@@ -77,7 +77,7 @@ https://gator.ronchy2000.top
 使用 EdgeOne 的 GitHub 仓库集成时，不需要额外配置 `EDGEONE_API_TOKEN`：
 
 ```text
-UTC 配置 23:30 / 07:57（北京时间次日 07:30 / 当日 15:57），目标实际启动约北京时间 09:00 / 16:30
+UTC 配置 23:30 / 03:17（北京时间次日 07:30 / 当日 11:17），目标实际启动约北京时间 09:00 / 16:15–17:00
   -> GitHub Actions 检查微信公众号
   -> 有内容或同步状态变化时提交并推送 master
   -> EdgeOne Pages 检测 master 更新
