@@ -1,7 +1,6 @@
 ---
 import { getCollection } from "astro:content";
 import ArticleRow from "../components/ArticleRow.astro";
-import NoteList from "../components/NoteList.astro";
 import ReportRow from "../components/ReportRow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
@@ -15,14 +14,13 @@ import {
   readingMinutes,
   sortArticles,
 } from "../lib/articles";
-import { sortNotes } from "../lib/notes";
 import { REPORT_CATEGORIES, sortReports } from "../lib/reports";
 
 const articles = sortArticles(await getCollection("articles"));
 const reports = sortReports(await getCollection("reports"));
-const notes = sortNotes(await getCollection("notes"));
+const notes = await getCollection("notes");
 const featured = articles[0];
-const recent = articles.slice(1, 11);
+const recent = articles.slice(0, 10);
 const recentReports = reports.slice(0, 5);
 const sourceCounts = new Map(
   ARTICLE_SOURCES.map((source) => [source.slug, articlesFromSource(articles, source.name).length]),
@@ -121,14 +119,6 @@ for (const article of articles) {
     </div>
   </section>
 
-  {notes.length > 0 && (
-    <NoteList
-      notes={notes}
-      heading="投资笔记"
-      description="这里记录独立的投资思考，按发布日期排列，最新内容始终在最上方。"
-    />
-  )}
-
   <section class="latest-section page-width">
     <div class="section-heading">
       <div>
@@ -138,7 +128,7 @@ for (const article of articles) {
       <p>两份公众号内容合并按发布日期倒序排列，栏目、标题、摘要和正文均可检索。</p>
     </div>
     <div class="article-list">
-      {recent.map((article, index) => <ArticleRow article={article} number={index + 2} />)}
+      {recent.map((article, index) => <ArticleRow article={article} number={index + 1} />)}
     </div>
     <a class="archive-link" href="/archive/">
       查看完整归档
