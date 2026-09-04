@@ -1,8 +1,9 @@
 ---
 import { getCollection } from "astro:content";
+import NoteList from "../../components/NoteList.astro";
 import ReportRow from "../../components/ReportRow.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { noteHref, sortNotes } from "../../lib/notes";
+import { sortNotes } from "../../lib/notes";
 import { REPORT_CATEGORIES, reportYear, sortReports } from "../../lib/reports";
 
 const reports = sortReports(await getCollection("reports"));
@@ -40,12 +41,12 @@ const years = [...yearGroups.keys()];
     ))}
   </section>
 
-  {notes[0] && (
-    <a class="note-banner page-width" href={noteHref(notes[0])}>
-      <span>投资随笔 · {notes[0].data.noteType}</span>
-      <strong>{notes[0].data.title}</strong>
-      <small>独立内容，不计入 913 篇机构研报 →</small>
-    </a>
+  {notes.length > 0 && (
+    <NoteList
+      notes={notes}
+      heading="投资随笔"
+      description="独立内容按发布日期倒序排列，最新笔记在最上方，不计入历史研报数量。"
+    />
   )}
 
   <section class="library page-width">
@@ -188,32 +189,6 @@ const years = [...yearGroups.keys()];
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     border-block: 1px solid var(--line-strong);
-  }
-
-  .note-banner {
-    display: grid;
-    grid-template-columns: 180px 1fr auto;
-    align-items: center;
-    gap: 20px;
-    min-height: 74px;
-    padding-block: 15px;
-    border-bottom: 1px solid var(--line-strong);
-  }
-
-  .note-banner span,
-  .note-banner small {
-    color: var(--ink-faint);
-    font-size: 11px;
-  }
-
-  .note-banner strong {
-    font-family: var(--serif);
-    font-size: 22px;
-    font-weight: 500;
-  }
-
-  .note-banner:hover strong {
-    color: var(--accent);
   }
 
   .category-summary button {
@@ -378,11 +353,6 @@ const years = [...yearGroups.keys()];
 
     .category-summary {
       grid-template-columns: 1fr;
-    }
-
-    .note-banner {
-      grid-template-columns: 1fr;
-      gap: 3px;
     }
 
     .category-summary button {

@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import ArticleRow from "../components/ArticleRow.astro";
+import NoteList from "../components/NoteList.astro";
 import ReportRow from "../components/ReportRow.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
@@ -14,14 +15,13 @@ import {
   readingMinutes,
   sortArticles,
 } from "../lib/articles";
-import { noteHref, sortNotes } from "../lib/notes";
+import { sortNotes } from "../lib/notes";
 import { REPORT_CATEGORIES, sortReports } from "../lib/reports";
 
 const articles = sortArticles(await getCollection("articles"));
 const reports = sortReports(await getCollection("reports"));
 const notes = sortNotes(await getCollection("notes"));
 const featured = articles[0];
-const latestNote = notes[0];
 const recent = articles.slice(1, 11);
 const recentReports = reports.slice(0, 5);
 const sourceCounts = new Map(
@@ -121,24 +121,12 @@ for (const article of articles) {
     </div>
   </section>
 
-  {latestNote && (
-    <section class="latest-note page-width" aria-labelledby="latest-note-title">
-      <div class="latest-note-label">
-        <span class="eyebrow">LATEST NOTE</span>
-        <strong>最新笔记</strong>
-      </div>
-      <a href={noteHref(latestNote)}>
-        <div>
-          <span>{latestNote.data.noteType}</span>
-          <time datetime={latestNote.data.publishedAt.toISOString()}>
-            {formatDate(latestNote.data.publishedAt)}
-          </time>
-        </div>
-        <h2 id="latest-note-title">{latestNote.data.title}</h2>
-        <p>{latestNote.data.description}</p>
-        <small>阅读全文 →</small>
-      </a>
-    </section>
+  {notes.length > 0 && (
+    <NoteList
+      notes={notes}
+      heading="投资笔记"
+      description="这里记录独立的投资思考，按发布日期排列，最新内容始终在最上方。"
+    />
   )}
 
   <section class="latest-section page-width">
@@ -467,76 +455,6 @@ for (const article of articles) {
     font-weight: 500;
   }
 
-  .latest-note {
-    display: grid;
-    grid-template-columns: minmax(150px, 0.28fr) minmax(0, 1fr);
-    border-bottom: 1px solid var(--line-strong);
-  }
-
-  .latest-note-label {
-    display: grid;
-    align-content: start;
-    gap: 8px;
-    padding: 34px 28px 34px 0;
-    border-right: 1px solid var(--line);
-  }
-
-  .latest-note-label strong {
-    font-family: var(--serif);
-    font-size: 24px;
-    font-weight: 500;
-  }
-
-  .latest-note > a {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 28px;
-    padding: 32px 0 34px 36px;
-  }
-
-  .latest-note > a > div {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    color: var(--ink-faint);
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: 0.08em;
-  }
-
-  .latest-note h2 {
-    grid-column: 1;
-    margin: 0;
-    font-family: var(--serif);
-    font-size: clamp(26px, 3vw, 42px);
-    font-weight: 500;
-    letter-spacing: -0.025em;
-    line-height: 1.15;
-  }
-
-  .latest-note p {
-    grid-column: 1;
-    max-width: 720px;
-    margin: 0;
-    color: var(--ink-soft);
-    font-size: 13px;
-  }
-
-  .latest-note small {
-    grid-column: 2;
-    grid-row: 1 / span 3;
-    align-self: center;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--ink);
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .latest-note > a:hover h2 {
-    color: var(--accent);
-  }
-
   .latest-section {
     padding-block: 110px 80px;
   }
@@ -821,27 +739,6 @@ for (const article of articles) {
 
     .section-heading {
       grid-template-columns: 1fr;
-    }
-
-    .latest-note {
-      grid-template-columns: 1fr;
-    }
-
-    .latest-note-label {
-      padding: 26px 0 18px;
-      border-right: 0;
-    }
-
-    .latest-note > a {
-      grid-template-columns: 1fr;
-      padding: 0 0 30px;
-    }
-
-    .latest-note small {
-      grid-column: 1;
-      grid-row: auto;
-      justify-self: start;
-      margin-top: 8px;
     }
 
     .section-heading p {

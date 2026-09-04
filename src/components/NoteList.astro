@@ -1,0 +1,171 @@
+---
+import type { NoteEntry } from "../lib/notes";
+import { formatDate } from "../lib/articles";
+import { noteHref, sortNotes } from "../lib/notes";
+
+interface Props {
+  notes: NoteEntry[];
+  heading?: string;
+  description?: string;
+}
+
+const {
+  notes,
+  heading = "投资笔记",
+  description = "记录独立的投资思考，不计入历史研报数量。",
+} = Astro.props;
+const sortedNotes = sortNotes(notes);
+---
+
+<section class="note-archive" aria-labelledby="note-archive-title">
+  <header class="note-archive-heading">
+    <div>
+      <span class="eyebrow">INVESTMENT NOTES</span>
+      <h2 id="note-archive-title">{heading}</h2>
+    </div>
+    <p>{description}</p>
+  </header>
+
+  <div class="note-archive-list">
+    {sortedNotes.map((note, index) => (
+      <a class="note-archive-item" href={noteHref(note)}>
+        <span class="note-archive-index">{String(index + 1).padStart(2, "0")}</span>
+        <div class="note-archive-main">
+          <div class="note-archive-meta">
+            <span>{note.data.noteType}</span>
+            <time datetime={note.data.publishedAt.toISOString()}>{formatDate(note.data.publishedAt)}</time>
+          </div>
+          <h3>{note.data.title}</h3>
+          <p>{note.data.description}</p>
+        </div>
+        <span class="note-archive-link">阅读全文 →</span>
+      </a>
+    ))}
+  </div>
+</section>
+
+<style>
+  .note-archive {
+    width: min(1320px, calc(100% - 40px));
+    margin-inline: auto;
+    padding-block: 90px 20px;
+  }
+
+  .note-archive-heading {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: end;
+    margin-bottom: 38px;
+  }
+
+  .note-archive-heading h2 {
+    margin: 8px 0 0;
+    font-family: var(--serif);
+    font-size: clamp(42px, 6vw, 76px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+  }
+
+  .note-archive-heading p {
+    max-width: 450px;
+    margin: 0 0 6px auto;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .note-archive-list {
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .note-archive-item {
+    display: grid;
+    grid-template-columns: 55px minmax(0, 1fr) auto;
+    gap: 24px;
+    align-items: center;
+    padding: 25px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .note-archive-item:hover h3 {
+    color: var(--accent);
+  }
+
+  .note-archive-index {
+    align-self: start;
+    padding-top: 3px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .note-archive-main {
+    min-width: 0;
+  }
+
+  .note-archive-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 7px;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .note-archive-main h3 {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(23px, 2.5vw, 34px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .note-archive-main p {
+    max-width: 780px;
+    margin: 7px 0 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .note-archive-link {
+    align-self: center;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--ink);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 800px) {
+    .note-archive-heading {
+      grid-template-columns: 1fr;
+    }
+
+    .note-archive-heading p {
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .note-archive {
+      width: min(100% - 30px, 520px);
+      padding-block: 70px 10px;
+    }
+
+    .note-archive-item {
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 14px;
+      padding: 22px 0;
+    }
+
+    .note-archive-link {
+      grid-column: 2;
+      justify-self: start;
+      margin-top: 4px;
+    }
+  }
+</style>
