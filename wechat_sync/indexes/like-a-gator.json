@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491716-1",
+      "title": "股市：关于创业板（2026.9.4）",
+      "publishedAt": "2026-09-04T17:22:10+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491716&idx=1&sn=43c2ea5a7cf8c56a06a40ebff828dc3e",
+      "markdownPath": "src/content/articles/2026-09-04-wx-dc354e7c-2247491716-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491716-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-dc354e7c-2247491704-1",
       "title": "股市：情绪退潮，结构还行（2026.9.3）",
       "publishedAt": "2026-09-03T16:41:30+08:00",
@@ -5412,5 +5421,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-03T19:23:22.310915+08:00"
+  "updatedAt": "2026-09-04T17:47:00.212173+08:00"
 }
