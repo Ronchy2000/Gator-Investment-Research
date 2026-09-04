@@ -2,10 +2,11 @@
 import { getCollection } from "astro:content";
 import ReportRow from "../../components/ReportRow.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { noteHref, sortNotes } from "../../lib/notes";
 import { REPORT_CATEGORIES, reportYear, sortReports } from "../../lib/reports";
 
 const reports = sortReports(await getCollection("reports"));
-const notes = await getCollection("notes");
+const notes = sortNotes(await getCollection("notes"));
 const categoryCounts = new Map(REPORT_CATEGORIES.map((category) => [category, 0]));
 const yearGroups = new Map<string, typeof reports>();
 for (const report of reports) {
@@ -40,7 +41,7 @@ const years = [...yearGroups.keys()];
   </section>
 
   {notes[0] && (
-    <a class="note-banner page-width" href={`/notes/${notes[0].id}/`}>
+    <a class="note-banner page-width" href={noteHref(notes[0])}>
       <span>投资随笔 · {notes[0].data.noteType}</span>
       <strong>{notes[0].data.title}</strong>
       <small>独立内容，不计入 913 篇机构研报 →</small>
