@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491734-1",
+      "title": "股市：静待利率决议（2026.9.7）",
+      "publishedAt": "2026-09-07T15:50:19+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491734&idx=1&sn=9dd09c3f48b5c6c4e3c7a8bebfc25a9f",
+      "markdownPath": "src/content/articles/2026-09-07-wx-dc354e7c-2247491734-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491734-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-dc354e7c-2247491716-1",
       "title": "股市：关于创业板（2026.9.4）",
       "publishedAt": "2026-09-04T17:22:10+08:00",
@@ -5421,5 +5430,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-04T17:47:00.212173+08:00"
+  "updatedAt": "2026-09-07T16:19:04.488525+08:00"
 }
