@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484092-1",
+      "title": "9.7周末消息汇总",
+      "publishedAt": "2026-09-07T08:30:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484092&idx=1&sn=5a98d7b81f9bdc23c1e740366a1a3e82",
+      "markdownPath": "src/content/articles/2026-09-07-wx-7a94aab6-2247484092-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484092-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484087-1",
       "title": "9.4美股科技大涨聚焦亚洲市场",
       "publishedAt": "2026-09-04T08:32:14+08:00",
@@ -687,5 +696,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-09-04T09:09:55.521767+08:00"
+  "updatedAt": "2026-09-07T09:12:23.011534+08:00"
 }
