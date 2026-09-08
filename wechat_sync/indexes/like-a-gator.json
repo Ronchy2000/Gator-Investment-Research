@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491750-1",
+      "title": "股市：熟悉的妖股氛围（2026.9.8）",
+      "publishedAt": "2026-09-08T17:40:16+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491750&idx=1&sn=4643e763649bd02f7e36180e55f8c6b3",
+      "markdownPath": "src/content/articles/2026-09-08-wx-dc354e7c-2247491750-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491750-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247491734-1",
       "title": "股市：静待利率决议（2026.9.7）",
       "publishedAt": "2026-09-07T15:50:19+08:00",
@@ -5430,5 +5439,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-07T16:19:04.488525+08:00"
+  "updatedAt": "2026-09-08T21:44:35.991774+08:00"
 }
