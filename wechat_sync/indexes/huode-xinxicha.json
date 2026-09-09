@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484106-1",
+      "title": "9.9科技利好繁多",
+      "publishedAt": "2026-09-09T08:48:19+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484106&idx=1&sn=7eeaf5093feb5404c415a5a4fcfb4653",
+      "markdownPath": "src/content/articles/2026-09-09-wx-7a94aab6-2247484106-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484106-1/cover.jpg",
+      "assetCount": 3
+    },
+    {
       "articleId": "wx-7a94aab6-2247484097-1",
       "title": "9.8科技行情蠢蠢欲动！",
       "publishedAt": "2026-09-08T08:39:58+08:00",
@@ -705,5 +714,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-09-08T09:17:35.364741+08:00"
+  "updatedAt": "2026-09-09T16:09:08.467514+08:00"
 }

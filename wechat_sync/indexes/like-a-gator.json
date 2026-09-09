@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491764-1",
+      "title": "股市：缩量弱轮动，不妙（2026.9.9）",
+      "publishedAt": "2026-09-09T15:58:13+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491764&idx=1&sn=1b658de789c2ace5078a01fa45a7ad31",
+      "markdownPath": "src/content/articles/2026-09-09-wx-dc354e7c-2247491764-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491764-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247491750-1",
       "title": "股市：熟悉的妖股氛围（2026.9.8）",
       "publishedAt": "2026-09-08T17:40:16+08:00",
@@ -5439,5 +5448,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-08T21:44:35.991774+08:00"
+  "updatedAt": "2026-09-09T16:09:25.368026+08:00"
 }
