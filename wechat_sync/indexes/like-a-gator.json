@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491780-1",
+      "title": "股市：短线顶级防御之术（2026.9.10）",
+      "publishedAt": "2026-09-10T15:52:30+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491780&idx=1&sn=f0f2e530a5240988a75dfbf33110b665",
+      "markdownPath": "src/content/articles/2026-09-10-wx-dc354e7c-2247491780-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491780-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247491764-1",
       "title": "股市：缩量弱轮动，不妙（2026.9.9）",
       "publishedAt": "2026-09-09T15:58:13+08:00",
@@ -5448,5 +5457,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-09T16:09:25.368026+08:00"
+  "updatedAt": "2026-09-11T09:20:00.122918+08:00"
 }
