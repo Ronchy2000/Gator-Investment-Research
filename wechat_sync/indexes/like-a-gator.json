@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491794-1",
+      "title": "股市：狼来了，亡羊补牢（2026.9.11）",
+      "publishedAt": "2026-09-11T17:02:36+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491794&idx=1&sn=357704fc8c81871aad295a20449661d9",
+      "markdownPath": "src/content/articles/2026-09-11-wx-dc354e7c-2247491794-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491794-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247491780-1",
       "title": "股市：短线顶级防御之术（2026.9.10）",
       "publishedAt": "2026-09-10T15:52:30+08:00",
@@ -5457,5 +5466,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-11T09:20:00.122918+08:00"
+  "updatedAt": "2026-09-12T09:21:25.670772+08:00"
 }
