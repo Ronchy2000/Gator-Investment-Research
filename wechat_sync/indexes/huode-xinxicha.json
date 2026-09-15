@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484127-1",
+      "title": "9.15海外AI踩刹车，科技大跌",
+      "publishedAt": "2026-09-15T08:30:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484127&idx=1&sn=5e6452843f214666fbd881aa98824bc8",
+      "markdownPath": "src/content/articles/2026-09-15-wx-7a94aab6-2247484127-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484127-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484122-1",
       "title": "9.14周末消息汇总，海外AI限速，国产替代加速",
       "publishedAt": "2026-09-14T08:32:00+08:00",
@@ -741,5 +750,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-09-14T09:21:53.819531+08:00"
+  "updatedAt": "2026-09-15T16:41:07.681670+08:00"
 }

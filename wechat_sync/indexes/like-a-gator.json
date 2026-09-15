@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491830-1",
+      "title": "股市：新低了，危or机？（2026.9.15）",
+      "publishedAt": "2026-09-15T16:35:45+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491830&idx=1&sn=e5c1d970a8a6bd4c9e46b6e8bc291ace",
+      "markdownPath": "src/content/articles/2026-09-15-wx-dc354e7c-2247491830-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491830-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247491814-1",
       "title": "股市：补跌&超跌反弹（2026.9.14）",
       "publishedAt": "2026-09-14T16:15:42+08:00",
@@ -5475,5 +5484,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-14T16:55:33.403918+08:00"
+  "updatedAt": "2026-09-15T16:41:22.209313+08:00"
 }
