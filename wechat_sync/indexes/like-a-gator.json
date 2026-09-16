@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491846-1",
+      "title": "股市：盲盒的诱惑（2026.9.16）",
+      "publishedAt": "2026-09-16T15:50:54+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491846&idx=1&sn=2f8beae5a33c6307e73ea65024e3746f",
+      "markdownPath": "src/content/articles/2026-09-16-wx-dc354e7c-2247491846-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491846-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247491830-1",
       "title": "股市：新低了，危or机？（2026.9.15）",
       "publishedAt": "2026-09-15T16:35:45+08:00",
@@ -5484,5 +5493,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-15T16:41:22.209313+08:00"
+  "updatedAt": "2026-09-17T00:34:23.423984+08:00"
 }
