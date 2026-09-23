@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491927-1",
+      "title": "股市：如来神掌，蓄力中（2026.9.23）",
+      "publishedAt": "2026-09-23T16:08:59+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491927&idx=1&sn=23bbfd201488cb0dd86c4907d99cf8fd",
+      "markdownPath": "src/content/articles/2026-09-23-wx-dc354e7c-2247491927-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491927-1/cover.jpg",
+      "assetCount": 12
+    },
+    {
       "articleId": "wx-dc354e7c-2247491912-1",
       "title": "股市：假期临近，波动加剧（2026.9.22）",
       "publishedAt": "2026-09-22T16:22:51+08:00",
@@ -5529,5 +5538,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-23T09:38:55.288103+08:00"
+  "updatedAt": "2026-09-23T16:35:28.012714+08:00"
 }
