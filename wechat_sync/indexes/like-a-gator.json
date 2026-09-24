@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491944-1",
+      "title": "股市：跌多少才会止跌？（2026.9.24）",
+      "publishedAt": "2026-09-24T15:47:52+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491944&idx=1&sn=807f1ef5b84e9c7eb1ea37ae4873d5a7",
+      "markdownPath": "src/content/articles/2026-09-24-wx-dc354e7c-2247491944-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491944-1/cover.jpg",
+      "assetCount": 13
+    },
+    {
       "articleId": "wx-dc354e7c-2247491927-1",
       "title": "股市：如来神掌，蓄力中（2026.9.23）",
       "publishedAt": "2026-09-23T16:08:59+08:00",
@@ -5538,5 +5547,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-23T16:35:28.012714+08:00"
+  "updatedAt": "2026-09-24T16:27:57.000802+08:00"
 }
