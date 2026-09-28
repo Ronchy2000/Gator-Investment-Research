@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484169-1",
+      "title": "9.27周末消息汇总。",
+      "publishedAt": "2026-09-28T08:28:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484169&idx=1&sn=ffe6e8fdfa227fc2aecb2b91c68fd4aa",
+      "markdownPath": "src/content/articles/2026-09-28-wx-7a94aab6-2247484169-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484169-1/cover.jpg",
+      "assetCount": 1
+    },
+    {
       "articleId": "wx-7a94aab6-2247484163-1",
       "title": "9.24全球关注——中美时间",
       "publishedAt": "2026-09-24T08:36:54+08:00",
@@ -813,5 +822,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-09-24T16:27:44.173280+08:00"
+  "updatedAt": "2026-09-28T09:50:59.795201+08:00"
 }
