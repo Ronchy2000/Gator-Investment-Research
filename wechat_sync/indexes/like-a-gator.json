@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491978-1",
+      "title": "股市：快速回本的方法（2026.9.30）",
+      "publishedAt": "2026-09-30T15:55:43+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491978&idx=1&sn=8c51c6ab58680cd95bb124c24c78ae0b",
+      "markdownPath": "src/content/articles/2026-09-30-wx-dc354e7c-2247491978-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491978-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-dc354e7c-2247491970-1",
       "title": "股市：错位与共振（2026.9.29）",
       "publishedAt": "2026-09-29T17:12:24+08:00",
@@ -5565,5 +5574,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-30T10:17:05.735027+08:00"
+  "updatedAt": "2026-09-30T17:42:45.256103+08:00"
 }
