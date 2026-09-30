@@ -12,6 +12,24 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484299-1",
+      "title": "9.30全是利好，开始打鸡血了。",
+      "publishedAt": "2026-09-30T08:30:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484299&idx=1&sn=fab92271c920840542bdc4aaab2add1c",
+      "markdownPath": "src/content/articles/2026-09-30-wx-7a94aab6-2247484299-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484299-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
+      "articleId": "wx-7a94aab6-2247484299-2",
+      "title": "生猪深度分析，一篇就够了！",
+      "publishedAt": "2026-09-30T08:30:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484299&idx=2&sn=2f54e997f39915496a047fd91d1c90ac",
+      "markdownPath": "src/content/articles/2026-09-30-wx-7a94aab6-2247484299-2.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484299-2/cover.jpg",
+      "assetCount": 13
+    },
+    {
       "articleId": "wx-7a94aab6-2247484178-1",
       "title": "9.29科技回调，AI有了新故事",
       "publishedAt": "2026-09-29T08:33:23+08:00",
@@ -831,5 +849,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-09-29T10:39:26.333674+08:00"
+  "updatedAt": "2026-09-30T10:16:55.751802+08:00"
 }

@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247491970-1",
+      "title": "股市：错位与共振（2026.9.29）",
+      "publishedAt": "2026-09-29T17:12:24+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247491970&idx=1&sn=a29521e7facd2b25857c410e9c67464b",
+      "markdownPath": "src/content/articles/2026-09-29-wx-dc354e7c-2247491970-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247491970-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247491960-1",
       "title": "股市：按止跌流程走（2026.9.28）",
       "publishedAt": "2026-09-28T15:36:04+08:00",
@@ -5556,5 +5565,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-09-28T16:39:59.191661+08:00"
+  "updatedAt": "2026-09-30T10:17:05.735027+08:00"
 }
