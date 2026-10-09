@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492007-1",
+      "title": "股市：护盘底、市场底（2026.10.9）",
+      "publishedAt": "2026-10-09T16:20:35+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492007&idx=1&sn=cc5f5952a9d465db27d2db4d3cd4936b",
+      "markdownPath": "src/content/articles/2026-10-09-wx-dc354e7c-2247492007-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492007-1/cover.jpg",
+      "assetCount": 12
+    },
+    {
       "articleId": "wx-dc354e7c-2247491991-1",
       "title": "股市：想红包，砸个包（2026.10.8）",
       "publishedAt": "2026-10-08T16:00:22+08:00",
@@ -5583,5 +5592,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-09T11:01:46.239730+08:00"
+  "updatedAt": "2026-10-09T18:33:56.632081+08:00"
 }
