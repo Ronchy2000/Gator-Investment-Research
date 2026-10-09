@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484319-1",
+      "title": "10.09加息风云再起",
+      "publishedAt": "2026-10-09T08:30:41+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484319&idx=1&sn=383d89820f1039de0179d8654420880a",
+      "markdownPath": "src/content/articles/2026-10-09-wx-7a94aab6-2247484319-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484319-1/cover.jpg",
+      "assetCount": 4
+    },
+    {
       "articleId": "wx-7a94aab6-2247484311-1",
       "title": "10.08假期消息汇总",
       "publishedAt": "2026-10-08T08:18:06+08:00",
@@ -858,5 +867,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-08T10:49:43.203245+08:00"
+  "updatedAt": "2026-10-09T11:01:31.550209+08:00"
 }
