@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484343-1",
+      "title": "10.13又有利空来了！",
+      "publishedAt": "2026-10-13T08:14:26+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484343&idx=1&sn=8de6f11856796662db40c9767fe1b1bb",
+      "markdownPath": "src/content/articles/2026-10-13-wx-7a94aab6-2247484343-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484343-1/cover.jpg",
+      "assetCount": 4
+    },
+    {
       "articleId": "wx-7a94aab6-2247484334-1",
       "title": "10.12周末消息汇总",
       "publishedAt": "2026-10-12T08:22:16+08:00",
@@ -885,5 +894,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-12T10:33:49.403066+08:00"
+  "updatedAt": "2026-10-13T11:44:11.892735+08:00"
 }
