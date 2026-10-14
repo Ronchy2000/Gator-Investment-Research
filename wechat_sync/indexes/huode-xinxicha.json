@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484352-1",
+      "title": "10.14市场悄悄转强了!",
+      "publishedAt": "2026-10-14T08:22:49+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484352&idx=1&sn=7c0a09bd7564b0e56bae89cde545275b",
+      "markdownPath": "src/content/articles/2026-10-14-wx-7a94aab6-2247484352-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484352-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-7a94aab6-2247484343-1",
       "title": "10.13又有利空来了！",
       "publishedAt": "2026-10-13T08:14:26+08:00",
@@ -894,5 +903,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-13T11:44:11.892735+08:00"
+  "updatedAt": "2026-10-14T10:04:26.573967+08:00"
 }
