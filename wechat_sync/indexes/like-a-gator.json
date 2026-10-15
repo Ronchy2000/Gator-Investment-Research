@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492054-1",
+      "title": "股市：放粮了，三日内涨（2026.10.15）",
+      "publishedAt": "2026-10-15T16:08:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492054&idx=1&sn=1dc6cd26f7eacfea39ee01d5782ef93a",
+      "markdownPath": "src/content/articles/2026-10-15-wx-dc354e7c-2247492054-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492054-1/cover.jpg",
+      "assetCount": 10
+    },
+    {
       "articleId": "wx-dc354e7c-2247492040-1",
       "title": "股市：放粮倒计时（2026.10.14）",
       "publishedAt": "2026-10-14T15:58:33+08:00",
@@ -5619,5 +5628,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-15T09:39:15.681808+08:00"
+  "updatedAt": "2026-10-15T16:18:38.002146+08:00"
 }
