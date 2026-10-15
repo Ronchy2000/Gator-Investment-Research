@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492040-1",
+      "title": "股市：放粮倒计时（2026.10.14）",
+      "publishedAt": "2026-10-14T15:58:33+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492040&idx=1&sn=ded4011438847b996c9bfc718b70f5ae",
+      "markdownPath": "src/content/articles/2026-10-14-wx-dc354e7c-2247492040-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492040-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247492030-1",
       "title": "股市：市场底的空间与时间（2026.10.13）",
       "publishedAt": "2026-10-13T16:04:57+08:00",
@@ -5610,5 +5619,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-13T18:36:21.341367+08:00"
+  "updatedAt": "2026-10-15T09:39:15.681808+08:00"
 }
