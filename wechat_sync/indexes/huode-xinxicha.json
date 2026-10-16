@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484371-1",
+      "title": "10.16再小利好也是利好！",
+      "publishedAt": "2026-10-16T08:35:59+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484371&idx=1&sn=9585d03994cb5d03b5ebad4991e8d534",
+      "markdownPath": "src/content/articles/2026-10-16-wx-7a94aab6-2247484371-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484371-1/cover.jpg",
+      "assetCount": 4
+    },
+    {
       "articleId": "wx-7a94aab6-2247484360-1",
       "title": "10.15加息预期上升，全球市场恐慌了！",
       "publishedAt": "2026-10-15T08:30:13+08:00",
@@ -912,5 +921,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-15T09:39:02.585479+08:00"
+  "updatedAt": "2026-10-16T09:34:28.023268+08:00"
 }
