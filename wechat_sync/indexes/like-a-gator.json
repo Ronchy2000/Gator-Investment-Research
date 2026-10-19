@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492084-1",
+      "title": "股市：右侧信号有哪些？（2026.10.19）",
+      "publishedAt": "2026-10-19T16:26:21+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492084&idx=1&sn=9ec747d1f091d7c368c9675b3f848aef",
+      "markdownPath": "src/content/articles/2026-10-19-wx-dc354e7c-2247492084-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492084-1/cover.jpg",
+      "assetCount": 12
+    },
+    {
       "articleId": "wx-dc354e7c-2247492068-1",
       "title": "股市：按照流程上涨（2026.10.16）",
       "publishedAt": "2026-10-16T16:20:02+08:00",
@@ -5637,5 +5646,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-17T09:24:46.843066+08:00"
+  "updatedAt": "2026-10-19T16:52:57.477431+08:00"
 }
