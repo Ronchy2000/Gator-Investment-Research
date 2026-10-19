@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484380-1",
+      "title": "10.19周末消息汇总",
+      "publishedAt": "2026-10-19T08:25:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484380&idx=1&sn=86f846bcecc98c39643d60d5a3c030e3",
+      "markdownPath": "src/content/articles/2026-10-19-wx-7a94aab6-2247484380-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484380-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-7a94aab6-2247484371-1",
       "title": "10.16再小利好也是利好！",
       "publishedAt": "2026-10-16T08:35:59+08:00",
@@ -921,5 +930,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-16T09:34:28.023268+08:00"
+  "updatedAt": "2026-10-19T09:30:26.310724+08:00"
 }
