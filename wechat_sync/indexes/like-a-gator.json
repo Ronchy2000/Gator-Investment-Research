@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492099-1",
+      "title": "股市：还悲观的可考虑销户（2026.10.20）",
+      "publishedAt": "2026-10-20T16:11:32+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492099&idx=1&sn=adafc68a234f348160dca3263aa351a2",
+      "markdownPath": "src/content/articles/2026-10-20-wx-dc354e7c-2247492099-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492099-1/cover.jpg",
+      "assetCount": 10
+    },
+    {
       "articleId": "wx-dc354e7c-2247492084-1",
       "title": "股市：右侧信号有哪些？（2026.10.19）",
       "publishedAt": "2026-10-19T16:26:21+08:00",
@@ -5646,5 +5655,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-19T16:52:57.477431+08:00"
+  "updatedAt": "2026-10-20T16:34:07.709497+08:00"
 }
