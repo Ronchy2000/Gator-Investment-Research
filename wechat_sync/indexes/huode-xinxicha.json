@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484390-1",
+      "title": "10.20利好如大雨般落下",
+      "publishedAt": "2026-10-20T08:33:26+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484390&idx=1&sn=adb8fc9fbb84a032046837e264368c65",
+      "markdownPath": "src/content/articles/2026-10-20-wx-7a94aab6-2247484390-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484390-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-7a94aab6-2247484380-1",
       "title": "10.19周末消息汇总",
       "publishedAt": "2026-10-19T08:25:00+08:00",
@@ -930,5 +939,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-19T09:30:26.310724+08:00"
+  "updatedAt": "2026-10-20T09:59:32.794755+08:00"
 }
