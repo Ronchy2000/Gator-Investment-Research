@@ -315,8 +315,13 @@ main {
 
 .footer-traffic > div {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 14px;
+}
+
+.footer-traffic > [hidden] {
+  display: none;
 }
 
 .footer-traffic > div > span {
@@ -333,6 +338,12 @@ main {
 }
 
 .footer-traffic small {
+  color: color-mix(in srgb, var(--paper) 62%, transparent);
+  font-size: 10px;
+}
+
+.traffic-status {
+  margin: 0;
   color: color-mix(in srgb, var(--paper) 62%, transparent);
   font-size: 10px;
 }
