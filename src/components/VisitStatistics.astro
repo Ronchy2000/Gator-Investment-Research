@@ -1,9 +1,9 @@
 <div class="footer-traffic" data-visit-statistics aria-label="网站访问统计">
   <span class="traffic-label">SITE SIGNAL / BUSUANZI</span>
   <div data-traffic-values aria-live="polite" hidden>
-    <span><strong id="busuanzi_value_site_uv"></strong><small>累计访客</small></span>
+    <span><strong id="busuanzi_site_uv"></strong><small>累计访客</small></span>
     <i aria-hidden="true"></i>
-    <span><strong id="busuanzi_value_site_pv"></strong><small>累计浏览</small></span>
+    <span><strong id="busuanzi_site_pv"></strong><small>累计浏览</small></span>
   </div>
   <p class="traffic-status" data-traffic-status role="status" hidden></p>
   <noscript class="traffic-status">启用 JavaScript 后可查看访问统计。</noscript>
@@ -13,8 +13,8 @@
   const statistics = document.querySelector<HTMLElement>("[data-visit-statistics]");
   const values = statistics?.querySelector<HTMLElement>("[data-traffic-values]");
   const status = statistics?.querySelector<HTMLElement>("[data-traffic-status]");
-  const visitors = document.getElementById("busuanzi_value_site_uv");
-  const views = document.getElementById("busuanzi_value_site_pv");
+  const visitors = document.getElementById("busuanzi_site_uv");
+  const views = document.getElementById("busuanzi_site_pv");
 
   if (statistics && values && status && visitors && views) {
     let received = false;
@@ -27,7 +27,7 @@
     };
     const timeout = window.setTimeout(showUnavailable, 12_000);
     const observer = new MutationObserver(() => {
-      // The script loading successfully does not mean its JSONP request succeeded.
+      // The script loading successfully does not mean its statistics request succeeded.
       if (
         !/^\d+$/.test(visitors.textContent?.trim() || "") ||
         !/^\d+$/.test(views.textContent?.trim() || "")
@@ -43,7 +43,8 @@
 
     const script = document.createElement("script");
     script.async = true;
-    script.src = "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js";
+    // Keep the existing provider: another service has an independent counter history.
+    script.src = "https://cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js";
     script.onerror = () => {
       window.clearTimeout(timeout);
       showUnavailable();

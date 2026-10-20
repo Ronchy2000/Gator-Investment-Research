@@ -94,9 +94,9 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 站点仅使用少量原生 JavaScript 处理搜索、主题、阅读进度和图片放大，不引入 React/Vue 等运行时框架。
 
-品牌资源统一使用 `public/brand/huode-xinxicha-logo.jpg`，用于页头、页脚、favicon、默认社交分享图和无封面占位。页脚由 `VisitStatistics.astro` 接入原版不蒜子 `busuanzi.ibruce.info`，使用 `busuanzi_value_site_pv` / `busuanzi_value_site_uv` 展示全站 PV/UV。只有两项计数均返回有效数字时才显示；脚本加载失败或 12 秒内未返回计数时显示“访问统计暂不可用”，迟到的有效响应仍可恢复展示。统计加载不会阻塞内容页面。
+品牌资源统一使用 `public/brand/huode-xinxicha-logo.jpg`，用于页头、页脚、favicon、默认社交分享图和无封面占位。页脚由 `VisitStatistics.astro` 接入既有的 `cdn.busuanzi.cc` 统计服务，使用 `busuanzi_site_pv` / `busuanzi_site_uv` 展示全站 PV/UV。只有两项计数均返回有效数字时才显示；脚本加载失败或 12 秒内未返回计数时显示“访问统计暂不可用”，迟到的有效响应仍可恢复展示。统计加载不会阻塞内容页面。
 
-此前使用的 `cdn.busuanzi.cc` 脚本会向同域 `/api.php` 发起请求；2026-10-20 排查时，该接口及预检请求均返回 HTTP 502。原版不蒜子与 `.cc` 服务的数据独立，历史计数不能直接拼接，页面只显示当前服务实际返回的数据。
+`cdn.busuanzi.cc` 脚本向同域 `/api.php` POST 当前页面 URL 与 referrer；2026-10-20 排查时，原样 POST 请求仍返回 HTTP 502。历史计数由该服务端保存，仓库中的接入代码不包含计数备份。`busuanzi.ibruce.info` 与 `.cc` 数据独立，因此不跨服务自动兜底、不拼接历史计数。接口故障期间显示不可用状态；历史数字能否恢复需以原服务实际返回的数据为准。
 
 ## 自动化
 
