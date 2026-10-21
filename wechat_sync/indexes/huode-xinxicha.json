@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484401-1",
+      "title": "10.21最有希望的一天。",
+      "publishedAt": "2026-10-21T09:36:59+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484401&idx=1&sn=8ca63f5804f72069a3526c14c444adfe",
+      "markdownPath": "src/content/articles/2026-10-21-wx-7a94aab6-2247484401-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484401-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-7a94aab6-2247484390-1",
       "title": "10.20利好如大雨般落下",
       "publishedAt": "2026-10-20T08:33:26+08:00",
@@ -939,5 +948,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-20T09:59:32.794755+08:00"
+  "updatedAt": "2026-10-21T09:50:13.604152+08:00"
 }
