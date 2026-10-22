@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492124-1",
+      "title": "股市：绝望出拐点（2026.10.22）",
+      "publishedAt": "2026-10-22T16:10:37+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492124&idx=1&sn=f5a514d935ed0be2886b90820d4f6fd5",
+      "markdownPath": "src/content/articles/2026-10-22-wx-dc354e7c-2247492124-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492124-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247492114-1",
       "title": "股市：一收一放，滴灌（2026.10.21）",
       "publishedAt": "2026-10-21T16:51:18+08:00",
@@ -5664,5 +5673,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-22T09:41:45.702404+08:00"
+  "updatedAt": "2026-10-22T16:37:21.792439+08:00"
 }
