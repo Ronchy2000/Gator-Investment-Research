@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484427-1",
+      "title": "10.23全球下跌，原因竟是这！",
+      "publishedAt": "2026-10-23T08:19:01+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484427&idx=1&sn=87ebb90493248d758aa9149e8cace070",
+      "markdownPath": "src/content/articles/2026-10-23-wx-7a94aab6-2247484427-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484427-1/cover.jpg",
+      "assetCount": 9
+    },
+    {
       "articleId": "wx-7a94aab6-2247484412-1",
       "title": "10.22空头藏不住了！",
       "publishedAt": "2026-10-22T08:31:39+08:00",
@@ -957,5 +966,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-22T09:41:29.275918+08:00"
+  "updatedAt": "2026-10-23T09:44:39.029597+08:00"
 }
