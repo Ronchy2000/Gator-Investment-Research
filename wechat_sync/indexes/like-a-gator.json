@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492148-1",
+      "title": "股市：戏台稳住，戏子自来（2026.10.26）",
+      "publishedAt": "2026-10-26T16:07:13+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492148&idx=1&sn=d5ec8e515d6b4ad01e0da53dcbb40957",
+      "markdownPath": "src/content/articles/2026-10-26-wx-dc354e7c-2247492148-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492148-1/cover.jpg",
+      "assetCount": 10
+    },
+    {
       "articleId": "wx-dc354e7c-2247492135-1",
       "title": "股市：阶段胜利，下一步重点（2026.10.23）",
       "publishedAt": "2026-10-23T16:14:12+08:00",
@@ -5682,5 +5691,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-23T16:33:20.296547+08:00"
+  "updatedAt": "2026-10-26T16:55:44.657642+08:00"
 }
