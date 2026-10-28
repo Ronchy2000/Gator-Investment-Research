@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492170-1",
+      "title": "股市：人心思涨，大手按（2026.10.28）",
+      "publishedAt": "2026-10-28T15:50:47+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492170&idx=1&sn=92f45cebf4f68e45a2d8b5dbbc943931",
+      "markdownPath": "src/content/articles/2026-10-28-wx-dc354e7c-2247492170-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492170-1/cover.jpg",
+      "assetCount": 10
+    },
+    {
       "articleId": "wx-dc354e7c-2247492157-1",
       "title": "股市：葫芦里卖的两种药（2026.10.27）",
       "publishedAt": "2026-10-27T16:22:13+08:00",
@@ -5700,5 +5709,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-27T17:00:38.852881+08:00"
+  "updatedAt": "2026-10-28T17:40:15.173496+08:00"
 }
