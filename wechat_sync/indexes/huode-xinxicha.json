@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484464-1",
+      "title": "10.29史诗级机会指南！",
+      "publishedAt": "2026-10-29T08:31:20+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484464&idx=1&sn=86ec756a781db6633231b21812f40997",
+      "markdownPath": "src/content/articles/2026-10-29-wx-7a94aab6-2247484464-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484464-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-7a94aab6-2247484453-1",
       "title": "10.28打服了就该养养了！",
       "publishedAt": "2026-10-28T08:16:07+08:00",
@@ -993,5 +1002,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-28T10:30:04.531563+08:00"
+  "updatedAt": "2026-10-29T10:38:26.472624+08:00"
 }
