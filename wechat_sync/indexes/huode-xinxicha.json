@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484472-1",
+      "title": "10.30一篇讲透下跌本质",
+      "publishedAt": "2026-10-30T07:37:36+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484472&idx=1&sn=4ace1fdc255510e1ee3b766c9b47c836",
+      "markdownPath": "src/content/articles/2026-10-30-wx-7a94aab6-2247484472-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484472-1/cover.jpg",
+      "assetCount": 3
+    },
+    {
       "articleId": "wx-7a94aab6-2247484464-1",
       "title": "10.29史诗级机会指南！",
       "publishedAt": "2026-10-29T08:31:20+08:00",
@@ -1002,5 +1011,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-29T10:38:26.472624+08:00"
+  "updatedAt": "2026-10-30T10:46:34.636619+08:00"
 }
