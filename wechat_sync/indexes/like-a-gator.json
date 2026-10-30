@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492195-1",
+      "title": "股市：先救香港，再救内地（2026.10.30）",
+      "publishedAt": "2026-10-30T16:57:53+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492195&idx=1&sn=e5a98f442851c35f4e51794d155b6576",
+      "markdownPath": "src/content/articles/2026-10-30-wx-dc354e7c-2247492195-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492195-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247492184-1",
       "title": "股市：队友祭天，曲折向前（2026.10.29）",
       "publishedAt": "2026-10-29T15:58:44+08:00",
@@ -5718,5 +5727,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-10-29T17:58:22.553717+08:00"
+  "updatedAt": "2026-10-30T18:01:45.679141+08:00"
 }
