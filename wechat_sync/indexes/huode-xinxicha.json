@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484484-1",
+      "title": "11.2农历九二四，看周末大事！",
+      "publishedAt": "2026-11-02T08:10:14+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484484&idx=1&sn=701d5fafc4df4c398ab017ef3c206bac",
+      "markdownPath": "src/content/articles/2026-11-02-wx-7a94aab6-2247484484-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484484-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-7a94aab6-2247484472-1",
       "title": "10.30一篇讲透下跌本质",
       "publishedAt": "2026-10-30T07:37:36+08:00",
@@ -1011,5 +1020,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-10-30T10:46:34.636619+08:00"
+  "updatedAt": "2026-11-02T10:40:39.858013+08:00"
 }
