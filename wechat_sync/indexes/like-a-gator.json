@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492228-1",
+      "title": "股市：救市，不救赌徒（2026.11.3）",
+      "publishedAt": "2026-11-03T17:00:47+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492228&idx=1&sn=f30aaf5d68fed3d6c2118998a6390387",
+      "markdownPath": "src/content/articles/2026-11-03-wx-dc354e7c-2247492228-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492228-1/cover.jpg",
+      "assetCount": 13
+    },
+    {
       "articleId": "wx-dc354e7c-2247492210-1",
       "title": "股市：耐心等连阳（2026.11.2）",
       "publishedAt": "2026-11-02T16:56:28+08:00",
@@ -5736,5 +5745,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-02T19:07:04.289811+08:00"
+  "updatedAt": "2026-11-03T18:53:00.996838+08:00"
 }
