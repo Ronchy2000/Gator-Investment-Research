@@ -10,7 +10,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "stats:snapshot": "node --experimental-strip-types scripts/snapshot-visit-statistics.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "4.0.19",

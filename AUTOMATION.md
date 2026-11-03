@@ -1,4 +1,4 @@
-# GitHub Actions 自动同步
+# GitHub Actions 自动同步与统计备份
 
 生产分支轮询 RapidAPI 上三套微信公众号数据产品获取文章列表，不再依赖微信读书扫码、`vid` 或短期登录令牌。正文优先保留微信原始 DOM；原文受限时回退到两套已验证能保持图文顺序的详情接口。封面与正文图片由仓库下载器从微信 CDN 本地化。
 
@@ -240,3 +240,30 @@ python -m wechat_sync.sync --max-pages 1 --delay 3
 ## 9. 历史实现
 
 微信读书扫码、中转接口和账号池实现冻结在 `legacy/weread-sync` 分支。旧版 Docsify 网站保存在 `legacy/docsify-archive` 分支。生产 `master` 不再依赖这两套历史实现。
+
+## 10. 每日访问统计备份
+
+统计备份独立于公众号同步，由 `.github/workflows/visit-statistics.yml` 运行：
+
+| 项目 | 配置 |
+| --- | --- |
+| Actions 名称 | `Daily Visit Statistics Backup` |
+| 计划时间 | 每天 `15:43 UTC`，即北京时间／台北时间 `23:43`；GitHub 调度可能延迟 |
+| 分支 | `master` |
+| 统计来源 | 原有 `cdn.busuanzi.cc/api.php`，固定正式站点 `https://gator.ronchy2000.top/` |
+| 最新有效计数 | `statistics/visit-statistics.json` |
+| 历史与故障记录 | `statistics/visit-history/YYYY-MM.jsonl`，按 UTC+8 月份分文件，每次执行追加一行 |
+| 额外备份 | 每次运行上传 artifact，保留 90 天；Git 历史长期保存 |
+| 所需凭据 | 工作流自带 `GITHUB_TOKEN`，需要 `contents: write`，无需新增 Secret |
+
+初始记录采用用户在 `2026-11-04` 提供的累计访客 **12778**、累计浏览 **30166**，来源标记 `manual`。每日成功采集后，来源改为 `api`，并更新数字与保存时间。
+
+采集器最多尝试 3 次，每次超时 15 秒，失败后间隔 5 秒。UV/PV 必须是正安全整数、PV ≥ UV，且两项都不能低于上次有效记录。空响应、HTTP 错误、无效 JSON、归零和计数倒退都视为失败，不能覆盖有效计数或刷新其保存时间；文件中的 `lastCheck` 则记录最后一次采集结果、时间和运行链接。历史行包含每次尝试的结果、错误原因、最终保留的快照与运行链接，失败也会提交，便于确定最近正常记录。
+
+页面直接展示构建时保存的数字，再请求实时计数。接口异常或 12 秒内未返回时，页脚会显示“实时统计暂不可用／异常 · 显示 YYYY-MM-DD 保存记录”；接口恢复后自动切换为实时数字。页面还会请求同站点 `/visit-statistics.json` 刷新备份；该请求也失败时仍保留构建时备份。
+
+查看记录时，先进入 `Actions -> Daily Visit Statistics Backup`，打开运行摘要。红色运行表示采集或保存流程失败；即使采集失败，也会先尝试提交保留的计数与故障记录，再将工作流标记失败。若 Git 推送失败，可以下载该运行的 `visit-statistics-<run_id>-<run_attempt>` artifact，再与仓库历史对照。
+
+手动采集可在该工作流点击 `Run workflow` 并选择 `master`。本地有 Node.js `>=22.12.0` 时，也可运行 `npm run stats:snapshot`，无需安装依赖；它会请求真实接口并改写统计记录。原接口同时承担访问上报，自动采集也可能计入流量，每天最多发出 3 次请求，不会从计数中人为扣减。
+
+将代码推送到 `master` 后，定时任务和页面回退才会在生产环境生效。若仓库分支保护不允许 `GITHUB_TOKEN` 直接写入，需要按现有仓库规则允许机器人提交，否则以 artifact 保留本次数据；EdgeOne 仍需保持监听 `master` 的自动部署。更换正式域名时，应同时修改 `astro.config.mjs`、`src/lib/visit-statistics.ts` 与统计快照中的 `siteUrl`，避免读取到其他站点的计数。

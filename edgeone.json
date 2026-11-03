@@ -4,6 +4,15 @@
   "outputDirectory": "dist",
   "headers": [
     {
+      "source": "/visit-statistics.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/*",
       "headers": [
         {

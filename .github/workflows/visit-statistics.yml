@@ -1,0 +1,77 @@
+name: Daily Visit Statistics Backup
+
+on:
+  schedule:
+    # UTC 15:43 = UTC+8 23:43. GitHub scheduled runs may be delayed.
+    - cron: "43 15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: visit-statistics-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Capture counters and record failures
+        id: capture
+        continue-on-error: true
+        run: npm run stats:snapshot
+
+      - name: Upload backup and collection history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visit-statistics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            statistics/visit-statistics.json
+            statistics/visit-history/
+          retention-days: 90
+
+      - name: Commit backup and collection history
+        if: always() && steps.capture.outcome != 'skipped'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add statistics/visit-statistics.json statistics/visit-history
+          if git diff --cached --quiet; then
+            echo "没有可保存的统计变更。"
+            exit 0
+          fi
+          backup_date="$(TZ=Asia/Taipei date +%F)"
+          git commit -m "data: back up visit statistics (${backup_date})"
+          for attempt in 1 2 3; do
+            git pull --rebase origin master
+            if git push origin HEAD:master; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep 5
+            fi
+          done
+          echo "::error::统计记录推送失败，本次数据仍可在工作流 artifact 中下载。"
+          exit 1
+
+      - name: Mark collection failure after preserving records
+        if: always() && steps.capture.outcome == 'failure'
+        run: |
+          echo "::error::访问统计采集失败；已尝试保存故障记录和原有备份，请查看步骤摘要与 artifact。"
+          exit 1

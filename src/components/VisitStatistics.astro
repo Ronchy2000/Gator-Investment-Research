@@ -1,55 +1,134 @@
-<div class="footer-traffic" data-visit-statistics aria-label="网站访问统计">
+---
+import savedStatistics from "../../statistics/visit-statistics.json";
+import { isVisitSnapshot, snapshotDate } from "../lib/visit-statistics";
+
+const backup = isVisitSnapshot(savedStatistics) ? savedStatistics : null;
+const backupLabel = backup
+  ? `显示 ${snapshotDate(backup)} 保存记录${backup.source === "manual" ? "（手动记录）" : ""}`
+  : "访问统计暂不可用";
+---
+
+<div class="footer-traffic" data-visit-statistics data-state="backup" aria-label="网站访问统计">
   <span class="traffic-label">SITE SIGNAL / BUSUANZI</span>
-  <div data-traffic-values aria-live="polite" hidden>
-    <span><strong id="busuanzi_site_uv"></strong><small>累计访客</small></span>
+  <div data-traffic-values aria-live="polite" hidden={!backup}>
+    <span><strong data-traffic-visitors>{backup?.siteUv}</strong><small>累计访客</small></span>
     <i aria-hidden="true"></i>
-    <span><strong id="busuanzi_site_pv"></strong><small>累计浏览</small></span>
+    <span><strong data-traffic-views>{backup?.sitePv}</strong><small>累计浏览</small></span>
   </div>
-  <p class="traffic-status" data-traffic-status role="status" hidden></p>
-  <noscript class="traffic-status">启用 JavaScript 后可查看访问统计。</noscript>
+  <p class="traffic-status" data-traffic-status role="status">{backupLabel}</p>
+  <!-- Provider output is isolated so the saved numbers cannot be mistaken for a live response. -->
+  <div data-traffic-provider hidden aria-hidden="true">
+    <span id="busuanzi_site_uv"></span>
+    <span id="busuanzi_site_pv"></span>
+  </div>
 </div>
 
 <script>
+  import savedStatistics from "../../statistics/visit-statistics.json";
+  import {
+    countsAtLeast,
+    isVisitSnapshot,
+    readBusuanziCounts,
+    snapshotDate,
+    snapshotTime,
+    type VisitCounts,
+    type VisitSnapshot,
+  } from "../lib/visit-statistics";
+
   const statistics = document.querySelector<HTMLElement>("[data-visit-statistics]");
   const values = statistics?.querySelector<HTMLElement>("[data-traffic-values]");
   const status = statistics?.querySelector<HTMLElement>("[data-traffic-status]");
-  const visitors = document.getElementById("busuanzi_site_uv");
-  const views = document.getElementById("busuanzi_site_pv");
+  const visitors = statistics?.querySelector<HTMLElement>("[data-traffic-visitors]");
+  const views = statistics?.querySelector<HTMLElement>("[data-traffic-views]");
+  const provider = statistics?.querySelector<HTMLElement>("[data-traffic-provider]");
+  const providerVisitors = document.getElementById("busuanzi_site_uv");
+  const providerViews = document.getElementById("busuanzi_site_pv");
 
-  if (statistics && values && status && visitors && views) {
-    let received = false;
-    status.textContent = "正在读取访问统计…";
-    status.hidden = false;
+  if (statistics && values && status && visitors && views && provider && providerVisitors && providerViews) {
+    let backup: VisitSnapshot | null = isVisitSnapshot(savedStatistics) ? savedStatistics : null;
+    let liveCounts: VisitCounts | null = null;
+    let fallbackReason = "正在读取实时统计";
+
+    const showBackup = () => {
+      if (liveCounts) return;
+      statistics.dataset.state = "backup";
+      if (backup) {
+        visitors.textContent = String(backup.siteUv);
+        views.textContent = String(backup.sitePv);
+        values.hidden = false;
+        status.textContent = `${fallbackReason} · 显示 ${snapshotDate(backup)} 保存记录${backup.source === "manual" ? "（手动记录）" : ""}`;
+        status.title = `保存时间：${backup.updatedAt}`;
+      } else {
+        values.hidden = true;
+        status.textContent = `${fallbackReason}，暂无已保存记录`;
+      }
+      status.hidden = false;
+    };
 
     const showUnavailable = () => {
-      if (received) return;
-      status.textContent = "访问统计暂不可用";
+      fallbackReason = "实时统计暂不可用";
+      showBackup();
     };
+    showBackup();
     const timeout = window.setTimeout(showUnavailable, 12_000);
-    const observer = new MutationObserver(() => {
-      // The script loading successfully does not mean its statistics request succeeded.
-      if (
-        !/^\d+$/.test(visitors.textContent?.trim() || "") ||
-        !/^\d+$/.test(views.textContent?.trim() || "")
-      ) return;
 
-      received = true;
+    const observer = new MutationObserver(() => {
+      const uv = providerVisitors.textContent?.trim();
+      const pv = providerViews.textContent?.trim();
+      if (!uv || !pv) return;
+      const counts = readBusuanziCounts({ busuanzi_site_uv: uv, busuanzi_site_pv: pv });
+      const baseline = liveCounts ?? backup;
+      if (!counts || (baseline && !countsAtLeast(counts, baseline))) {
+        liveCounts = null;
+        window.clearTimeout(timeout);
+        fallbackReason = "实时统计异常";
+        showBackup();
+        return;
+      }
+
+      liveCounts = counts;
       window.clearTimeout(timeout);
-      observer.disconnect();
+      visitors.textContent = String(counts.siteUv);
+      views.textContent = String(counts.sitePv);
       values.hidden = false;
       status.hidden = true;
+      statistics.dataset.state = "live";
     });
-    observer.observe(values, { childList: true, characterData: true, subtree: true });
+    // Only observe provider output; changing the displayed backup never triggers this observer.
+    // Keep observing after errors/timeouts so a late valid response can restore live counts.
+    observer.observe(provider, { childList: true, characterData: true, subtree: true });
+
+    // Refresh the backup for readers opening an older cached HTML page or script bundle.
+    fetch("/visit-statistics.json", { cache: "no-store", signal: AbortSignal.timeout(5_000) })
+      .then((response) => {
+        if (!response.ok) throw new Error("统计备份暂不可用");
+        return response.json();
+      })
+      .then((snapshot: unknown) => {
+        if (!isVisitSnapshot(snapshot)) return;
+        if (backup && (
+          !countsAtLeast(snapshot, backup) ||
+          snapshotTime(snapshot) < snapshotTime(backup)
+        )) return;
+        backup = snapshot;
+        if (liveCounts && !countsAtLeast(liveCounts, snapshot)) {
+          liveCounts = null;
+          fallbackReason = "实时统计异常";
+        }
+        showBackup();
+      })
+      .catch(() => {
+        // The build-time snapshot remains usable if the backup request also fails.
+      });
 
     const script = document.createElement("script");
     script.async = true;
-    // Keep the existing provider: another service has an independent counter history.
+    // Another provider has an independent history; always keep the original source.
     script.src = "https://cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js";
     script.onerror = () => {
       window.clearTimeout(timeout);
       showUnavailable();
     };
-    // Keep observing after a timeout so a late response can still show real counts.
     document.head.appendChild(script);
   }
 </script>

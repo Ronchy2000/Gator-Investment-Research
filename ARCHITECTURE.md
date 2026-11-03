@@ -94,9 +94,11 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 
 站点仅使用少量原生 JavaScript 处理搜索、主题、阅读进度和图片放大，不引入 React/Vue 等运行时框架。
 
-品牌资源统一使用 `public/brand/huode-xinxicha-logo.jpg`，用于页头、页脚、favicon、默认社交分享图和无封面占位。页脚由 `VisitStatistics.astro` 接入既有的 `cdn.busuanzi.cc` 统计服务，使用 `busuanzi_site_pv` / `busuanzi_site_uv` 展示全站 PV/UV。只有两项计数均返回有效数字时才显示；脚本加载失败或 12 秒内未返回计数时显示“访问统计暂不可用”，迟到的有效响应仍可恢复展示。统计加载不会阻塞内容页面。
+品牌资源统一使用 `public/brand/huode-xinxicha-logo.jpg`，用于页头、页脚、favicon、默认社交分享图和无封面占位。页脚由 `VisitStatistics.astro` 接入既有的 `cdn.busuanzi.cc` 统计服务。构建时先把 `statistics/visit-statistics.json` 中的有效计数和保存日期写入 HTML，因此禁用 JavaScript 或接口故障时仍可阅读备份。浏览器通过 `/visit-statistics.json` 刷新备份，避免旧页面缓存固定显示旧记录；此静态 JSON 由 `src/pages/visit-statistics.json.ts` 生成，EdgeOne 为它设置 `Cache-Control: no-store`。
 
-`cdn.busuanzi.cc` 脚本向同域 `/api.php` POST 当前页面 URL 与 referrer；2026-10-20 排查时，原样 POST 请求仍返回 HTTP 502。历史计数由该服务端保存，仓库中的接入代码不包含计数备份。`busuanzi.ibruce.info` 与 `.cc` 数据独立，因此不跨服务自动兜底、不拼接历史计数。接口故障期间显示不可用状态；历史数字能否恢复需以原服务实际返回的数据为准。
+原脚本继续写入独立隐藏节点 `busuanzi_site_uv` / `busuanzi_site_pv`，前端仅观察这两个节点，避免把备份误认成实时响应。两项计数必须为正安全整数、PV 不小于 UV，且均不低于已保存计数，才切换为实时数字并隐藏备份提示。脚本失败、12 秒超时或数字异常时继续显示备份及日期，迟到的有效响应仍可恢复。浏览器与每日采集器共用 `src/lib/visit-statistics.ts` 中的数据校验规则。
+
+`cdn.busuanzi.cc` 脚本向同域 `/api.php` POST 当前页面 URL 与 referrer；每日采集器使用相同协议及正式站点 URL，不访问会执行脚本的网页。`busuanzi.ibruce.info` 与 `.cc` 数据独立，因此不跨服务切换，也不拼接历史计数。初始备份为用户在 `2026-11-04` 提供的 UV **12778**、PV **30166**，标记为 `source: manual`，只记录已知日期；首次成功采集后改为 `source: api` 并记录精确时间。
 
 ## 自动化
 
@@ -110,6 +112,7 @@ Astro 使用 `src/content.config.ts` 中的 schema 读取全部文章，在构�
 6. 任何阶段失败时创建或更新唯一的 GitHub Issue；后续恢复时自动关闭。
 
 EdgeOne Pages 监听内容提交并执行 `npm run build`，静态输出目录为 `dist`。
+`.github/workflows/visit-statistics.yml` 独立在每天 `15:43 UTC`（北京时间／台北时间 `23:43`）备份统计，也支持手动运行。它不安装 npm 依赖，只使用 Node.js 22 的原生 fetch 与类型剥离运行采集器。成功时更新最新快照；失败时保留有效计数和原保存时间，只更新最后采集状态。每次执行都会向 `statistics/visit-history/YYYY-MM.jsonl` 追加记录并提交到 `master`；工作流摘要与保留 90 天的 artifact 提供另一份记录。采集失败在保存动作后仍将工作流标红，推送失败也可从 artifact 找回数据。持久记录以 Git 中的 JSON/JSONL 为准。
 RapidAPI Key、GitHub Secrets 与 Action 运维见 `AUTOMATION.md`；新建或迁移 EdgeOne Pages 项目见 `DEPLOYMENT.md`。
 
 ## 分支布局

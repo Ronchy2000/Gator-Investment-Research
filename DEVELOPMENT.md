@@ -85,6 +85,11 @@ public/
   brand/                  Logo、README 封面等品牌资源
   note-assets/            投资随笔图片
   report-assets/          历史研报图片或失效说明占位图
+scripts/
+  snapshot-visit-statistics.mjs  每日访问统计采集与故障留档（Node.js 原生运行）
+statistics/
+  visit-statistics.json    最新有效 UV/PV、保存时间与最后采集状态
+  visit-history/          按月追加的访问统计采集历史（JSONL）
 wechat_sync/
   client.py               RapidAPI 列表、详情接口与 Key 故障转移客户端
   downloader.py           详情 HTML 解析与微信媒体本地化
@@ -104,6 +109,8 @@ wechat_sync/
 - `public/article-assets/`：与公众号文章 ID 对应的封面和正文图片。
 
 新增内容必须保持 Markdown frontmatter、`wechat_sync/indexes/<slug>.json` 和本地图片引用一致。同步器只会在文章与所需媒体完整时写入对应账号的完成索引。
+
+访问统计备份由独立工作流每日保存，不受公众号是否新增文章影响。采集器与页脚共用 `src/lib/visit-statistics.ts` 的校验规则；浏览器可读取静态接口 `/visit-statistics.json`。详细调度、失败记录及手动采集方式见 [AUTOMATION.md](AUTOMATION.md#10-每日访问统计备份)。
 
 ## 分支约定
 

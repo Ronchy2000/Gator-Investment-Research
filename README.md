@@ -84,7 +84,7 @@ README 只负责介绍项目。实现、部署与运维细节分别放在以下�
 | --- | --- |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | 本地开发、构建命令、目录结构与分支约定 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 数据流、同步器、内容模型与前端架构 |
-| [AUTOMATION.md](AUTOMATION.md) | RapidAPI Key 池、GitHub Secrets、每日 Action 与故障处理 |
+| [AUTOMATION.md](AUTOMATION.md) | RapidAPI Key 池、GitHub Secrets、每日 Action、访问统计备份与故障处理 |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | EdgeOne Pages、生产分支、自定义域名与部署排查 |
 | [wechat_sync/README.md](wechat_sync/README.md) | 微信公众号同步器的参数与行为 |
 | [CHANGELOG.md](CHANGELOG.md) | 主要版本与迁移记录 |
