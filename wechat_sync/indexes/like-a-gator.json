@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492253-1",
+      "title": "股市：放量缩量，走走停停（2026.11.5）",
+      "publishedAt": "2026-11-05T15:46:57+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492253&idx=1&sn=b5382c621da03fe77a6dd7cf3f6cf0bd",
+      "markdownPath": "src/content/articles/2026-11-05-wx-dc354e7c-2247492253-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492253-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247492241-1",
       "title": "股市：尊重龙哥，尊重市场（2026.11.4）",
       "publishedAt": "2026-11-04T16:24:32+08:00",
@@ -5754,5 +5763,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-05T11:37:33.127089+08:00"
+  "updatedAt": "2026-11-05T18:56:29.848731+08:00"
 }
