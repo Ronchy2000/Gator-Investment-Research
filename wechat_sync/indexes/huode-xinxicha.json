@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484519-1",
+      "title": "11.5给你一颗后悔药！",
+      "publishedAt": "2026-11-05T08:14:28+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484519&idx=1&sn=6af6398a2816fbe1e4baaf406168a251",
+      "markdownPath": "src/content/articles/2026-11-05-wx-7a94aab6-2247484519-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484519-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-7a94aab6-2247484507-1",
       "title": "11.4三个信号必有大阳！",
       "publishedAt": "2026-11-04T08:14:00+08:00",
@@ -1038,5 +1047,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-04T11:06:37.604922+08:00"
+  "updatedAt": "2026-11-05T11:37:08.675393+08:00"
 }
