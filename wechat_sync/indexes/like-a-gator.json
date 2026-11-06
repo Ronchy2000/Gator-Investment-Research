@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492272-1",
+      "title": "股市：别自己吓自己（2026.11.6）",
+      "publishedAt": "2026-11-06T15:37:30+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492272&idx=1&sn=d05ca624c4bae2841c5a36c311dd3ef4",
+      "markdownPath": "src/content/articles/2026-11-06-wx-dc354e7c-2247492272-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492272-1/cover.jpg",
+      "assetCount": 13
+    },
+    {
       "articleId": "wx-dc354e7c-2247492253-1",
       "title": "股市：放量缩量，走走停停（2026.11.5）",
       "publishedAt": "2026-11-05T15:46:57+08:00",
@@ -5763,5 +5772,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-05T18:56:29.848731+08:00"
+  "updatedAt": "2026-11-06T18:52:53.964731+08:00"
 }
