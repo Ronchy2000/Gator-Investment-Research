@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492301-1",
+      "title": "股市：坐轿子，起起伏伏（2026.11.10）",
+      "publishedAt": "2026-11-10T15:29:25+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492301&idx=1&sn=de970140c0a4adfffd9ae2a9063d7893",
+      "markdownPath": "src/content/articles/2026-11-10-wx-dc354e7c-2247492301-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492301-1/cover.jpg",
+      "assetCount": 11
+    },
+    {
       "articleId": "wx-dc354e7c-2247492287-1",
       "title": "股市：少看分时，先填坑（2026.11.9）",
       "publishedAt": "2026-11-09T15:51:13+08:00",
@@ -5781,5 +5790,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-09T19:31:53.471023+08:00"
+  "updatedAt": "2026-11-11T10:54:58.319393+08:00"
 }
