@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492321-1",
+      "title": "股市：继续坐轿子（2026.11.11）",
+      "publishedAt": "2026-11-11T15:27:34+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492321&idx=1&sn=bdd2fb0512ad8ea814579b86fc169eff",
+      "markdownPath": "src/content/articles/2026-11-11-wx-dc354e7c-2247492321-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492321-1/cover.jpg",
+      "assetCount": 17
+    },
+    {
       "articleId": "wx-dc354e7c-2247492301-1",
       "title": "股市：坐轿子，起起伏伏（2026.11.10）",
       "publishedAt": "2026-11-10T15:29:25+08:00",
@@ -5790,5 +5799,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-11T10:54:58.319393+08:00"
+  "updatedAt": "2026-11-11T18:57:39.700647+08:00"
 }
