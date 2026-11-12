@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484574-1",
+      "title": "我在光模块很想你",
+      "publishedAt": "2026-11-12T08:07:40+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484574&idx=1&sn=86eb28c8bebe0045a79723026df94433",
+      "markdownPath": "src/content/articles/2026-11-12-wx-7a94aab6-2247484574-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484574-1/cover.jpg",
+      "assetCount": 9
+    },
+    {
       "articleId": "wx-7a94aab6-2247484561-1",
       "title": "11.11机构的麻袋已经准备好了！",
       "publishedAt": "2026-11-11T08:17:14+08:00",
@@ -1083,5 +1092,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-11T10:54:47.287217+08:00"
+  "updatedAt": "2026-11-12T12:00:38.219999+08:00"
 }
