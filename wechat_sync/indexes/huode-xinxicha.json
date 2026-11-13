@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484584-1",
+      "title": "11.13谁来力挽狂澜？",
+      "publishedAt": "2026-11-13T08:20:25+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484584&idx=1&sn=6b8b7276a8d04ac91b3f0d669572ffa5",
+      "markdownPath": "src/content/articles/2026-11-13-wx-7a94aab6-2247484584-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484584-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-7a94aab6-2247484574-1",
       "title": "我在光模块很想你",
       "publishedAt": "2026-11-12T08:07:40+08:00",
@@ -1092,5 +1101,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-12T12:00:38.219999+08:00"
+  "updatedAt": "2026-11-13T11:31:02.452875+08:00"
 }
