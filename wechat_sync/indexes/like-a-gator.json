@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492343-1",
+      "title": "股市：同样的套路，但管用（2026.11.13）",
+      "publishedAt": "2026-11-13T15:59:33+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492343&idx=1&sn=d18dfef60ea986dc27f4d6557e332d16",
+      "markdownPath": "src/content/articles/2026-11-13-wx-dc354e7c-2247492343-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492343-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247492334-1",
       "title": "股市：网上又不笑了，好事（2026.11.12）",
       "publishedAt": "2026-11-12T15:35:23+08:00",
@@ -5808,5 +5817,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-12T19:09:58.532899+08:00"
+  "updatedAt": "2026-11-14T11:27:26.419902+08:00"
 }
