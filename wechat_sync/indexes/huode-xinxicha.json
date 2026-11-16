@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484594-1",
+      "title": "11.16多给一点耐心。",
+      "publishedAt": "2026-11-16T08:20:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484594&idx=1&sn=34c73397233fe8b66a141616c8f4bf05",
+      "markdownPath": "src/content/articles/2026-11-16-wx-7a94aab6-2247484594-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484594-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-7a94aab6-2247484584-1",
       "title": "11.13谁来力挽狂澜？",
       "publishedAt": "2026-11-13T08:20:25+08:00",
@@ -1101,5 +1110,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-13T11:31:02.452875+08:00"
+  "updatedAt": "2026-11-16T10:56:56.147105+08:00"
 }
