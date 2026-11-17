@@ -9,8 +9,25 @@
   "backfillComplete": true,
   "backfillNextPage": 3,
   "backfillOffset": "",
-  "pendingArticles": [],
+  "pendingArticles": [
+    {
+      "articleId": "wx-7a94aab6-2247484610-1",
+      "title": "11.17开始绝地反击！",
+      "url": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484610&idx=1&sn=cae4ab72a6c1e3a6b7a16e8086e00132",
+      "coverUrl": "https://mmbiz.qpic.cn/sz_mmbiz_jpg/e76ia4bLc7n14VaTExP3iaF2xS1eWhcMFmjCdeV3Uc2fb4ZX0NhxMC8fW5R7GyIGCcHWPHibxqntAxiaNgMJz278O2FcnbFDBe03RngL3HZsicYw/640?wxtype=jpeg&wxfrom=25",
+      "publishedAt": "2026-11-17T08:20:00+08:00"
+    }
+  ],
   "articles": [
+    {
+      "articleId": "wx-7a94aab6-2247484610-2",
+      "title": "邀请结果公布",
+      "publishedAt": "2026-11-17T08:20:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484610&idx=2&sn=ad5a2232ba34d83f42ba8f20c69e73ac",
+      "markdownPath": "src/content/articles/2026-11-17-wx-7a94aab6-2247484610-2.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484610-2/cover.jpg",
+      "assetCount": 3
+    },
     {
       "articleId": "wx-7a94aab6-2247484594-1",
       "title": "11.16多给一点耐心。",
@@ -1110,5 +1127,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-16T10:56:56.147105+08:00"
+  "updatedAt": "2026-11-17T19:52:19.858261+08:00"
 }
