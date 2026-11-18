@@ -20,6 +20,15 @@
   ],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484621-1",
+      "title": "11.18 继续反击！",
+      "publishedAt": "2026-11-18T08:19:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484621&idx=1&sn=18658e60b2bc4c02e7c976b2b29243da",
+      "markdownPath": "src/content/articles/2026-11-18-wx-7a94aab6-2247484621-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484621-1/cover.jpg",
+      "assetCount": 5
+    },
+    {
       "articleId": "wx-7a94aab6-2247484610-2",
       "title": "邀请结果公布",
       "publishedAt": "2026-11-17T08:20:00+08:00",
@@ -1127,5 +1136,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-17T19:52:19.858261+08:00"
+  "updatedAt": "2026-11-18T12:38:40.437944+08:00"
 }
