@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492409-1",
+      "title": "股市：人类的赞歌（2026.11.19）",
+      "publishedAt": "2026-11-19T16:08:55+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492409&idx=1&sn=0f27c21060cbaff31cc4d87aacd4e1f6",
+      "markdownPath": "src/content/articles/2026-11-19-wx-dc354e7c-2247492409-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492409-1/cover.jpg",
+      "assetCount": 8
+    },
+    {
       "articleId": "wx-dc354e7c-2247492397-1",
       "title": "股市：破局靠先锋（2026.11.18）",
       "publishedAt": "2026-11-18T16:02:33+08:00",
@@ -5844,5 +5853,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-19T12:22:11.999356+08:00"
+  "updatedAt": "2026-11-19T19:39:53.993022+08:00"
 }
