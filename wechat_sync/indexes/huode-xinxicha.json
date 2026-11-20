@@ -20,6 +20,15 @@
   ],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484642-1",
+      "title": "11.20呼叫大威天龙！",
+      "publishedAt": "2026-11-20T08:21:00+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484642&idx=1&sn=d24acd4ed9d1cabfee3f677f5005fd0f",
+      "markdownPath": "src/content/articles/2026-11-20-wx-7a94aab6-2247484642-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484642-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-7a94aab6-2247484631-1",
       "title": "11.19种子已经发芽！",
       "publishedAt": "2026-11-19T08:20:00+08:00",
@@ -1145,5 +1154,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-19T12:22:00.352022+08:00"
+  "updatedAt": "2026-11-20T19:39:51.137496+08:00"
 }
