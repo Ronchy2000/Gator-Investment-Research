@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492430-1",
+      "title": "股市：闯关腊子口（2026.11.23）",
+      "publishedAt": "2026-11-23T15:37:27+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492430&idx=1&sn=ff961dce9292347981724eb5a131d1a9",
+      "markdownPath": "src/content/articles/2026-11-23-wx-dc354e7c-2247492430-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492430-1/cover.jpg",
+      "assetCount": 7
+    },
+    {
       "articleId": "wx-dc354e7c-2247492420-1",
       "title": "股市：长征到哪一步？（2026.11.20）",
       "publishedAt": "2026-11-20T16:28:38+08:00",
@@ -5862,5 +5871,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-20T19:40:00.883094+08:00"
+  "updatedAt": "2026-11-23T20:40:44.140122+08:00"
 }
