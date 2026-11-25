@@ -12,6 +12,15 @@
   "pendingArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492439-1",
+      "title": "股市：轮流攀崖（2026.11.24）",
+      "publishedAt": "2026-11-24T15:55:44+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492439&idx=1&sn=8c16adb22a1b850918586811d3ab3545",
+      "markdownPath": "src/content/articles/2026-11-24-wx-dc354e7c-2247492439-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492439-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-dc354e7c-2247492430-1",
       "title": "股市：闯关腊子口（2026.11.23）",
       "publishedAt": "2026-11-23T15:37:27+08:00",
@@ -5871,5 +5880,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-23T20:40:44.140122+08:00"
+  "updatedAt": "2026-11-25T09:11:57.375110+08:00"
 }
