@@ -20,6 +20,15 @@
   ],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484685-1",
+      "title": "11.26流动性枯竭！",
+      "publishedAt": "2026-11-26T08:22:57+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484685&idx=1&sn=e3c570958599faeb4f407ef171be78b5",
+      "markdownPath": "src/content/articles/2026-11-26-wx-7a94aab6-2247484685-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484685-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-7a94aab6-2247484673-1",
       "title": "11.25坚持就是胜利！",
       "publishedAt": "2026-11-25T08:15:51+08:00",
@@ -1181,5 +1190,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-25T09:11:46.609596+08:00"
+  "updatedAt": "2026-11-26T20:33:37.996137+08:00"
 }
