@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 from .client import (
     AccountReference,
+    RapidAPIArticleUnavailable,
     RapidAPIClient,
     RapidAPIError,
     load_api_key_pool,
@@ -434,6 +435,17 @@ def _synchronize_account(
         and entry.get("publishedAt") is not None
     }
 
+    raw_unavailable = index.get("unavailableArticles", [])
+    if not isinstance(raw_unavailable, list):
+        raise ValueError(f"{index_path.name} 的 unavailableArticles 字段不是数组")
+    unavailable_articles = list(raw_unavailable)
+    for item in unavailable_articles:
+        if not isinstance(item, dict):
+            raise ValueError(f"{index_path.name} 的 unavailableArticles 包含无效记录")
+        article = _normalize_article(item)
+        indexed_ids.add(article.article_id)
+        indexed_urls.add(_url_key(article.url))
+
     raw_pending = index.get("pendingArticles", [])
     if not isinstance(raw_pending, list):
         raise ValueError(f"{index_path.name} 的 pendingArticles 字段不是数组")
@@ -501,7 +513,7 @@ def _synchronize_account(
 
     def save_state() -> None:
         next_index = {
-            "version": 5,
+            "version": 6,
             "account": {
                 "slug": account.slug,
                 "name": account.name,
@@ -519,6 +531,7 @@ def _synchronize_account(
                     reverse=True,
                 )
             ],
+            "unavailableArticles": unavailable_articles,
             "articles": entries,
         }
         current_without_timestamp = {
@@ -542,6 +555,7 @@ def _synchronize_account(
     )
 
     succeeded = 0
+    unavailable_count = 0
     failures: list[tuple[ArticleSummary, str]] = []
     for position, article in enumerate(pending, start=1):
         print(f"[{account.name} {position}/{len(pending)}] 下载 {article.title}")
@@ -556,6 +570,19 @@ def _synchronize_account(
                 downloaded = downloader.download_detail(
                     article, account.name, detail
                 )
+        except RapidAPIArticleUnavailable as error:
+            unavailable_articles.append(
+                {
+                    **_pending_record(article),
+                    "reason": str(error),
+                    "unavailableAt": datetime.now(tz=SHANGHAI).isoformat(),
+                }
+            )
+            pending_by_id.pop(article.article_id, None)
+            indexed_ids.add(article.article_id)
+            indexed_urls.add(_url_key(article.url))
+            unavailable_count += 1
+            print(f"  已记录下架，停止自动重试: {error}")
         except Exception as error:
             failures.append((article, str(error)))
             print(f"  失败: {error}", file=sys.stderr)
@@ -585,6 +612,11 @@ def _synchronize_account(
         if position < len(pending):
             time.sleep(delay_seconds)
 
+    if unavailable_articles:
+        print(
+            f"[{account.name}] 已记录下架 {len(unavailable_articles)} 篇"
+            f"（本次新标记 {unavailable_count} 篇），元数据和原因已保留"
+        )
     if failures:
         print(f"[{account.name}] 以下文章保留到下次同步重试：", file=sys.stderr)
         for article, message in failures:

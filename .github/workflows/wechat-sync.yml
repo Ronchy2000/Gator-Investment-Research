@@ -79,7 +79,7 @@ jobs:
             echo "- 日常增量轮询三套微信公众号产品；未订阅的 Key × 产品组合会被自动隔离。"
             echo "- 显式历史回补仍固定使用 Official Accounts Platform V2，保护已有 offset 断点。"
           } >> "$GITHUB_STEP_SUMMARY"
-          python -m wechat_sync.sync --max-pages "$SYNC_MAX_PAGES" --delay 3
+          python -u -m wechat_sync.sync --max-pages "$SYNC_MAX_PAGES" --delay 3
 
       - name: Detect generated changes
         id: changes
@@ -90,6 +90,11 @@ jobs:
         run: |
           new_article_count="$(git ls-files --others --exclude-standard -- src/content/articles | wc -l | tr -d ' ')"
           echo "new_article_count=$new_article_count" >> "$GITHUB_OUTPUT"
+          if [[ -n "$(git status --porcelain -- src/content/articles public/article-assets wechat_sync/indexes)" ]]; then
+            echo "has_sync_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_sync_changes=false" >> "$GITHUB_OUTPUT"
+          fi
           if [[ "$new_article_count" -gt 0 ]]; then
             echo "has_new_articles=true" >> "$GITHUB_OUTPUT"
           else
@@ -98,14 +103,14 @@ jobs:
               {
                 echo "## 本次没有新增文章"
                 echo
-                echo "同步成功，但未生成新的文章文件，因此不会创建空提交。"
+                echo "同步成功，本次没有新增文章；若重试或下架记录发生变化，将单独保存索引状态。"
               } >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
 
       - name: Validate generated archive
         id: integrity
-        if: steps.changes.outputs.has_new_articles == 'true'
+        if: steps.changes.outputs.has_sync_changes == 'true'
         run: python -m wechat_sync.validate
 
       - name: Set up Node.js
@@ -125,23 +130,27 @@ jobs:
         run: npm run build
 
       - name: Commit synchronized content
-        if: steps.changes.outputs.has_new_articles == 'true'
+        if: steps.changes.outputs.has_sync_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/content/articles public/article-assets wechat_sync/indexes
-          article_count="$(git diff --cached --name-only --diff-filter=A -- src/content/articles | wc -l | tr -d ' ')"
-          if [[ "$article_count" -eq 0 ]]; then
-            echo "暂存区没有新增文章文件，跳过提交。"
+          if git diff --cached --quiet; then
+            echo "暂存区没有同步变化，跳过提交。"
             exit 0
           fi
+          article_count="$(git diff --cached --name-only --diff-filter=A -- src/content/articles | wc -l | tr -d ' ')"
           if [[ "$article_count" == "1" ]]; then
             article_label="article"
           else
             article_label="articles"
           fi
           sync_date="$(TZ=Asia/Shanghai date +%F)"
-          git commit -m "content: sync ${article_count} WeChat ${article_label} (${sync_date})"
+          if [[ "$article_count" -gt 0 ]]; then
+            git commit -m "content: sync ${article_count} WeChat ${article_label} (${sync_date})"
+          else
+            git commit -m "chore: save WeChat synchronization state (${sync_date})"
+          fi
           git pull --rebase origin master
           git push origin HEAD:master
 
@@ -186,7 +195,7 @@ jobs:
           if [[ "${{ steps.credentials.outcome }}" == "failure" ]]; then
             guidance='请上传 Key 池 Secret `RAPIDAPI_KEYS`；单个 `RAPIDAPI_KEY` 仅作为兼容后备。'
           else
-            guidance='同步器会分别探测三套产品。某个 Key 在某产品提示 401/403/429 只会禁用该组合；若三套产品都失败，请检查订阅、配额和账号标识。HTTP 5xx 通常是对应产品的上游故障。'
+            guidance='请先查看 Synchronize articles 的最终计数和逐篇失败原因：部分文章下载成功时，仍可能因其他文章或账号失败而告警。明确下架的文章会记录在 unavailableArticles 并停止自动重试。某个 Key 的 401/403/429 会自动故障转移；只有全部候选失败时才需检查订阅、配额和账号标识。'
           fi
           body="$(printf '自动同步未完成。请查看运行记录：%s\n\n%s' "$run_url" "$guidance")"
           if [[ -n "$issue_number" ]]; then

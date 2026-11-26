@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "account": {
     "slug": "huode-xinxicha",
     "name": "获得信息差",
@@ -9,13 +9,17 @@
   "backfillComplete": true,
   "backfillNextPage": 3,
   "backfillOffset": "",
-  "pendingArticles": [
+  "pendingArticles": [],
+  "unavailableArticles": [
     {
       "articleId": "wx-7a94aab6-2247484610-1",
       "title": "11.17开始绝地反击！",
       "url": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484610&idx=1&sn=cae4ab72a6c1e3a6b7a16e8086e00132",
       "coverUrl": "https://mmbiz.qpic.cn/sz_mmbiz_jpg/e76ia4bLc7n14VaTExP3iaF2xS1eWhcMFmjCdeV3Uc2fb4ZX0NhxMC8fW5R7GyIGCcHWPHibxqntAxiaNgMJz278O2FcnbFDBe03RngL3HZsicYw/640?wxtype=jpeg&wxfrom=25",
-      "publishedAt": "2026-11-17T08:20:00+08:00"
+      "publishedAt": "2026-11-17T08:20:00+08:00",
+      "reason": "WeChat Data 业务错误 1004: 此内容因违规无法查看",
+      "unavailableAt": "2026-11-26T20:33:46+08:00",
+      "evidenceRunUrl": "https://github.com/Ronchy2000/Gator-Investment-Research/actions/runs/45820675674/job/139911798727#step:6:50"
     }
   ],
   "articles": [

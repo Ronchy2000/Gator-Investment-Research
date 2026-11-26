@@ -53,6 +53,10 @@ class RapidAPIProviderUnavailable(RapidAPIError):
     """A product lacks a usable key or required account identifier."""
 
 
+class RapidAPIArticleUnavailable(RapidAPIError):
+    """An article-detail provider explicitly reports removal or blocking."""
+
+
 @dataclass(frozen=True)
 class APIKeyPool:
     keys: tuple[str, ...]
@@ -296,9 +300,28 @@ def _is_key_error(message: str) -> bool:
     return any(term in normalized for term in KEY_ERROR_TERMS)
 
 
-def _validate_payload(provider: _Provider, payload: Any) -> None:
+def _validate_payload(
+    provider: _Provider, payload: Any, *, article_detail: bool = False
+) -> None:
     if not isinstance(payload, dict):
         return
+    if (
+        article_detail
+        and provider.name == "wechat-data"
+        and _business_code(payload) == 1004
+        and any(
+            term in _error_message(payload)
+            for term in (
+                "此内容因违规无法查看",
+                "该内容因违规无法查看",
+                "此内容已被发布者删除",
+                "该内容已被发布者删除",
+            )
+        )
+    ):
+        raise RapidAPIArticleUnavailable(
+            f"{provider.label} 业务错误 1004: {_error_message(payload)}"
+        )
     if provider.name == "justone":
         code = _business_code(payload)
         if code == 0:
@@ -816,7 +839,9 @@ class RapidAPIClient:
         except ValueError as error:
             raise RapidAPIError(f"{provider.label} 返回了无效 JSON") from error
 
-        _validate_payload(provider, payload)
+        _validate_payload(
+            provider, payload, article_detail=path == WECHAT_DATA_DETAIL_PATH
+        )
         return payload
 
     def _with_key_failover(
@@ -863,11 +888,14 @@ class RapidAPIClient:
                 if provider.name == provider_name
             ]
         errors: list[str] = []
+        unavailable_error: Optional[RapidAPIArticleUnavailable] = None
         for provider in providers:
             try:
                 result = request(provider)
             except RapidAPIError as error:
                 errors.append(f"{provider.label}: {error}")
+                if isinstance(error, RapidAPIArticleUnavailable):
+                    unavailable_error = error
                 if provider_name is None:
                     print(f"RapidAPI {provider.label} 暂不可用（{error}），切换产品")
                 continue
@@ -885,6 +913,12 @@ class RapidAPIClient:
             return provider, result
 
         detail = "；".join(errors) if errors else "没有可用产品"
+        if capability == "detail" and unavailable_error is not None:
+            # A different provider may still have an archive, so only classify
+            # removal after every trusted detail provider has failed.
+            raise RapidAPIArticleUnavailable(
+                str(unavailable_error)
+            ) from unavailable_error
         scope = "三套列表产品" if capability == "history" else "两套可信详情产品"
         raise RapidAPIError(f"RapidAPI {scope}均未返回可用数据：{detail}")
 
