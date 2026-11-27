@@ -24,6 +24,15 @@
   ],
   "articles": [
     {
+      "articleId": "wx-7a94aab6-2247484696-1",
+      "title": "11.27今日宜上涨",
+      "publishedAt": "2026-11-27T08:14:11+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzY5MDM0NDQ1OQ%3D%3D&mid=2247484696&idx=1&sn=b7cf2b60081b1628c056687ada2561d0",
+      "markdownPath": "src/content/articles/2026-11-27-wx-7a94aab6-2247484696-1.md",
+      "cover": "/article-assets/wx-7a94aab6-2247484696-1/cover.jpg",
+      "assetCount": 6
+    },
+    {
       "articleId": "wx-7a94aab6-2247484685-1",
       "title": "11.26流动性枯竭！",
       "publishedAt": "2026-11-26T08:22:57+08:00",
@@ -1194,5 +1203,5 @@
       "assetCount": 5
     }
   ],
-  "updatedAt": "2026-11-26T20:33:37.996137+08:00"
+  "updatedAt": "2026-11-27T13:14:19.151032+08:00"
 }
