@@ -13,6 +13,15 @@
   "unavailableArticles": [],
   "articles": [
     {
+      "articleId": "wx-dc354e7c-2247492478-1",
+      "title": "股市：下一关，六盘山（2026.11.27）",
+      "publishedAt": "2026-11-27T15:25:09+08:00",
+      "sourceUrl": "https://mp.weixin.qq.com/s?__biz=MzkyMjUxNDU5Nw%3D%3D&mid=2247492478&idx=1&sn=21c76e213b159456a93bbf94dc2a0d35",
+      "markdownPath": "src/content/articles/2026-11-27-wx-dc354e7c-2247492478-1.md",
+      "cover": "/article-assets/wx-dc354e7c-2247492478-1/cover.jpg",
+      "assetCount": 12
+    },
+    {
       "articleId": "wx-dc354e7c-2247492462-1",
       "title": "股市：机构敢买了（2026.11.26）",
       "publishedAt": "2026-11-26T15:57:04+08:00",
@@ -5899,5 +5908,5 @@
       "assetCount": 3
     }
   ],
-  "updatedAt": "2026-11-26T23:35:12.600571+08:00"
+  "updatedAt": "2026-11-27T20:20:09.881778+08:00"
 }
